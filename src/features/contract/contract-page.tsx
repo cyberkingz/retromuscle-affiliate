@@ -130,7 +130,7 @@ export function ContractPage() {
                 onChange={(event) => setAccepted(event.target.checked)}
               />
               <span className="text-sm text-foreground/80">
-                J'ai lu et j'accepte les conditions du programme (cession des droits, paiement mensuel, deadlines).
+                J&apos;ai lu et j&apos;accepte les conditions du programme (cession des droits, paiement mensuel, deadlines).
               </span>
             </label>
 
@@ -155,4 +155,3 @@ export function ContractPage() {
     </div>
   );
 }
-

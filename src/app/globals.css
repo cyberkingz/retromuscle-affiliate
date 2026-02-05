@@ -128,7 +128,13 @@ html {
 }
 
 .animate-marquee-vertical {
-  animation: marquee-vertical 20s linear infinite;
+  animation: marquee-vertical 25s linear infinite;
+}
+
+@media (min-width: 640px) {
+  .animate-marquee-vertical {
+    animation: marquee-vertical 20s linear infinite;
+  }
 }
 
 .mask-fade-y {
