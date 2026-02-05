@@ -38,7 +38,7 @@ export function LandingHero({
             </Badge>
           </div>
 
-          <h1 className="font-display text-4xl uppercase leading-[0.92] tracking-tight text-secondary sm:text-5xl md:text-6xl lg:text-6xl mx-auto lg:mx-0">
+          <h1 className="font-display text-3xl uppercase leading-[0.94] tracking-tight text-secondary sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl mx-auto lg:mx-0">
             {title}
           </h1>
 
