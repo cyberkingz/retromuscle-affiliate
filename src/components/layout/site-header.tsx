@@ -89,9 +89,6 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
-            <Button asChild size="sm" variant="outline" className="hidden lg:inline-flex">
-              <Link href="/creators">Gains</Link>
-            </Button>
             {!auth.loading && auth.session ? (
               <>
                 <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
