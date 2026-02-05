@@ -30,7 +30,7 @@ export function PageShell({ children, currentPath }: PageShellProps) {
 
       <SiteHeader currentPath={currentPath} />
 
-      <main className="container-wide flex-1 overflow-x-hidden pb-8 pt-0 md:pb-12 md:pt-0">{children}</main>
+      <main className="container-wide flex-1 overflow-x-hidden pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12">{children}</main>
 
       <SiteFooter />
     </div>

@@ -16,7 +16,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ title, subtitle, ctaLabel, ctaHref }: HeroSectionProps) {
   return (
-    <Card className="grid gap-8 bg-gradient-to-br from-white to-frost/60 p-5 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:p-10">
+    <Card className="mt-4 grid gap-8 bg-gradient-to-br from-white to-frost/60 p-5 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:p-10">
       <div className="flex flex-col justify-center space-y-6">
         <SectionHeading eyebrow="Revenus createur" title={title} subtitle={subtitle} />
         <div className="flex flex-col gap-3 xs:flex-row">

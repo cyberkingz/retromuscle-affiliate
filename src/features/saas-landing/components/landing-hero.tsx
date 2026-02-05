@@ -29,7 +29,7 @@ export function LandingHero({
   visuals
 }: LandingHeroProps) {
   return (
-    <section className="relative overflow-visible pb-16 pt-0">
+    <section className="relative overflow-visible pb-10 pt-0">
       <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-12">
         <div className="relative z-30 min-w-0 space-y-7 animate-fade-up lg:pr-8 text-center lg:text-left">
           <div className="flex justify-center lg:justify-start">
@@ -51,12 +51,6 @@ export function LandingHero({
               <Link href={primaryCta.href}>
                 {primaryCta.label}
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="h-14 w-full px-8 text-base sm:w-auto">
-              <Link href={secondaryCta.href}>
-                <PlayCircle className="mr-2 h-5 w-5" />
-                {secondaryCta.label}
               </Link>
             </Button>
           </div>
@@ -143,14 +137,6 @@ export function LandingHero({
                 <p className="font-semibold uppercase tracking-[0.08em]">Revenus plus reguliers</p>
                 <p className="text-foreground/80">grace a un volume de missions constant</p>
               </div>
-            </div>
-
-            <div className="absolute bottom-4 left-4 z-20 rounded-2xl border border-line bg-white/95 px-4 py-3 text-sm shadow-lg">
-              <div className="mb-1 flex items-center gap-2">
-                <Image src={visuals.logoUrl} alt="RetroMuscle logo" width={24} height={24} className="h-6 w-6 object-contain" />
-                <p className="font-semibold">Avis affilie</p>
-              </div>
-              <p className="text-foreground/65">Simple, clair, et rentable chaque mois.</p>
             </div>
           </div>
         </div>
