@@ -46,11 +46,6 @@ export function ApplyMarketingColumn({ data, authenticated }: ApplyMarketingColu
         </div>
       </div>
 
-      <div className="px-2">
-        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-foreground/40">
-          {data.action.urgencyText}
-        </p>
-      </div>
     </div>
   );
 }

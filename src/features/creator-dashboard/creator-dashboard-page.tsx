@@ -40,10 +40,12 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
         <UploadCard
+          monthlyTrackingId={data.upload.monthlyTrackingId}
           specs={data.upload.specs}
-          tips={data.upload.tips.CINEMATIC ?? []}
+          tips={data.upload.tips}
           pendingReviewCount={data.upload.pendingReviewCount}
           rejectedCount={data.upload.rejectedCount}
+          recentVideos={data.upload.recentVideos}
         />
         <RushesSummaryCard
           totalFiles={data.rushes.totalFiles}

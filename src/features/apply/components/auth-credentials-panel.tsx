@@ -135,6 +135,14 @@ export function AuthCredentialsPanel({
       <p className="text-xs text-foreground/65">
         {isSignup ? "Inscription simple par email + mot de passe." : "Connecte-toi pour reprendre ton onboarding."}
       </p>
+
+      {isSignup && (
+        <div className="rounded-xl border border-secondary/20 bg-frost/50 p-3">
+          <p className="text-[11px] font-medium leading-relaxed text-secondary/80">
+            Les places sont ouvertes chaque semaine selon les besoins campagnes.
+          </p>
+        </div>
+      )}
     </form>
   );
 }
