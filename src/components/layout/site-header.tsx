@@ -15,6 +15,7 @@ interface SiteHeaderProps {
     | "/apply"
     | "/login"
     | "/onboarding"
+    | "/contract"
     | "/creators"
     | "/join"
     | "/dashboard"
@@ -42,57 +43,63 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-secondary/60 bg-secondary text-secondary-foreground">
-        <div className="container-wide flex h-8 items-center justify-center text-[11px] uppercase tracking-[0.16em]">
-          PROGRAMME AFFILIE OUVERT • REPONSE SOUS 48H • PAIEMENTS MENSUELS
+        <div className="container-wide flex h-8 items-center justify-center text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
+          <span className="hidden xs:inline">PROGRAMME AFFILIE OUVERT • </span>
+          REPONSE SOUS 48H • PAIEMENTS MENSUELS
         </div>
       </div>
 
       <div className="border-b border-line bg-background/95 backdrop-blur">
-        <div className="container-wide grid h-20 grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <nav className="hidden items-center gap-5 md:flex">
-            {links.map((link) => {
-              const isCurrent =
-                currentPath === link.href || (link.href === "/apply" && currentPath === "/onboarding");
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "text-sm uppercase tracking-[0.08em] transition-colors",
-                    isCurrent ? "text-foreground" : "text-foreground/70 hover:text-foreground"
-                  )}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
+        <div className="container-wide flex h-16 items-center justify-between md:h-20 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4">
+          <div className="hidden md:flex items-center gap-5">
+            <nav className="flex items-center gap-5">
+              {links.map((link) => {
+                const isCurrent =
+                  currentPath === link.href || (link.href === "/apply" && currentPath === "/onboarding");
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "text-sm uppercase tracking-[0.08em] transition-colors",
+                      isCurrent ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-          <Link
-            href="/"
-            className="justify-self-center rounded-xl border border-transparent px-2 py-1 transition-transform hover:-translate-y-0.5 hover:border-line"
-          >
-            <Image
-              src={BRAND_ASSETS.logo}
-              alt="RetroMuscle"
-              width={124}
-              height={56}
-              className="h-14 w-auto object-contain"
-              priority
-            />
-          </Link>
+          <div className="flex flex-1 md:flex-none md:justify-center">
+            <Link
+              href="/"
+              className="rounded-xl border border-transparent px-2 py-1 transition-transform hover:-translate-y-0.5 hover:border-line"
+            >
+              <Image
+                src={BRAND_ASSETS.logo}
+                alt="RetroMuscle"
+                width={124}
+                height={56}
+                className="h-10 w-auto object-contain md:h-14"
+                priority
+              />
+            </Link>
+          </div>
 
-          <div className="flex items-center justify-end gap-2">
-            <Button asChild size="sm" variant="outline" className="hidden md:inline-flex">
+          <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
+            <Button asChild size="sm" variant="outline" className="hidden lg:inline-flex">
               <Link href="/creators">Gains</Link>
             </Button>
             {!auth.loading && auth.session ? (
               <>
-                <Button asChild size="sm" variant="outline" className="hidden sm:inline-flex">
+                <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
                   <Link href={appTarget}>{appLabel}</Link>
                 </Button>
                 <Button
                   size="sm"
+                  className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
                   onClick={() => {
                     void auth.signOut();
                   }}
@@ -102,10 +109,10 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
               </>
             ) : (
               <>
-                <Button asChild size="sm" variant="outline" className="hidden sm:inline-flex">
+                <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
                   <Link href="/login">Connexion</Link>
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm">
                   <Link href="/apply">S&apos;inscrire</Link>
                 </Button>
               </>
@@ -120,29 +127,53 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
               onClick={() => setMobileOpen((value) => !value)}
             >
               <span className="sr-only">Toggle menu</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-              >
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
+              {mobileOpen ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                >
+                  <line x1="4" x2="20" y1="12" y2="12" />
+                  <line x1="4" x2="20" y1="6" y2="6" />
+                  <line x1="4" x2="20" y1="18" y2="18" />
+                </svg>
+              )}
             </Button>
           </div>
         </div>
 
-        {mobileOpen ? (
-          <div id="mobile-site-nav" className="container-wide border-t border-line py-3 md:hidden">
-            <nav className="space-y-2">
+        <div
+          id="mobile-site-nav"
+          className={cn(
+            "grid transition-all duration-300 ease-in-out md:hidden",
+            mobileOpen ? "grid-rows-[1fr] border-t border-line opacity-100" : "grid-rows-[0fr] opacity-0"
+          )}
+        >
+          <div className="overflow-hidden">
+            <nav className="container-wide space-y-1 py-4">
               {links.map((link) => {
                 const isCurrent =
                   currentPath === link.href || (link.href === "/apply" && currentPath === "/onboarding");
@@ -152,7 +183,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-2 text-sm uppercase tracking-[0.08em]",
+                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
                       isCurrent ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
                     )}
                   >
@@ -166,7 +197,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                   <Link
                     href={appTarget}
                     onClick={() => setMobileOpen(false)}
-                    className="block rounded-lg px-3 py-2 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                    className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
                   >
                     {appLabel}
                   </Link>
@@ -176,7 +207,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                       setMobileOpen(false);
                       void auth.signOut();
                     }}
-                    className="block w-full rounded-lg px-3 py-2 text-left text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                    className="block w-full rounded-lg px-3 py-3 text-left text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
                   >
                     Deconnexion
                   </button>
@@ -187,7 +218,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href="/login"
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-2 text-sm uppercase tracking-[0.08em]",
+                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
                       currentPath === "/login" ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
                     )}
                   >
@@ -197,7 +228,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href="/apply"
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-2 text-sm uppercase tracking-[0.08em]",
+                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
                       currentPath === "/apply" ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
                     )}
                   >
@@ -207,7 +238,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
               )}
             </nav>
           </div>
-        ) : null}
+        </div>
       </div>
     </header>
   );

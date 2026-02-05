@@ -51,6 +51,10 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     );
   }
 
+  async getMonthlyTrackingById(monthlyTrackingId: string): Promise<MonthlyTracking | null> {
+    return monthlyTrackings.find((tracking) => tracking.id === monthlyTrackingId) ?? null;
+  }
+
   async listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]> {
     return monthlyTrackings.filter((tracking) => tracking.creatorId === creatorId).sort(byMonthDesc);
   }
@@ -65,6 +69,35 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]> {
     return rushes.filter((item) => item.monthlyTrackingId === monthlyTrackingId);
+  }
+
+  async createVideoAsset(_input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoAsset["videoType"];
+    fileUrl: string;
+    durationSeconds: number;
+    resolution: VideoAsset["resolution"];
+    fileSizeMb: number;
+    status?: VideoStatus;
+  }): Promise<VideoAsset> {
+    throw new Error("Uploads are not available in offline mode");
+  }
+
+  async reviewVideoAsset(_input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<VideoAsset> {
+    throw new Error("Video review is not available in offline mode");
+  }
+
+  async updateTrackingDelivered(_input: {
+    monthlyTrackingId: string;
+    delivered: MonthlyTracking["delivered"];
+  }): Promise<MonthlyTracking> {
+    throw new Error("Tracking updates are not available in offline mode");
   }
 
   async listRates(): Promise<VideoRate[]> {

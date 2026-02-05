@@ -13,7 +13,7 @@ export function PackagesGrid({ packages }: PackagesGridProps) {
   return (
     <section className="space-y-4">
       <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">Packs mensuels</h3>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 xs:grid-cols-2 lg:grid-cols-4">
         {packages.map((pkg, index) => {
           const featured = index === 1;
 

@@ -28,7 +28,7 @@ function AuthCallbackClient() {
     const code = searchParams.get("code");
     const next = searchParams.get("next");
     const safeNext =
-      next === "/onboarding" || next === "/login" || next === "/dashboard" || next === "/admin"
+      next === "/onboarding" || next === "/login" || next === "/dashboard" || next === "/admin" || next === "/contract"
         ? next
         : "/login";
 

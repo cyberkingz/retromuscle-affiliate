@@ -45,15 +45,15 @@ export function SocialProofWall({ testimonials, trustedBy }: SocialProofWallProp
         ))}
       </div>
 
-      <div className="rounded-3xl border border-line bg-white/70 px-6 py-8">
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.14em] text-foreground/55">
+      <div className="rounded-3xl border border-line bg-white/70 px-4 py-8 sm:px-6">
+        <p className="mb-6 text-center text-[10px] uppercase tracking-[0.14em] text-foreground/55 sm:text-xs">
           Accompagne par
         </p>
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
           {trustedBy.map((brand) => (
             <span
               key={brand}
-              className="rounded-full border border-line bg-frost px-4 py-2 text-sm font-semibold text-secondary"
+              className="whitespace-nowrap rounded-full border border-line bg-frost px-3 py-1.5 text-xs font-semibold text-secondary sm:px-4 sm:py-2 sm:text-sm"
             >
               {brand}
             </span>

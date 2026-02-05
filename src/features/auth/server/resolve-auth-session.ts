@@ -2,7 +2,7 @@ import "server-only";
 
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/infrastructure/supabase/server-client";
 
-export type RedirectTarget = "/admin" | "/dashboard" | "/onboarding";
+export type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
 export type AuthRole = "admin" | "affiliate";
 
 export interface ResolvedAuthSession {
@@ -94,7 +94,7 @@ export async function resolveAuthSessionFromAccessToken(
   if (application?.status === "approved") {
     const { data: creator, error: creatorError } = await client
       .from("creators")
-      .select("id")
+      .select("id, contract_signed_at")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -107,7 +107,7 @@ export async function resolveAuthSessionFromAccessToken(
     if (creator?.id) {
       return {
         role: "affiliate",
-        target: "/dashboard",
+        target: creator.contract_signed_at ? "/dashboard" : "/contract",
         userId: user.id,
         email: user.email ?? undefined
       };

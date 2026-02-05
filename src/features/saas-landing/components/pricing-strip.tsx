@@ -29,7 +29,7 @@ export function PricingStrip({ plans }: PricingStripProps) {
             <Card
               key={plan.tier} 
               className={`relative flex flex-col border-line bg-white ${
-                featured ? "scale-[1.03] border-foreground bg-frost shadow-xl" : "hover:border-foreground/40"
+                featured ? "md:scale-[1.03] border-foreground bg-frost shadow-xl" : "hover:border-foreground/40"
               }`}
             >
               {featured && (

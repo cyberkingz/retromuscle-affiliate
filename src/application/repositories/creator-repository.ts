@@ -18,11 +18,32 @@ export interface CreatorRepository {
 
   listMonthlyTrackings(month?: string): Promise<MonthlyTracking[]>;
   getMonthlyTracking(creatorId: string, month: string): Promise<MonthlyTracking | null>;
+  getMonthlyTrackingById(monthlyTrackingId: string): Promise<MonthlyTracking | null>;
   listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]>;
 
   listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]>;
   listVideosByTracking(monthlyTrackingId: string): Promise<VideoAsset[]>;
   listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]>;
+  createVideoAsset(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoAsset["videoType"];
+    fileUrl: string;
+    durationSeconds: number;
+    resolution: VideoAsset["resolution"];
+    fileSizeMb: number;
+    status?: VideoStatus;
+  }): Promise<VideoAsset>;
+  reviewVideoAsset(input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<VideoAsset>;
+  updateTrackingDelivered(input: {
+    monthlyTrackingId: string;
+    delivered: MonthlyTracking["delivered"];
+  }): Promise<MonthlyTracking>;
 
   listRates(): Promise<VideoRate[]>;
   listPackageDefinitions(): Promise<PackageDefinition[]>;

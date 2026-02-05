@@ -1,4 +1,4 @@
-export type RedirectTarget = "/admin" | "/dashboard" | "/onboarding";
+export type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
 export type AuthRole = "admin" | "affiliate";
 
 interface ResolveAuthRoutingResult {
@@ -7,7 +7,7 @@ interface ResolveAuthRoutingResult {
 }
 
 function normalizeTarget(value: unknown): RedirectTarget {
-  if (value === "/admin" || value === "/dashboard" || value === "/onboarding") {
+  if (value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding") {
     return value;
   }
 

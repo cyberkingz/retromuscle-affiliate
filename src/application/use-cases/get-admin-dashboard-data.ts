@@ -45,6 +45,7 @@ export interface AdminDashboardData {
     videoId: string;
     creatorHandle: string;
     videoType: string;
+    fileUrl: string;
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
@@ -137,6 +138,7 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
         videoId: video.id,
         creatorHandle: creator?.handle ?? "@inconnu",
         videoType: VIDEO_TYPE_LABELS[video.videoType],
+        fileUrl: video.fileUrl,
         uploadedAt: video.createdAt,
         durationSeconds: video.durationSeconds,
         resolution: video.resolution

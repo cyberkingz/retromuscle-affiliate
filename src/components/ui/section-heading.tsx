@@ -12,7 +12,7 @@ export function SectionHeading({ eyebrow, title, subtitle }: SectionHeadingProps
           {eyebrow}
         </p>
       ) : null}
-      <h2 className="font-display text-4xl uppercase leading-[0.92] sm:text-5xl">{title}</h2>
+      <h2 className="font-display text-3xl uppercase leading-[0.95] sm:text-5xl sm:leading-[0.92]">{title}</h2>
       {subtitle ? <p className="max-w-3xl text-sm text-foreground/75 sm:text-base">{subtitle}</p> : null}
     </header>
   );

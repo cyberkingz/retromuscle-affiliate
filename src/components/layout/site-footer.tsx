@@ -7,8 +7,8 @@ export function SiteFooter() {
   return (
     <footer className="mt-14 border-t border-secondary/70 bg-secondary text-secondary-foreground">
       <div className="container-wide py-12 md:py-16">
-        <div className="grid gap-8 md:grid-cols-[1.2fr_0.8fr_0.8fr_1.2fr]">
-          <div className="space-y-4">
+        <div className="grid gap-8 text-center md:grid-cols-[1.2fr_0.8fr_0.8fr_1.2fr] md:text-left">
+          <div className="flex flex-col items-center space-y-4 md:items-start">
             <Image src={BRAND_ASSETS.logo} alt="RetroMuscle" width={150} height={68} className="h-14 w-auto object-contain" />
             <p className="max-w-sm text-sm text-white/80">
               Le programme affilie RetroMuscle pour aider les createurs a obtenir un revenu plus regulier.

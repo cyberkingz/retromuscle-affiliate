@@ -31,20 +31,22 @@ export function LandingHero({
   return (
     <section className="relative overflow-visible pb-16 pt-0">
       <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-12">
-        <div className="relative z-30 min-w-0 space-y-7 animate-fade-up lg:pr-8">
-          <Badge variant="outline" className="bg-white/80">
-            {kicker}
-          </Badge>
+        <div className="relative z-30 min-w-0 space-y-7 animate-fade-up lg:pr-8 text-center lg:text-left">
+          <div className="flex justify-center lg:justify-start">
+            <Badge variant="outline" className="bg-white/80">
+              {kicker}
+            </Badge>
+          </div>
 
-          <h1 className="font-display text-4xl uppercase leading-[0.92] tracking-tight text-secondary sm:text-5xl md:text-6xl lg:text-6xl">
+          <h1 className="font-display text-4xl uppercase leading-[0.92] tracking-tight text-secondary sm:text-5xl md:text-6xl lg:text-6xl mx-auto lg:mx-0">
             {title}
           </h1>
 
-          <p className="max-w-[42rem] text-lg text-foreground/80 sm:text-xl md:text-2xl">
+          <p className="max-w-[42rem] text-lg text-foreground/80 sm:text-xl md:text-2xl mx-auto lg:mx-0">
             {subtitle}
           </p>
 
-          <div className="flex max-w-[720px] flex-wrap gap-3">
+          <div className="flex max-w-[720px] flex-wrap gap-3 justify-center lg:justify-start mx-auto lg:mx-0">
             <Button asChild size="lg" className="h-14 w-full px-8 text-base sm:w-auto">
               <Link href={primaryCta.href}>
                 {primaryCta.label}

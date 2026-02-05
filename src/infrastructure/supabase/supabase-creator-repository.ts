@@ -66,6 +66,8 @@ interface VideoRow {
   file_size_mb: number;
   status: string;
   rejection_reason: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
   created_at: string;
 }
 
@@ -332,6 +334,20 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     return data ? mapMonthlyTracking(data as MonthlyTrackingRow) : null;
   }
 
+  async getMonthlyTrackingById(monthlyTrackingId: string): Promise<MonthlyTracking | null> {
+    const { data, error } = await this.client
+      .from("monthly_tracking")
+      .select("*")
+      .eq("id", monthlyTrackingId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to get monthly tracking ${monthlyTrackingId}: ${error.message}`);
+    }
+
+    return data ? mapMonthlyTracking(data as MonthlyTrackingRow) : null;
+  }
+
   async listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]> {
     const { data, error } = await this.client
       .from("monthly_tracking")
@@ -386,6 +402,83 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return (data as RushRow[]).map(mapRush);
+  }
+
+  async createVideoAsset(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoAsset["videoType"];
+    fileUrl: string;
+    durationSeconds: number;
+    resolution: VideoAsset["resolution"];
+    fileSizeMb: number;
+    status?: VideoStatus;
+  }): Promise<VideoAsset> {
+    const { data, error } = await this.client
+      .from("videos")
+      .insert({
+        monthly_tracking_id: input.monthlyTrackingId,
+        creator_id: input.creatorId,
+        video_type: input.videoType,
+        file_url: input.fileUrl,
+        duration_seconds: input.durationSeconds,
+        resolution: input.resolution,
+        file_size_mb: input.fileSizeMb,
+        status: input.status ?? "pending_review"
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create video asset: ${error.message}`);
+    }
+
+    return mapVideo(data as VideoRow);
+  }
+
+  async reviewVideoAsset(input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<VideoAsset> {
+    const { data, error } = await this.client
+      .from("videos")
+      .update({
+        status: input.status,
+        rejection_reason: input.status === "rejected" ? input.rejectionReason ?? null : null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: input.reviewedBy
+      })
+      .eq("id", input.videoId)
+      .select("*")
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(`Failed to review video ${input.videoId}: ${error?.message ?? "missing row"}`);
+    }
+
+    return mapVideo(data as VideoRow);
+  }
+
+  async updateTrackingDelivered(input: {
+    monthlyTrackingId: string;
+    delivered: MonthlyTracking["delivered"];
+  }): Promise<MonthlyTracking> {
+    const { data, error } = await this.client
+      .from("monthly_tracking")
+      .update({
+        delivered: input.delivered
+      })
+      .eq("id", input.monthlyTrackingId)
+      .select("*")
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(`Failed to update tracking delivered for ${input.monthlyTrackingId}: ${error?.message ?? "missing row"}`);
+    }
+
+    return mapMonthlyTracking(data as MonthlyTrackingRow);
   }
 
   async listRates(): Promise<VideoRate[]> {

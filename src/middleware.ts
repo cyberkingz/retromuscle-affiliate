@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ACCESS_TOKEN_COOKIE = "rm_access_token";
 
-type RedirectTarget = "/admin" | "/dashboard" | "/onboarding";
+type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
 
 function isSupabaseGuardEnabled() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY);
@@ -17,7 +17,7 @@ function readAccessToken(request: NextRequest): string | null {
 }
 
 function isProtectedPath(pathname: string): boolean {
-  return pathname.startsWith("/admin") || pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+  return pathname.startsWith("/admin") || pathname.startsWith("/dashboard") || pathname.startsWith("/contract") || pathname.startsWith("/onboarding");
 }
 
 function isPublicAuthPath(pathname: string): boolean {
@@ -40,7 +40,7 @@ function clearAccessTokenCookie(response: NextResponse) {
 }
 
 function isRedirectTarget(value: unknown): value is RedirectTarget {
-  return value === "/admin" || value === "/dashboard" || value === "/onboarding";
+  return value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding";
 }
 
 async function resolveRedirectTarget(request: NextRequest, accessToken: string): Promise<RedirectTarget | null> {
@@ -113,9 +113,13 @@ export async function middleware(request: NextRequest) {
     return redirectTo(request, target);
   }
 
+  if (pathname.startsWith("/contract") && target !== "/contract") {
+    return redirectTo(request, target);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/apply", "/login", "/onboarding/:path*", "/dashboard/:path*", "/admin/:path*"]
+  matcher: ["/apply", "/login", "/onboarding/:path*", "/contract/:path*", "/dashboard/:path*", "/admin/:path*"]
 };

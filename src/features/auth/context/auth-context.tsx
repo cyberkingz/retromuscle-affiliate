@@ -16,6 +16,7 @@ interface AuthContextValue {
   loading: boolean;
   error: string | null;
   refreshSession(): Promise<void>;
+  refreshRouting(): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -63,6 +64,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(nextSession);
     syncAccessTokenCookie(nextSession);
   }, [client]);
+
+  const refreshRouting = useCallback(async () => {
+    if (!session?.access_token) {
+      setRole(null);
+      setRedirectTarget(null);
+      return;
+    }
+
+    setResolvingRole(true);
+    try {
+      const routing = await resolveAuthRouting(session.access_token);
+      setRole(routing.role);
+      setRedirectTarget(routing.target);
+    } catch {
+      setRole(null);
+      setRedirectTarget("/onboarding");
+    } finally {
+      setResolvingRole(false);
+    }
+  }, [session?.access_token]);
 
   const signOut = useCallback(async () => {
     if (!client) {
@@ -166,9 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       refreshSession,
+      refreshRouting,
       signOut
     }),
-    [client, session, role, redirectTarget, resolvingRole, loading, error, refreshSession, signOut]
+    [client, session, role, redirectTarget, resolvingRole, loading, error, refreshSession, refreshRouting, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
