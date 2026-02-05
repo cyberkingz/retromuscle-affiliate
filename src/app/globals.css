@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: "Futura Condensed ExtraBold", "Arial Black", "Impact", "Haettenschweiler", "Oswald", sans-serif;
+    --font-body: "Avenir Next", "Avenir", "Helvetica Neue", "Helvetica", "Nimbus Sans", "Liberation Sans", sans-serif;
+    --background: 198 100% 82%;
+    --foreground: 227 78% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 227 78% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 227 78% 12%;
+    --primary: 327 100% 66%;
+    --primary-foreground: 227 78% 12%;
+    --secondary: 228 92% 25%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 198 100% 92%;
+    --muted-foreground: 227 50% 24%;
+    --accent: 55 98% 69%;
+    --accent-foreground: 227 78% 12%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 227 78% 12% / 0.18;
+    --input: 227 78% 12% / 0.24;
+    --ring: 327 100% 66%;
+    --line: 227 78% 12% / 0.2;
+    --sand: 198 100% 90%;
+    --frost: 198 100% 95%;
+    --mint: 151 72% 42%;
+    --ember: 327 100% 66%;
+    --tide: 228 92% 25%;
+    --radius: 1.1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 18% -6%, hsl(var(--primary) / 0.22), transparent 44%),
+      radial-gradient(circle at 90% 18%, hsl(var(--secondary) / 0.12), transparent 38%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.35) 0%, hsl(0 0% 100% / 0) 26%),
+      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    background-size: auto, auto, auto, 24px 24px, 24px 24px;
+    background-position: center, center, center, -1px -1px, -1px -1px;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), sans-serif;
+    font-style: italic;
+    letter-spacing: -0.02em;
+  }
+
+  .text-shadow-sm {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  .retro-outline {
+    @apply border-2 border-foreground;
+    box-shadow: 0 10px 24px -12px rgba(6, 13, 56, 0.38);
+  }
+
+  .glass-panel {
+    @apply border border-line bg-white/85 backdrop-blur-sm;
+    box-shadow: 0 8px 26px -14px rgba(6, 13, 56, 0.26);
+  }
+}
+
+/* Animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.container-wide {
+  @apply max-w-[1400px] mx-auto px-6 sm:px-8;
+}
