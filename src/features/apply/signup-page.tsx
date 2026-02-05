@@ -43,62 +43,77 @@ export function SignupPage({ marketing }: SignupPageProps) {
   }, [flow.loadingSession, flow.session, router]);
 
   return (
-    <div className="mx-auto max-w-[1120px] space-y-7 pt-8 sm:space-y-8 sm:pt-10">
-      <section className="mx-auto w-full max-w-[760px] space-y-4">
-        <Card className="border-line bg-white/95 p-5 sm:p-7">
-          <SectionHeading
-            eyebrow="Inscription"
-            title="Cree ton compte createur"
-            subtitle="Inscris-toi avec email + mot de passe pour rejoindre le programme."
-          />
+    <div className="mx-auto max-w-[1280px] pt-2 sm:pt-4 md:pt-6">
+      <div className="grid gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch xl:grid-cols-[1fr_420px]">
+        {/* Left Column: Sign up Form */}
+        <section className="space-y-4">
+          <Card className="border-line bg-white/95 p-5 sm:p-7 md:p-8">
+            <SectionHeading
+              eyebrow="Inscription"
+              title="Cree ton compte createur"
+              subtitle="Inscris-toi avec email + mot de passe pour rejoindre le programme."
+            />
 
-          <div className="mt-5 rounded-2xl border border-line bg-frost/70 p-4 sm:p-5">
-            {flow.loadingSession ? (
-              <p className="text-sm text-foreground/70">Chargement session...</p>
-            ) : flow.session ? (
-              <div className="space-y-4">
-                <p className="text-sm text-foreground/75">Connecte en tant que {flow.session.user.email}.</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild size="pill">
-                    <Link href="/onboarding">Continuer l&apos;onboarding</Link>
-                  </Button>
-                  <Button type="button" variant="outline" size="pill" onClick={flow.signOut}>
-                    Se deconnecter
-                  </Button>
+            <div className="mt-6 rounded-2xl border border-line bg-frost/70 p-4 sm:p-6">
+              {flow.loadingSession ? (
+                <div className="flex h-40 items-center justify-center">
+                  <p className="text-sm animate-pulse text-foreground/70">Chargement session...</p>
                 </div>
-              </div>
-            ) : (
-              <AuthCredentialsPanel
-                mode={flow.mode}
-                email={flow.email}
-                password={flow.password}
-                confirmPassword={flow.confirmPassword}
-                submitting={flow.submitting}
-                errorMessage={flow.errorMessage}
-                showModeSwitch={false}
-                onModeChange={flow.setMode}
-                onEmailChange={flow.setEmail}
-                onPasswordChange={flow.setPassword}
-                onConfirmPasswordChange={flow.setConfirmPassword}
-                onSubmit={flow.submitCredentials}
-              />
-            )}
-          </div>
+              ) : flow.session ? (
+                <div className="space-y-4 py-4">
+                  <div className="rounded-xl border border-mint/20 bg-mint/5 p-4 text-sm text-foreground/80">
+                    Connecte en tant que <span className="font-semibold">{flow.session.user.email}</span>.
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="pill">
+                      <Link href="/onboarding">Continuer l&apos;onboarding</Link>
+                    </Button>
+                    <Button type="button" variant="outline" size="pill" onClick={flow.signOut}>
+                      Se deconnecter
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <AuthCredentialsPanel
+                  mode={flow.mode}
+                  email={flow.email}
+                  password={flow.password}
+                  confirmPassword={flow.confirmPassword}
+                  submitting={flow.submitting}
+                  errorMessage={flow.errorMessage}
+                  showModeSwitch={false}
+                  onModeChange={flow.setMode}
+                  onEmailChange={flow.setEmail}
+                  onPasswordChange={flow.setPassword}
+                  onConfirmPasswordChange={flow.setConfirmPassword}
+                  onSubmit={flow.submitCredentials}
+                />
+              )}
+            </div>
 
-          {!flow.loadingSession && !flow.session ? (
-            <p className="mt-3 text-sm text-foreground/70">
-              Deja inscrit ?{" "}
-              <Link href="/login" className="font-semibold underline underline-offset-4">
-                Se connecter
-              </Link>
-            </p>
-          ) : null}
-        </Card>
+            {!flow.loadingSession && !flow.session ? (
+              <p className="mt-5 text-center text-sm text-foreground/70 sm:text-left">
+                Deja inscrit ?{" "}
+                <Link href="/login" className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80">
+                  Se connecter
+                </Link>
+              </p>
+            ) : null}
+          </Card>
 
-        <FlashMessages statusMessage={flow.statusMessage} />
-      </section>
+          <FlashMessages statusMessage={flow.statusMessage} />
+        </section>
 
-      <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+        {/* Right Column: Marketing info */}
+        <aside className="hidden lg:block">
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+        </aside>
+
+        {/* Mobile Marketing info (shown below on small screens) */}
+        <aside className="lg:hidden">
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+        </aside>
+      </div>
     </div>
   );
 }

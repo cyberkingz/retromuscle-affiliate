@@ -122,6 +122,19 @@ html {
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes marquee-vertical {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 20s linear infinite;
+}
+
+.mask-fade-y {
+  mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+}
+
 .container-wide {
   width: 100%;
   @apply max-w-[1400px] mx-auto px-4 sm:px-8;

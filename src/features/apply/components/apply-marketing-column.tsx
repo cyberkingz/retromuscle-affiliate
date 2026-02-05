@@ -9,90 +9,48 @@ interface ApplyMarketingColumnProps {
 }
 
 export function ApplyMarketingColumn({ data, authenticated }: ApplyMarketingColumnProps) {
+  // Duplicate creators to ensure seamless marquee
+  const marqueeItems = [...data.socialProof.creators, ...data.socialProof.creators, ...data.socialProof.creators];
+
   return (
-    <section className="space-y-4">
-      <section className="relative overflow-hidden rounded-[28px] border border-line bg-secondary p-5 text-white shadow-panel sm:p-6 md:p-7">
-        {data.heroImageUrl ? (
-          <div className="relative mb-5 h-40 overflow-hidden rounded-2xl border border-white/20 sm:h-48">
-            <Image
-              src={data.heroImageUrl}
-              alt="RetroMuscle creator program"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 420px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-secondary/65 via-secondary/20 to-transparent" />
-          </div>
-        ) : null}
-
-        <p className="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-white/85">
-          {data.attention.badge}
-        </p>
-        <h1 className="mt-3 font-display text-4xl uppercase leading-[0.92] sm:text-5xl">{data.attention.headline}</h1>
-        <p className="mt-2 text-sm text-white/80">{data.attention.supportingText}</p>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-lg">
-          {data.socialProof.stats.map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-white/20 bg-white/10 px-2 py-2 text-center backdrop-blur">
-              <p className="font-display text-3xl uppercase leading-none">{stat.value}</p>
-              <p className="text-[10px] uppercase tracking-[0.1em] text-white/65">{stat.label}</p>
-            </div>
-          ))}
+    <div className="flex h-full flex-col gap-6 lg:sticky lg:top-24 lg:h-[calc(100vh-160px)]">
+      {/* Testimonials Marquee Section */}
+      <div className="relative flex-1 overflow-hidden rounded-[2rem] border border-line bg-white/40 min-h-[400px]">
+        <div className="absolute inset-x-0 top-6 z-10 text-center">
+          <span className="rounded-full border border-line bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-foreground/50 backdrop-blur-sm">
+            Avis des affilies
+          </span>
         </div>
 
-        <p className="mt-4 text-xs uppercase tracking-[0.13em] text-white/70">
-          {authenticated ? "Tu es connecte. Finalise ton onboarding." : "Inscription rapide par email + mot de passe"}
-        </p>
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Ce que tu gagnes</p>
-          <ul className="mt-3 space-y-2 text-sm text-foreground/80">
-            {data.interestPoints.map((point) => (
-              <li key={point} className="flex gap-2">
-                <span className="mt-0.5 text-secondary">✓</span>
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card className="space-y-3 p-5 md:col-span-1">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Temoignages</p>
-          <div className="space-y-2">
-            {data.socialProof.creators.map((creator) => (
-              <div key={creator.name} className="rounded-xl border border-line/70 bg-white/90 px-3 py-2">
-                <p className="text-sm font-semibold">{creator.name}</p>
-                <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/55">{creator.niche}</p>
-                <p className="mt-1 text-sm text-foreground/75">&ldquo;{creator.quote}&rdquo;</p>
+        <div className="mask-fade-y h-full py-12">
+          <div className="animate-marquee-vertical flex flex-col gap-4 px-4">
+            {marqueeItems.map((creator, idx) => (
+              <div
+                key={`${creator.name}-${idx}`}
+                className="rounded-2xl border border-line/60 bg-white/95 p-4 shadow-sm"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-bold">
+                    {creator.name[0]}
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider">{creator.name}</span>
+                  <span className="text-[10px] text-foreground/40">•</span>
+                  <span className="text-[10px] font-medium text-foreground/50">{creator.niche}</span>
+                </div>
+                <p className="text-xs italic leading-relaxed text-foreground/80">
+                  &ldquo;{creator.quote}&rdquo;
+                </p>
               </div>
             ))}
           </div>
-        </Card>
-
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Pourquoi agir maintenant</p>
-          <p className="mt-2 font-semibold text-foreground">{data.desire.title}</p>
-          <ul className="mt-2 space-y-1 text-sm text-foreground/75">
-            {data.desire.bullets.map((bullet) => (
-              <li key={bullet}>- {bullet}</li>
-            ))}
-          </ul>
-          <p className="mt-3 text-sm font-semibold text-secondary">{data.action.urgencyText}</p>
-          <p className="text-xs text-foreground/70">{data.action.reassurance}</p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {data.socialProof.trustedBy.map((brand) => (
-              <span
-                key={brand}
-                className="rounded-full border border-line bg-frost px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.11em] text-foreground/65"
-              >
-                {brand}
-              </span>
-            ))}
-          </div>
-        </Card>
+        </div>
       </div>
-    </section>
+
+      <div className="px-2">
+        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-foreground/40">
+          {data.action.urgencyText}
+        </p>
+      </div>
+    </div>
   );
 }

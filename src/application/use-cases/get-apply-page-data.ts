@@ -34,8 +34,23 @@ export async function getApplyPageData(): Promise<ApplyPageData> {
           },
           {
             name: "Marc",
-            niche: "Performance / Storytelling",
-            quote: "J'ai un rythme de missions plus stable au lieu de collaborations one-shot."
+            niche: "Performance",
+            quote: "J'ai un rythme de missions stable au lieu de collabs one-shot."
+          },
+          {
+            name: "Julie",
+            niche: "Lifestyle",
+            quote: "Le process est pro: brief clair, validation rapide et paiement ok."
+          },
+          {
+            name: "Lucas",
+            niche: "Workout",
+            quote: "Simple, efficace. On se concentre sur la creation, pas la negociation."
+          },
+          {
+            name: "Sarah",
+            niche: "Gymwear",
+            quote: "J'adore l'ambiance RetroMuscle, c'est vraiment une communaute."
           }
         ],
         trustedBy: ["RetroMuscle", "Athletes Squad", "Creator Partners", "Performance Team"]

@@ -38,7 +38,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
   return {
     hero: {
       kicker: "Programme Affilie RetroMuscle",
-      title: "Transforme ton contenu en revenu mensuel stable.",
+      title: "Transforme ton contenu en revenu stable.",
       subtitle:
         "Tu recois des missions chaque mois, un cadre clair pour tourner vite, et un paiement regulier quand les contenus sont valides.",
       primaryCta: { label: "Je veux rejoindre le programme", href: "/apply" },

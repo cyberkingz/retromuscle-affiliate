@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 
+import { cn } from "@/lib/cn";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 
@@ -18,6 +19,8 @@ interface PageShellProps extends PropsWithChildren {
 }
 
 export function PageShell({ children, currentPath }: PageShellProps) {
+  const isAuthPage = currentPath === "/apply" || currentPath === "/login";
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
@@ -30,7 +33,14 @@ export function PageShell({ children, currentPath }: PageShellProps) {
 
       <SiteHeader currentPath={currentPath} />
 
-      <main className="container-wide flex-1 overflow-x-hidden pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12">{children}</main>
+      <main
+        className={cn(
+          "container-wide flex-1 overflow-x-hidden",
+          isAuthPage ? "pb-4 pt-4 md:pb-6 md:pt-6" : "pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12"
+        )}
+      >
+        {children}
+      </main>
 
       <SiteFooter />
     </div>
