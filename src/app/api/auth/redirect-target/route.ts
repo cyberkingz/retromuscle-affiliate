@@ -1,24 +1,23 @@
 import { NextResponse } from "next/server";
 
-import {
-  readBearerToken,
-  resolveAuthSessionFromAccessToken
-} from "@/features/auth/server/resolve-auth-session";
+import { requireApiSession } from "@/features/auth/server/api-guards";
+import { rateLimit } from "@/lib/rate-limit";
+import { getRequestId } from "@/lib/request-id";
 
 export async function GET(request: Request) {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const requestId = getRequestId(request);
+  const limited = rateLimit({ request, key: "auth:redirect-target", limit: 120, windowMs: 60_000 });
+  if (limited) {
+    limited.headers.set("x-request-id", requestId);
+    return limited;
   }
 
-  try {
-    const session = await resolveAuthSessionFromAccessToken(token);
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    return NextResponse.json({ role: session.role, target: session.target });
-  } catch {
-    return NextResponse.json({ message: "Unable to resolve auth target" }, { status: 500 });
+  const auth = await requireApiSession(request, { requestId });
+  if (!auth.ok) {
+    return auth.response;
   }
+
+  const response = NextResponse.json({ role: auth.session.role, target: auth.session.target });
+  response.headers.set("x-request-id", requestId);
+  return response;
 }

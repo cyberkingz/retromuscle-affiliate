@@ -7,7 +7,7 @@ import {
 } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
-import { VIDEO_TYPES } from "@/domain/types";
+import { VIDEO_TYPES, type PaymentStatus } from "@/domain/types";
 import { resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminDashboardData {
@@ -39,6 +39,7 @@ export interface AdminDashboardData {
     remainingTotal: number;
     deadline: string;
     paymentStatus: string;
+    paymentStatusKey: PaymentStatus;
     payoutAmount: number;
   }>;
   validationQueue: Array<{
@@ -55,6 +56,7 @@ export interface AdminDashboardData {
     deliveredSummary: string;
     amount: number;
     paymentStatus: string;
+    paymentStatusKey: PaymentStatus;
   }>;
 }
 
@@ -88,11 +90,11 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
     const summary = summarizeTracking(tracking.quotas, tracking.delivered);
     const payout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
 
-    return {
-      creatorId: creator.id,
-      handle: creator.handle,
-      packageTier: tracking.packageTier,
-      mixLabel: MIX_LABELS[tracking.mixName],
+      return {
+        creatorId: creator.id,
+        handle: creator.handle,
+        packageTier: tracking.packageTier,
+        mixLabel: MIX_LABELS[tracking.mixName],
       quotas: Object.fromEntries(
         VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.quotas[videoType]])
       ),
@@ -103,13 +105,14 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       remainingTotal: summary.remainingTotal,
       deadline: tracking.deadline,
       paymentStatus: PAYMENT_STATUS_LABELS[tracking.paymentStatus],
+      paymentStatusKey: tracking.paymentStatus,
       payoutAmount: payout.total
     };
   });
 
   const creatorsComplete = monthlyRows.filter((row) => row.remainingTotal === 0).length;
   const creatorsPending = monthlyRows.filter((row) => row.remainingTotal > 0).length;
-  const paymentsTodoRows = monthlyRows.filter((row) => row.paymentStatus !== "Paye");
+  const paymentsTodoRows = monthlyRows.filter((row) => row.paymentStatusKey !== "paye");
 
   const metrics = {
     creatorsComplete,
@@ -148,7 +151,8 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       creatorHandle: row.handle,
       deliveredSummary: `${row.deliveredTotal}/${row.packageTier}`,
       amount: row.payoutAmount,
-      paymentStatus: row.paymentStatus
+      paymentStatus: row.paymentStatus,
+      paymentStatusKey: row.paymentStatusKey
     }))
   };
 }

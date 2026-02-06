@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 import { recordVideoUpload } from "@/application/use-cases/record-video-upload";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
-import { readBearerToken, resolveAuthSessionFromAccessToken } from "@/features/auth/server/resolve-auth-session";
-import { isSafeEntityId } from "@/lib/validation";
+import { requireApiRole } from "@/features/auth/server/api-guards";
+import { rateLimit } from "@/lib/rate-limit";
+import { getRequestId } from "@/lib/request-id";
+import { isUuid } from "@/lib/validation";
 
 interface UploadVideoPayload {
   monthlyTrackingId: string;
@@ -27,7 +29,7 @@ function parsePayload(body: unknown): UploadVideoPayload {
   const fileSizeMbRaw = typeof input.fileSizeMb === "number" ? input.fileSizeMb : Number(input.fileSizeMb);
   const resolution = typeof input.resolution === "string" ? input.resolution.trim() : "";
 
-  if (!monthlyTrackingId || !isSafeEntityId(monthlyTrackingId)) {
+  if (!monthlyTrackingId || !isUuid(monthlyTrackingId)) {
     throw new Error("Invalid monthlyTrackingId");
   }
   if (!VIDEO_TYPES.includes(videoType as VideoAsset["videoType"])) {
@@ -62,42 +64,39 @@ function parsePayload(body: unknown): UploadVideoPayload {
 }
 
 export async function POST(request: Request) {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const requestId = getRequestId(request);
+  const limited = rateLimit({ request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
+  if (limited) {
+    limited.headers.set("x-request-id", requestId);
+    return limited;
   }
 
-  let session: Awaited<ReturnType<typeof resolveAuthSessionFromAccessToken>>;
-  try {
-    session = await resolveAuthSessionFromAccessToken(token);
-  } catch {
-    return NextResponse.json({ message: "Unable to resolve auth session" }, { status: 500 });
-  }
-
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  if (session.role !== "affiliate") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  const auth = await requireApiRole(request, "affiliate", { requestId });
+  if (!auth.ok) {
+    return auth.response;
   }
 
   let payload: UploadVideoPayload;
   try {
     payload = parsePayload(await request.json());
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Invalid payload" },
       { status: 400 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 
-  if (!payload.fileUrl.startsWith(`${session.userId}/`)) {
-    return NextResponse.json({ message: "Invalid fileUrl prefix" }, { status: 400 });
+  if (!payload.fileUrl.startsWith(`${auth.session.userId}/`)) {
+    const response = NextResponse.json({ message: "Invalid fileUrl prefix" }, { status: 400 });
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 
   try {
     const video = await recordVideoUpload({
-      userId: session.userId,
+      userId: auth.session.userId,
       monthlyTrackingId: payload.monthlyTrackingId,
       videoType: payload.videoType,
       fileUrl: payload.fileUrl,
@@ -106,12 +105,15 @@ export async function POST(request: Request) {
       fileSizeMb: payload.fileSizeMb
     });
 
-    return NextResponse.json(video, { status: 201 });
+    const response = NextResponse.json(video, { status: 201 });
+    response.headers.set("x-request-id", requestId);
+    return response;
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Unable to record upload" },
       { status: 500 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 }
-

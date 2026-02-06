@@ -63,7 +63,7 @@ async function main() {
   loadDotEnvLocal();
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const email = process.env.ADMIN_EMAIL ?? "admin@retromuscle.net";
   const password = process.env.ADMIN_PASSWORD;
 
@@ -71,7 +71,7 @@ async function main() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
   }
   if (!serviceKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY");
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
   }
   if (!password) {
     throw new Error("Missing ADMIN_PASSWORD (set it for this one-time seed)");
@@ -118,4 +118,3 @@ main().catch((error) => {
   console.error(error?.message ?? error);
   process.exitCode = 1;
 });
-

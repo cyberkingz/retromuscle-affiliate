@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 import { MIX_NAMES } from "@/domain/types";
 import { readBearerToken } from "@/features/auth/server/resolve-auth-session";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { isValidEmail, isValidHttpUrl } from "@/lib/validation";
+import {
+  isValidEmail,
+  isValidInstagramUrl,
+  isValidPublicHttpUrl,
+  isValidTiktokUrl
+} from "@/lib/validation";
 
 const PACKAGE_TIERS = [10, 20, 30, 40] as const;
 
@@ -39,64 +44,71 @@ function isMixName(value: unknown): value is (typeof MIX_NAMES)[number] {
   return typeof value === "string" && MIX_NAMES.includes(value as (typeof MIX_NAMES)[number]);
 }
 
-export function parsePayload(body: unknown): ApplicationPayload {
+export function parsePayload(
+  body: unknown,
+  options?: {
+    authEmail?: string;
+  }
+): ApplicationPayload {
   if (!body || typeof body !== "object") {
-    throw new Error("Invalid payload");
+    throw new Error("Payload invalide.");
   }
 
   const input = body as Record<string, unknown>;
 
   if (!isNonEmptyString(input.handle)) {
-    throw new Error("handle is required");
+    throw new Error("Ajoute ton handle createur.");
   }
   if (!isNonEmptyString(input.fullName)) {
-    throw new Error("fullName is required");
-  }
-  if (!isNonEmptyString(input.email)) {
-    throw new Error("email is required");
+    throw new Error("Ajoute ton nom complet.");
   }
   if (!isNonEmptyString(input.whatsapp)) {
-    throw new Error("whatsapp is required");
+    throw new Error("Ajoute ton numero WhatsApp.");
   }
   if (!isNonEmptyString(input.country)) {
-    throw new Error("country is required");
+    throw new Error("Ajoute ton pays.");
   }
   if (!isNonEmptyString(input.address)) {
-    throw new Error("address is required");
+    throw new Error("Ajoute ton adresse de livraison.");
   }
   if (!isPackageTier(input.packageTier)) {
-    throw new Error("packageTier is invalid");
+    throw new Error("Choisis un package valide.");
   }
   if (!isMixName(input.mixName)) {
-    throw new Error("mixName is invalid");
+    throw new Error("Choisis un mix valide.");
   }
-  if (!isValidEmail(input.email.trim())) {
-    throw new Error("email format is invalid");
+
+  const email = (options?.authEmail ?? sanitizeOptionalString(input.email) ?? "").trim();
+  if (!email) {
+    throw new Error("Impossible de recuperer l'email du compte. Reconnecte-toi.");
+  }
+  if (!isValidEmail(email)) {
+    throw new Error("Email invalide.");
   }
 
   const followers = Number(input.followers);
   if (!Number.isFinite(followers) || !Number.isInteger(followers) || followers < 0 || followers > 100000000) {
-    throw new Error("followers is invalid");
+    throw new Error("Le nombre de followers est invalide.");
   }
 
   const socialTiktok = sanitizeOptionalString(input.socialTiktok);
   const socialInstagram = sanitizeOptionalString(input.socialInstagram);
   const portfolioUrl = sanitizeOptionalString(input.portfolioUrl);
 
-  if (socialTiktok && !isValidHttpUrl(socialTiktok)) {
-    throw new Error("socialTiktok must be a valid URL");
+  if (socialTiktok && !isValidTiktokUrl(socialTiktok)) {
+    throw new Error("Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte");
   }
-  if (socialInstagram && !isValidHttpUrl(socialInstagram)) {
-    throw new Error("socialInstagram must be a valid URL");
+  if (socialInstagram && !isValidInstagramUrl(socialInstagram)) {
+    throw new Error("Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte");
   }
-  if (portfolioUrl && !isValidHttpUrl(portfolioUrl)) {
-    throw new Error("portfolioUrl must be a valid URL");
+  if (portfolioUrl && !isValidPublicHttpUrl(portfolioUrl)) {
+    throw new Error("Lien portfolio invalide. Exemple: https://tonsite.com");
   }
 
   return {
     handle: input.handle.trim(),
     fullName: input.fullName.trim(),
-    email: input.email.trim(),
+    email,
     whatsapp: input.whatsapp.trim(),
     country: input.country.trim(),
     address: input.address.trim(),

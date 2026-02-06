@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { getCreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import {
   findCreatorIdForUser,
-  readBearerToken,
-  resolveAuthSessionFromAccessToken
+  type ResolvedAuthSession
 } from "@/features/auth/server/resolve-auth-session";
-import { isSafeEntityId, parseMonthParam } from "@/lib/validation";
+import { requireApiSession } from "@/features/auth/server/api-guards";
+import { isUuid, parseMonthParam } from "@/lib/validation";
 
 interface RouteContext {
   params: {
@@ -14,29 +14,33 @@ interface RouteContext {
   };
 }
 
+function safeMessage(error: unknown, fallback: string) {
+  if (process.env.NODE_ENV !== "production" && error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function jsonWithRequestId(requestId: string, status: number, body: Record<string, unknown>) {
+  const response = NextResponse.json(body, { status });
+  response.headers.set("x-request-id", requestId);
+  return response;
+}
+
 export async function GET(request: Request, context: RouteContext) {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const auth = await requireApiSession(request);
+  if (!auth.ok) {
+    return auth.response;
   }
 
-  let authSession: Awaited<ReturnType<typeof resolveAuthSessionFromAccessToken>>;
-  try {
-    authSession = await resolveAuthSessionFromAccessToken(token);
-  } catch {
-    return NextResponse.json({ message: "Unable to resolve auth session" }, { status: 500 });
-  }
-
-  if (!authSession) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  const authSession: ResolvedAuthSession = auth.session;
   if (authSession.role !== "admin" && authSession.target !== "/dashboard") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    return jsonWithRequestId(auth.requestId, 403, { message: "Forbidden" });
   }
 
   const creatorId = context.params.id?.trim();
-  if (!creatorId || !isSafeEntityId(creatorId)) {
-    return NextResponse.json({ message: "Invalid creator id" }, { status: 400 });
+  if (!creatorId || !isUuid(creatorId)) {
+    return jsonWithRequestId(auth.requestId, 400, { message: "Invalid creator id" });
   }
 
   if (authSession.role !== "admin") {
@@ -44,11 +48,11 @@ export async function GET(request: Request, context: RouteContext) {
     try {
       ownCreatorId = await findCreatorIdForUser({ userId: authSession.userId, email: authSession.email });
     } catch {
-      return NextResponse.json({ message: "Unable to resolve creator mapping" }, { status: 500 });
+      return jsonWithRequestId(auth.requestId, 500, { message: "Unable to resolve creator mapping" });
     }
 
     if (!ownCreatorId || ownCreatorId !== creatorId) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      return jsonWithRequestId(auth.requestId, 403, { message: "Forbidden" });
     }
   }
 
@@ -57,23 +61,17 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     month = parseMonthParam(searchParams.get("month"));
   } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Invalid query params" },
-      { status: 400 }
-    );
+    return jsonWithRequestId(auth.requestId, 400, { message: safeMessage(error, "Invalid query params") });
   }
 
   try {
     const data = await getCreatorDashboardData({ creatorId, month });
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    response.headers.set("x-request-id", auth.requestId);
+    return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message.includes("not found") ? 404 : 500;
-    return NextResponse.json(
-      {
-        message
-      },
-      { status }
-    );
+    const message = safeMessage(error, "Unable to load dashboard");
+    const status = error instanceof Error && error.message.toLowerCase().includes("not found") ? 404 : 500;
+    return jsonWithRequestId(auth.requestId, status, { message });
   }
 }

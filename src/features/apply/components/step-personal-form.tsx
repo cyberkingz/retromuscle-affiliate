@@ -31,15 +31,6 @@ export function StepPersonalForm({ form, disabled, onFieldChange }: StepPersonal
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="font-medium">Email</span>
-          <Input
-            value={form.email}
-            onChange={(event) => onFieldChange("email", event.target.value)}
-            disabled={disabled}
-            placeholder="creator@email.com"
-          />
-        </label>
-        <label className="space-y-1 text-sm">
           <span className="font-medium">WhatsApp</span>
           <Input
             value={form.whatsapp}

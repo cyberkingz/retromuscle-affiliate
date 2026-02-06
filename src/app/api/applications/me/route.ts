@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return NextResponse.json({ message: "Unable to load application" }, { status: 500 });
     }
 
     return NextResponse.json({ application: data ?? null });
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   let payload;
   try {
-    payload = parsePayload(await request.json());
+    payload = parsePayload(await request.json(), { authEmail });
   } catch (error) {
     return badRequest(error instanceof Error ? error.message : "Invalid payload");
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     user_id: userId,
     handle: payload.handle,
     full_name: payload.fullName,
-    email: authEmail ?? payload.email,
+    email: payload.email,
     whatsapp: payload.whatsapp,
     country: payload.country,
     address: payload.address,
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Unable to save application" }, { status: 500 });
   }
 
   return NextResponse.json({ application: data }, { status: 200 });

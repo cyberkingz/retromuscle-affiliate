@@ -29,7 +29,7 @@ export function LandingHero({
   visuals
 }: LandingHeroProps) {
   return (
-    <section className="relative overflow-visible pb-10 pt-0">
+    <section className="relative overflow-visible pb-10 pt-0 sm:pt-2">
       <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-12">
         <div className="relative z-30 min-w-0 space-y-7 animate-fade-up lg:pr-8 text-center lg:text-left">
           <div className="flex justify-center lg:justify-start">
@@ -38,11 +38,11 @@ export function LandingHero({
             </Badge>
           </div>
 
-          <h1 className="font-display text-3xl uppercase leading-[0.94] tracking-tight text-secondary sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl mx-auto lg:mx-0">
+          <h1 className="font-display text-xl uppercase leading-[1.02] tracking-tight text-secondary sm:text-2xl md:text-3xl lg:text-4xl mx-auto lg:mx-0">
             {title}
           </h1>
 
-          <p className="max-w-[42rem] text-lg text-foreground/80 sm:text-xl md:text-2xl mx-auto lg:mx-0">
+          <p className="max-w-[42rem] text-base text-foreground/80 sm:text-lg md:text-xl mx-auto lg:mx-0">
             {subtitle}
           </p>
 
@@ -51,6 +51,12 @@ export function LandingHero({
               <Link href={primaryCta.href}>
                 {primaryCta.label}
                 <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="h-14 w-full px-8 text-base sm:w-auto">
+              <Link href={secondaryCta.href}>
+                <PlayCircle className="h-5 w-5" />
+                {secondaryCta.label}
               </Link>
             </Button>
           </div>
@@ -99,7 +105,7 @@ export function LandingHero({
               </div>
             </div>
 
-            <div className="space-y-3 p-4 sm:p-5">
+            <div className="space-y-3 p-4 pb-5 sm:p-5 sm:pb-6">
               <div className="grid gap-3 sm:grid-cols-[0.7fr_1.3fr]">
                 <div className="relative h-32 overflow-hidden rounded-2xl border border-line">
                   <Image

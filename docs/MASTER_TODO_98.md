@@ -1,0 +1,110 @@
+# TODO “GAFA Grade” (98 tasks)
+
+Status legend:
+- [ ] not started
+- [~] in progress / partially done
+- [x] done
+
+## P0 — Bloquants production (1–35)
+- [ ] P0-01 (SEC) Rotater toutes les clés Supabase (anon/service/publishable/access token) et regénérer .env.local.
+- [ ] P0-02 (SEC) Vérifier que rien n’a été commité (et si oui: purge historique + rotation).
+- [~] P0-03 (SEC) Ajouter un “secret scan” (pre-commit + CI) pour bloquer tokens/keys en repo. (CI + script OK, pre-commit restant)
+- [ ] P0-04 (AUTH) Activer “Leaked password protection” dans Supabase Auth (dashboard).
+- [ ] P0-05 (AUTH) Configurer règles mot de passe + politique lockout/bruteforce (dashboard).
+- [ ] P0-06 (AUTH) Configurer Redirect URLs (local + prod) dans Supabase Auth (dashboard).
+- [ ] P0-07 (AUTH) Migrer vers cookies HttpOnly (Supabase SSR) et supprimer l’usage de rm_access_token en cookie JS.
+- [ ] P0-08 (AUTH) Ajouter @supabase/ssr (ou approche SSR officielle) + wrappers server/client.
+- [ ] P0-09 (AUTH) Refaire middleware.ts pour lire session SSR cookie (plus de fetch /redirect-target en edge si inutile).
+- [~] P0-10 (AUTH) Harmoniser guards pages/API: un seul helper requireAuth() + requireAdmin() + requireCreator() (zéro duplication). (api-guards + refactor routes demarre)
+- [x] P0-11 (SEC) Ajouter headers sécurité (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy).
+- [x] P0-12 (SEC) Ajouter rate limiting sur endpoints sensibles (login/redirect-target/admin review/upload).
+- [~] P0-13 (SEC) Remplacer isSafeEntityId par isUuid sur tous les ids (creatorId/videoId/trackingId).
+- [~] P0-14 (SEC) Ne plus renvoyer error.message DB brut dans les APIs (messages safe + codes).
+- [x] P0-15 (SEC) Ajouter audit log admin (table admin_audit_log) + log actions: approve/reject application, approve/reject video, mark paid, etc. (approve/reject OK, payout reste)
+- [x] P0-16 (DB) Ajouter indexes manquants (FKs + colonnes filtrées): creator_applications(package_tier,mix_name), creators(package_tier,default_mix), monthly_tracking(package_tier,mix_name), videos(creator_id), rushes(creator_id), etc.
+- [x] P0-17 (DB) Unifier policies RLS “admin OR owner” en 1 policy SELECT par table (perf + linter).
+- [~] P0-18 (DB) Backfill creators.user_id pour toutes les lignes existantes + contrainte cohérente pour creators “actifs”.
+- [ ] P0-19 (DB) Ajouter trigger (ou job) “delivered counts” basé sur vidéos approuvées (source-of-truth DB).
+- [ ] P0-20 (DB) Contraintes: videos.file_url longueur + pattern, reviewed_by non-null quand reviewed, etc.
+- [~] P0-21 (STORAGE) Vérifier policies Storage: prefix {auth.uid()}/... partout + admin preview OK.
+- [ ] P0-22 (OBS) Ajouter Sentry (ou équivalent) front+server + env vars prod.
+- [~] P0-23 (OBS) Ajouter request-id + logs structurés sur API routes (utile debug + audit). (request-id sur endpoints critiques OK)
+- [x] P0-24 (OPS) Ajouter endpoint /api/health + check env + check Supabase reachable.
+- [x] P0-25 (CI) Mettre GitHub Actions: lint + typecheck + build (et tests quand prêts).
+- [ ] P0-26 (DX) Ajouter Prettier + format script + règles ESLint supplémentaires.
+- [ ] P0-27 (DOC) Ajouter SECURITY.md (rotation keys, accès service role, règles).
+- [~] P0-28 (AUTH) Fix durable “création admin user” (script idempotent + jamais toucher auth.users à la main). (scripts/seed-admin.mjs + npm run seed:admin)
+- [~] P0-29 (AUTH) Ajouter page/admin guard server-side même sans JS (déjà bien, mais tests + hardening).
+- [ ] P0-30 (DEPLOY) Définir cible déploiement (Vercel/other) + checklist env prod.
+- [x] P0-31 (DEPLOY) Vérifier que SUPABASE_SERVICE_ROLE_KEY n’est jamais utilisé côté client (bundle check). (server-only + usage restreint)
+- [ ] P0-32 (PRIVACY) Ajouter page mentions légales / confidentialité (minimale).
+- [~] P0-33 (A11Y) Ajouter aria-live/focus management minimum sur erreurs formulaires + wizard onboarding.
+- [~] P0-34 (SEO) OG tags + title/description par page (landing/apply/login/dashboard/admin).
+- [ ] P0-35 (BACKUP) Activer backups + plan de restore (dashboard Supabase).
+
+## P1 — Compléter le produit (PRD “full flow”) (36–80)
+- [ ] P1-36 (RUSHES) UI upload rushes (drag/drop + browse) dans RushesSummaryCard.
+- [ ] P1-37 (RUSHES) API POST /api/creator/uploads/rush + insert DB.
+- [ ] P1-38 (RUSHES) Repo: createRushAsset() + list + preview via signed URL.
+- [ ] P1-39 (CREATOR) Afficher “derniers uploads” filtrables (type/status) + pagination légère.
+- [ ] P1-40 (CREATOR) Enforcer quotas par type (bloquer ou marquer “extra” au-delà quota).
+- [ ] P1-41 (CREATOR) Bouton “re-upload” sur rejected + raison visible + UX claire.
+- [ ] P1-42 (CREATOR) Ajouter états vides + skeletons sur dashboard (zéro layout jump).
+- [~] P1-43 (ONBOARD) Stepper clair + autosave + validation inline + meilleur copywriting. (validation URLs + actions wizard + suppression email onboarding OK; stepper/autosave restent)
+- [x] P1-44 (ONBOARD) Écran “pending review” (ETA + ce qui se passe ensuite + contact). (PendingReviewPanel)
+- [ ] P1-45 (ADMIN) Validation queue: filtres (type/date/creator) + tri + pagination.
+- [ ] P1-46 (ADMIN) Bulk approve/reject (actions multi-select).
+- [ ] P1-47 (ADMIN) Vue detail creator (profil + mois + uploads + payouts).
+- [ ] P1-48 (ADMIN) Action “changer pack/mix” (recompute quotas + tracking) + audit log.
+- [ ] P1-49 (ADMIN) UI “rates/packages/mixes” (CRUD) OU process propre “config via DB” + garde-fous.
+- [ ] P1-50 (CYCLE) Cron/job: provision automatique monthly_tracking pour creators actifs au 1er du mois.
+- [ ] P1-51 (CYCLE) Notif “nouveau cycle” (email).
+- [ ] P1-52 (PAY) Ajouter action admin “mark paid” + paid_at + status update.
+- [ ] P1-53 (PAY) Export CSV paiements (montant, email, handle, mois, statut).
+- [ ] P1-54 (PAY) Stocker infos payout (IBAN/Stripe) (nouvelle table + UI creator settings).
+- [ ] P1-55 (PAY) Règles de transition statut paiement (a_faire/en_cours/paye) + affichage cohérent.
+- [ ] P1-56 (NOTIF) Email “application approved” → lien /contract.
+- [ ] P1-57 (NOTIF) Email “application rejected” → raison + recandidature.
+- [ ] P1-58 (NOTIF) Email “video approved/rejected” (raison pour rejected).
+- [ ] P1-59 (SLACK) Webhook admin: nouvelle candidature + nouvel upload + backlog validation.
+- [~] P1-60 (CONTRACT) Stocker contract_version + timestamp + user-agent/ip (si dispo).
+- [ ] P1-61 (CONTRACT) Admin: voir statut signature + version.
+- [~] P1-62 (LANDING) Rewriter total copy (AIDA) pour vendre le revenu/benefice (pas “produit/saas”).
+- [ ] P1-63 (LANDING) Social proof “vrai”: avis + chiffres + logos (sans bullshit).
+- [ ] P1-64 (LANDING) Section “combien tu peux gagner” (scenarios packs + types) claire.
+- [~] P1-65 (DESIGN) Audit padding/marges sur toutes pages (cards/forms/tables) + harmonisation.
+- [~] P1-66 (DESIGN) Uniformiser composants shadcn: forms, inputs, textarea, badges, dialogs.
+- [ ] P1-67 (TABLES) Migrer tables vers TanStack Table (shadcn patterns) + responsive “stacked rows” mobile.
+- [~] P1-68 (NAV) Séparer navigation Admin vs Creator (layout dédié /admin).
+- [ ] P1-69 (NAV) Ajouter navigation Creator (Dashboard, Uploads, Paiements, Settings).
+- [ ] P1-70 (SETTINGS) Page settings creator (socials, adresse, whatsapp, payout).
+- [ ] P1-71 (ADMIN) Page “settings admin” (rates/packs/mixes) + validations.
+- [ ] P1-72 (UPLOAD) Vérifier existence objet storage avant insert DB (optionnel mais “clean”).
+- [ ] P1-73 (UPLOAD) Anti-double upload: idempotency key / déduplication sur même fichier.
+- [ ] P1-74 (UPLOAD) Gestion erreurs upload: retry + resume (option upy/react-dropzone + chunk).
+- [ ] P1-75 (PERF) Chargements admin: limiter dataset (month filter server-side) + pagination.
+- [~] P1-76 (A11Y) Wizard onboarding: focus auto sur champ en erreur + navigation clavier.
+- [~] P1-77 (COPY) Enlever “UGC platform” partout (metadata/layout) et aligner wording “programme affilie”. (OG/Twitter copy aligne, reste du copy a re-auditer)
+- [~] P1-78 (RESP) Mobile iOS: audit complet (navbar, hero, forms, tables) + fix overflow.
+- [ ] P1-79 (POLISH) Toast system global (success/error) au lieu de messages dispersés.
+- [~] P1-80 (POLISH) Illustrations/motion (stagger reveals) + “human warmth” sans casser perf.
+
+## P2 — Qualité, tests, scalabilité (81–98)
+- [ ] P2-81 (TEST) Installer Vitest + Testing Library.
+- [ ] P2-82 (TEST) Unit tests: calculateQuotas, calculatePayout, trackingSummary.
+- [ ] P2-83 (TEST) Tests API: applications (submit), uploads (record), admin review (approve/reject).
+- [ ] P2-84 (E2E) Playwright: flow complet signup → onboarding → approve → contract → upload → validate.
+- [ ] P2-85 (OBS) Dashboards d’erreurs (Sentry) + alerting (seuils).
+- [ ] P2-86 (PERF) RPC/view SQL pour admin overview (moins de roundtrips).
+- [ ] P2-87 (PERF) Caching/revalidate pour landing data (packages/rates/mixes).
+- [ ] P2-88 (SEC) Ajouter “abuse monitoring” (rate-limit logs + audit anomalies).
+- [ ] P2-89 (SEO) OG image generator + twitter cards + canonical URLs.
+- [ ] P2-90 (SEO) JSON-LD minimal (Organization + WebSite).
+- [ ] P2-91 (A11Y) Tables: headers/aria + navigation clavier + contraste.
+- [ ] P2-92 (DX) Scripts “one command”: lint/typecheck/build/test + supabase checks.
+- [ ] P2-93 (DOC) RUNBOOK.md (incident auth, rotation keys, restore, migrations).
+- [ ] P2-94 (DOC) ARCHITECTURE.md (couches, conventions, flows).
+- [ ] P2-95 (DEPLOY) Preview deployments + env separation (dev/staging/prod).
+- [ ] P2-96 (DATA) Seed “staging-safe” (pas de secrets) + fixtures demo.
+- [ ] P2-97 (I18N) Externaliser copy dans un dictionnaire (eviter hardcode partout).
+- [ ] P2-98 (ANALYTICS) Analytics privacy-friendly + events conversion (apply/signup/submit/contract).

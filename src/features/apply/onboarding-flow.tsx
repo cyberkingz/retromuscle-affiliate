@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { FlashMessages } from "@/features/apply/components/flash-messages";
+import { PendingReviewPanel } from "@/features/apply/components/pending-review-panel";
 import { StepPersonalForm } from "@/features/apply/components/step-personal-form";
 import { StepPlanForm } from "@/features/apply/components/step-plan-form";
 import { StepProfileForm } from "@/features/apply/components/step-profile-form";
@@ -21,6 +22,7 @@ import { useEffect } from "react";
 export function OnboardingFlow() {
   const flow = useOnboardingFlow();
   const router = useRouter();
+  const isPendingReview = flow.application?.status === "pending_review";
 
   useEffect(() => {
     if (flow.loadingSession || !flow.session) {
@@ -45,9 +47,6 @@ export function OnboardingFlow() {
 
   function moveToStep(nextStep: number) {
     flow.setStep(nextStep);
-    if (flow.session && flow.canEdit) {
-      void flow.saveDraft();
-    }
   }
 
   return (
@@ -73,7 +72,7 @@ export function OnboardingFlow() {
           <SectionHeading
             eyebrow="Onboarding createur"
             title="Finalise ton inscription"
-            subtitle="Renseigne ton profil puis envoie ton dossier. Tu peux enregistrer un brouillon a tout moment."
+            subtitle="Renseigne ton profil, puis envoie ton dossier a la derniere etape."
           />
 
           <div className="mt-5 space-y-4">
@@ -87,53 +86,60 @@ export function OnboardingFlow() {
               }}
             />
 
-            <WizardStepper
-              step={flow.step}
-              stepPercent={flow.stepPercent}
-              steps={WIZARD_STEPS}
-              onSelect={moveToStep}
-            />
+            {isPendingReview ? (
+              <PendingReviewPanel application={flow.application!} />
+            ) : (
+              <WizardStepper
+                step={flow.step}
+                stepPercent={flow.stepPercent}
+                steps={WIZARD_STEPS}
+                onSelect={moveToStep}
+              />
+            )}
 
-            <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
-              {flow.step === 0 ? (
-                <StepPersonalForm
-                  form={flow.form}
-                  disabled={!flow.canEdit}
-                  onFieldChange={flow.updateField}
+            {!isPendingReview ? (
+              <>
+                <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
+                  {flow.step === 0 ? (
+                    <StepPersonalForm
+                      form={flow.form}
+                      disabled={!flow.canEdit}
+                      onFieldChange={flow.updateField}
+                    />
+                  ) : null}
+
+                  {flow.step === 1 ? (
+                    <StepProfileForm
+                      form={flow.form}
+                      disabled={!flow.canEdit}
+                      onFieldChange={flow.updateField}
+                    />
+                  ) : null}
+
+                  {flow.step === 2 ? (
+                    <StepPlanForm
+                      form={flow.form}
+                      options={flow.options}
+                      disabled={!flow.canEdit}
+                      onFieldChange={flow.updateField}
+                    />
+                  ) : null}
+                </div>
+
+                <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
+
+                <WizardActions
+                  step={flow.step}
+                  maxStep={WIZARD_STEPS.length - 1}
+                  canEdit={flow.canEdit}
+                  submitting={flow.submitting}
+                  onPrev={() => moveToStep(flow.step - 1)}
+                  onNext={() => moveToStep(flow.step + 1)}
+                  onSubmit={flow.submitApplication}
                 />
-              ) : null}
-
-              {flow.step === 1 ? (
-                <StepProfileForm
-                  form={flow.form}
-                  disabled={!flow.canEdit}
-                  onFieldChange={flow.updateField}
-                />
-              ) : null}
-
-              {flow.step === 2 ? (
-                <StepPlanForm
-                  form={flow.form}
-                  options={flow.options}
-                  disabled={!flow.canEdit}
-                  onFieldChange={flow.updateField}
-                />
-              ) : null}
-            </div>
-
-            <WizardActions
-              step={flow.step}
-              maxStep={WIZARD_STEPS.length - 1}
-              canEdit={flow.canEdit}
-              submitting={flow.submitting}
-              onPrev={() => moveToStep(flow.step - 1)}
-              onNext={() => moveToStep(flow.step + 1)}
-              onSaveDraft={flow.saveDraft}
-              onSubmit={flow.submitApplication}
-            />
+              </>
+            ) : null}
           </div>
-
-          <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
 
           {flow.application?.review_notes ? (
             <Card className="border-line bg-frost/70 p-4">

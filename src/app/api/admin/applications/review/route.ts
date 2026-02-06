@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { reviewCreatorApplication } from "@/application/use-cases/review-creator-application";
-import { readBearerToken, resolveAuthSessionFromAccessToken } from "@/features/auth/server/resolve-auth-session";
-import { isSafeEntityId } from "@/lib/validation";
+import { requireApiRole } from "@/features/auth/server/api-guards";
+import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
+import { rateLimit } from "@/lib/rate-limit";
+import { getRequestId } from "@/lib/request-id";
+import { isUuid } from "@/lib/validation";
 
 interface ReviewPayload {
   userId: string;
@@ -20,7 +23,7 @@ function parsePayload(body: unknown): ReviewPayload {
   const decision = input.decision;
   const reviewNotes = typeof input.reviewNotes === "string" ? input.reviewNotes.trim() : null;
 
-  if (!userId || !isSafeEntityId(userId)) {
+  if (!userId || !isUuid(userId)) {
     throw new Error("Invalid userId");
   }
   if (decision !== "approved" && decision !== "rejected") {
@@ -38,42 +41,54 @@ function parsePayload(body: unknown): ReviewPayload {
 }
 
 export async function POST(request: Request) {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const requestId = getRequestId(request);
+  const limited = rateLimit({ request, key: "admin:applications:review", limit: 60, windowMs: 60_000 });
+  if (limited) {
+    limited.headers.set("x-request-id", requestId);
+    return limited;
   }
 
-  let authSession: Awaited<ReturnType<typeof resolveAuthSessionFromAccessToken>>;
-  try {
-    authSession = await resolveAuthSessionFromAccessToken(token);
-  } catch {
-    return NextResponse.json({ message: "Unable to resolve auth session" }, { status: 500 });
-  }
-  if (!authSession) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  if (authSession.role !== "admin") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  const auth = await requireApiRole(request, "admin", { requestId });
+  if (!auth.ok) {
+    return auth.response;
   }
 
   let payload: ReviewPayload;
   try {
     payload = parsePayload(await request.json());
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Invalid payload" },
       { status: 400 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 
   try {
     const result = await reviewCreatorApplication(payload);
-    return NextResponse.json(result, { status: 200 });
+    void writeAdminAuditLog({
+      request,
+      requestId,
+      adminUserId: auth.session.userId,
+      action: `application.${payload.decision}`,
+      entityType: "creator_application",
+      entityId: payload.userId,
+      metadata: {
+        decision: payload.decision,
+        notes: payload.reviewNotes ?? null
+      }
+    });
+
+    const response = NextResponse.json(result, { status: 200 });
+    response.headers.set("x-request-id", requestId);
+    return response;
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Unable to review application" },
       { status: 500 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 }
-

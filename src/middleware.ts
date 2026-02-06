@@ -5,7 +5,7 @@ const ACCESS_TOKEN_COOKIE = "rm_access_token";
 type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
 
 function isSupabaseGuardEnabled() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY);
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 function readAccessToken(request: NextRequest): string | null {

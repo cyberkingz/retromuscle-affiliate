@@ -20,6 +20,7 @@ interface PageShellProps extends PropsWithChildren {
 
 export function PageShell({ children, currentPath }: PageShellProps) {
   const isAuthPage = currentPath === "/apply" || currentPath === "/login";
+  const isHomePage = currentPath === "/";
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
@@ -36,7 +37,11 @@ export function PageShell({ children, currentPath }: PageShellProps) {
       <main
         className={cn(
           "container-wide flex-1 overflow-x-hidden",
-          isAuthPage ? "pb-4 pt-4 md:pb-6 md:pt-6" : "pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12"
+          isAuthPage
+            ? "pb-6 pt-6 sm:pb-8 sm:pt-8 md:pb-10 md:pt-10"
+            : isHomePage
+              ? "pb-8 pt-2 sm:pb-12 sm:pt-4 md:pt-6"
+              : "pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12"
         )}
       >
         {children}

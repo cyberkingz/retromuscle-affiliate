@@ -18,14 +18,17 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   }
 
   const url = getPublicSupabaseUrl();
-  const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!publishableKey) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  // Supabase "publishable" keys are not JWTs. For email+password auth flows, the legacy anon JWT key
+  // is significantly more reliable (notably for `/auth/v1/token` exchanges).
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonKey) {
+    throw new Error(
+      "Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
+        "Set the legacy anon JWT key (the long eyJhbGciOi... value) for reliable password auth."
+    );
   }
 
-  client = createClient(url, publishableKey, {
+  client = createClient(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

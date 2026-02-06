@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
-import { readBearerToken, resolveAuthSessionFromAccessToken } from "@/features/auth/server/resolve-auth-session";
-import { isSafeEntityId } from "@/lib/validation";
+import { requireApiRole } from "@/features/auth/server/api-guards";
+import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
+import { rateLimit } from "@/lib/rate-limit";
+import { getRequestId } from "@/lib/request-id";
+import { isUuid } from "@/lib/validation";
 
 interface ReviewVideoPayload {
   videoId: string;
@@ -20,7 +23,7 @@ function parsePayload(body: unknown): ReviewVideoPayload {
   const decision = input.decision;
   const rejectionReason = typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
-  if (!videoId || !isSafeEntityId(videoId)) {
+  if (!videoId || !isUuid(videoId)) {
     throw new Error("Invalid videoId");
   }
   if (decision !== "approved" && decision !== "rejected") {
@@ -38,49 +41,60 @@ function parsePayload(body: unknown): ReviewVideoPayload {
 }
 
 export async function POST(request: Request) {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const requestId = getRequestId(request);
+  const limited = rateLimit({ request, key: "admin:videos:review", limit: 120, windowMs: 60_000 });
+  if (limited) {
+    limited.headers.set("x-request-id", requestId);
+    return limited;
   }
 
-  let authSession: Awaited<ReturnType<typeof resolveAuthSessionFromAccessToken>>;
-  try {
-    authSession = await resolveAuthSessionFromAccessToken(token);
-  } catch {
-    return NextResponse.json({ message: "Unable to resolve auth session" }, { status: 500 });
-  }
-
-  if (!authSession) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  if (authSession.role !== "admin") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  const auth = await requireApiRole(request, "admin", { requestId });
+  if (!auth.ok) {
+    return auth.response;
   }
 
   let payload: ReviewVideoPayload;
   try {
     payload = parsePayload(await request.json());
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Invalid payload" },
       { status: 400 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 
   try {
     const result = await reviewVideoUpload({
-      adminUserId: authSession.userId,
+      adminUserId: auth.session.userId,
       videoId: payload.videoId,
       decision: payload.decision,
       rejectionReason: payload.rejectionReason
     });
 
-    return NextResponse.json(result, { status: 200 });
+    void writeAdminAuditLog({
+      request,
+      requestId,
+      adminUserId: auth.session.userId,
+      action: `video.${payload.decision}`,
+      entityType: "video",
+      entityId: payload.videoId,
+      metadata: {
+        decision: payload.decision,
+        rejectionReason: payload.rejectionReason ?? null
+      }
+    });
+
+    const response = NextResponse.json(result, { status: 200 });
+    response.headers.set("x-request-id", requestId);
+    return response;
   } catch (error) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { message: error instanceof Error ? error.message : "Unable to review video" },
       { status: 500 }
     );
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 }
-

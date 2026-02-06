@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Rejoins le programme affilie RetroMuscle et transforme ton contenu en revenu mensuel regulier.",
   openGraph: {
     title: "RetroMuscle Programme Affilie",
-    description: "Programme d'affiliation RetroMuscle pour createurs UGC.",
+    description: "Programme d'affiliation RetroMuscle pour createurs: missions mensuelles, validation rapide, paiements reguliers.",
     url: SITE_URL,
     siteName: "RetroMuscle",
     type: "website",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "RetroMuscle Programme Affilie",
-    description: "Programme d'affiliation RetroMuscle pour createurs UGC.",
+    description: "Programme d'affiliation RetroMuscle pour createurs: missions mensuelles, validation rapide, paiements reguliers.",
     images: [BRAND_ASSETS.heroLifestyle]
   }
 };

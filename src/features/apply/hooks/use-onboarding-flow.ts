@@ -10,7 +10,12 @@ import type {
   ApplicationRecord,
   OnboardingOptions
 } from "@/features/apply/types";
-import { isValidEmail } from "@/lib/validation";
+import {
+  isValidInstagramUrl,
+  isValidPublicHttpUrl,
+  isValidTiktokUrl,
+  normalizeHttpUrl
+} from "@/lib/validation";
 
 async function fetchOnboardingOptions(): Promise<OnboardingOptions> {
   const response = await fetch("/api/onboarding/options", { cache: "no-store" });
@@ -62,7 +67,6 @@ interface UseOnboardingFlowResult {
     field: K,
     value: ApplicationFormState[K]
   ): void;
-  saveDraft(): Promise<void>;
   submitApplication(): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -70,18 +74,33 @@ interface UseOnboardingFlowResult {
 function validateBeforeSubmit(form: ApplicationFormState): string | null {
   if (!form.handle.trim()) return "Ajoute ton handle createur.";
   if (!form.fullName.trim()) return "Ajoute ton nom complet.";
-  if (!isValidEmail(form.email)) return "Renseigne un email valide.";
   if (!form.whatsapp.trim()) return "Ajoute ton numero WhatsApp.";
   if (!form.country.trim()) return "Ajoute ton pays.";
   if (!form.address.trim()) return "Ajoute ton adresse de livraison.";
-  if (!form.socialTiktok.trim() && !form.socialInstagram.trim()) {
+
+  const tiktok = form.socialTiktok.trim();
+  const instagram = form.socialInstagram.trim();
+
+  if (!tiktok && !instagram) {
     return "Ajoute au moins un reseau social (TikTok ou Instagram).";
   }
-  if (!form.portfolioUrl.trim()) return "Ajoute un lien portfolio.";
+  if (tiktok && !isValidTiktokUrl(tiktok)) {
+    return "Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte";
+  }
+  if (instagram && !isValidInstagramUrl(instagram)) {
+    return "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte";
+  }
 
-  const followersCount = Number(form.followers || 0);
-  if (!Number.isFinite(followersCount) || followersCount < 0) {
+  if (!form.followers.trim()) return "Ajoute ton nombre de followers.";
+
+  const followersCount = Number(form.followers);
+  if (!Number.isFinite(followersCount) || !Number.isInteger(followersCount) || followersCount < 0) {
     return "Le nombre de followers est invalide.";
+  }
+
+  if (!form.portfolioUrl.trim()) return "Ajoute un lien portfolio.";
+  if (!isValidPublicHttpUrl(form.portfolioUrl)) {
+    return "Lien portfolio invalide. Exemple: https://tonsite.com";
   }
 
   return null;
@@ -131,6 +150,11 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
 
     let ignore = false;
 
+    const sessionEmail = auth.session.user.email ?? "";
+    if (sessionEmail) {
+      setForm((current) => (current.email ? current : { ...current, email: sessionEmail }));
+    }
+
     fetchExistingApplication(auth.session.access_token)
       .then((record) => {
         if (ignore || !record) {
@@ -163,18 +187,16 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     setStep(Math.max(0, Math.min(2, nextStep)));
   }
 
-  async function persistApplication(submit: boolean) {
+  async function persistApplication() {
     if (!auth.session) {
       return;
     }
 
-    if (submit) {
-      const validationMessage = validateBeforeSubmit(form);
-      if (validationMessage) {
-        setErrorMessage(validationMessage);
-        setStatusMessage(null);
-        return;
-      }
+    const validationMessage = validateBeforeSubmit(form);
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
+      setStatusMessage(null);
+      return;
     }
 
     setErrorMessage(null);
@@ -191,17 +213,16 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
         body: JSON.stringify({
           handle: form.handle,
           fullName: form.fullName,
-          email: form.email,
           whatsapp: form.whatsapp,
           country: form.country,
           address: form.address,
-          socialTiktok: form.socialTiktok,
-          socialInstagram: form.socialInstagram,
-          followers: Number(form.followers || 0),
-          portfolioUrl: form.portfolioUrl,
+          socialTiktok: form.socialTiktok ? normalizeHttpUrl(form.socialTiktok) : "",
+          socialInstagram: form.socialInstagram ? normalizeHttpUrl(form.socialInstagram) : "",
+          followers: Number(form.followers),
+          portfolioUrl: normalizeHttpUrl(form.portfolioUrl),
           packageTier: Number(form.packageTier),
           mixName: form.mixName,
-          submit
+          submit: true
         })
       });
 
@@ -215,11 +236,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
       }
 
       setApplication(data.application);
-      setStatusMessage(
-        submit
-          ? "Dossier soumis. Tu recevras un retour apres revue de l'equipe."
-          : "Brouillon sauvegarde."
-      );
+      setStatusMessage("Dossier soumis. Tu recevras un retour apres revue de l'equipe.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Erreur sauvegarde dossier");
     } finally {
@@ -227,12 +244,8 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     }
   }
 
-  async function saveDraft() {
-    await persistApplication(false);
-  }
-
   async function submitApplication() {
-    await persistApplication(true);
+    await persistApplication();
   }
 
   async function signOut() {
@@ -256,7 +269,6 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     canEdit,
     setStep: setSafeStep,
     updateField,
-    saveDraft,
     submitApplication,
     signOut
   };
