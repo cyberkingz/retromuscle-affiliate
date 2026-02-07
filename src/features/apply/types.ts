@@ -22,16 +22,13 @@ export interface ApplicationRecord {
 }
 
 export interface ApplicationFormState {
-  handle: string;
   fullName: string;
-  email: string;
   whatsapp: string;
   country: string;
   address: string;
   socialTiktok: string;
   socialInstagram: string;
   followers: string;
-  portfolioUrl: string;
   packageTier: number;
   mixName: string;
 }

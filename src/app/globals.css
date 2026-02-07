@@ -9,8 +9,6 @@ html {
 
 @layer base {
   :root {
-    --font-display: "Futura Condensed ExtraBold", "Arial Black", "Impact", "Haettenschweiler", "Oswald", sans-serif;
-    --font-body: "Avenir Next", "Avenir", "Helvetica Neue", "Helvetica", "Nimbus Sans", "Liberation Sans", sans-serif;
     --background: 198 100% 82%;
     --foreground: 227 78% 12%;
     --card: 0 0% 100%;

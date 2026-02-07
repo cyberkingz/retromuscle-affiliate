@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ExternalLink, UploadCloud } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { CardSection } from "@/components/layout/card-section";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { VIDEO_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { VIDEO_TYPES, type VideoAsset, type VideoType } from "@/domain/types";
@@ -20,7 +20,7 @@ interface UploadCardProps {
   rejectedCount: number;
   recentVideos: Array<{
     id: string;
-    videoType: string;
+    videoType: VideoType;
     status: string;
     createdAt: string;
     fileUrl: string;
@@ -89,8 +89,7 @@ export function UploadCard({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const accessToken = auth.session?.access_token ?? null;
-  const canUpload = Boolean(auth.client && accessToken && !uploading);
+  const canUpload = Boolean(auth.user && !uploading);
 
   const tipsForType = useMemo(() => {
     const value = tips[activeType];
@@ -99,22 +98,21 @@ export function UploadCard({
 
   async function previewVideo(fileUrl: string) {
     setErrorMessage(null);
-    if (!auth.client) {
-      setErrorMessage("Supabase n'est pas configure.");
-      return;
-    }
+    try {
+      const response = await fetch(`/api/videos/preview?fileUrl=${encodeURIComponent(fileUrl)}`, { cache: "no-store" });
+      const data = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
+      if (!response.ok || !data?.signedUrl) {
+        throw new Error(data?.message ?? "Impossible de generer un lien de preview.");
+      }
 
-    const { data, error } = await auth.client.storage.from("videos").createSignedUrl(fileUrl, 60);
-    if (error || !data?.signedUrl) {
-      setErrorMessage(error?.message ?? "Impossible de generer un lien de preview.");
-      return;
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (caught) {
+      setErrorMessage(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
     }
-
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
   async function handleFile(file: File) {
-    if (!auth.client || !accessToken || !auth.session?.user?.id) {
+    if (!auth.user) {
       router.replace("/login");
       return;
     }
@@ -146,30 +144,55 @@ export function UploadCard({
       }
 
       const fileSizeMb = Math.max(1, Math.ceil(file.size / (1024 * 1024)));
-      const key = `${auth.session.user.id}/${monthlyTrackingId}/${activeType}/${Date.now()}-${filename}`;
 
       setStatusMessage("Upload vers RetroMuscle...");
 
-      const uploadResult = await auth.client.storage.from("videos").upload(key, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: mime
+      const signed = await fetch("/api/creator/uploads/video/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          monthlyTrackingId,
+          videoType: activeType,
+          filename
+        })
       });
 
-      if (uploadResult.error) {
-        throw new Error(uploadResult.error.message);
+      const signedPayload = (await signed.json().catch(() => null)) as
+        | { key?: string; signedUrl?: string; message?: string }
+        | null;
+
+      if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
+        throw new Error(signedPayload?.message ?? "Impossible de preparer l'upload.");
+      }
+
+      const uploadForm = new FormData();
+      uploadForm.append("cacheControl", "3600");
+      // Supabase Storage expects a multipart form with an empty field name for the file (mirrors storage-js).
+      uploadForm.append("", file);
+
+      const uploaded = await fetch(signedPayload.signedUrl, {
+        method: "PUT",
+        headers: {
+          // Supabase Storage requires the header even when upsert is false.
+          "x-upsert": "false"
+        },
+        body: uploadForm
+      });
+
+      if (!uploaded.ok) {
+        throw new Error("Upload impossible. Reessaie dans quelques instants.");
       }
 
       const response = await fetch("/api/creator/uploads/video", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           monthlyTrackingId,
           videoType: activeType,
-          fileUrl: key,
+          fileUrl: signedPayload.key,
           durationSeconds,
           resolution,
           fileSizeMb
@@ -179,8 +202,6 @@ export function UploadCard({
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { message?: string } | null;
-        // Attempt cleanup: keep storage clean if DB insert fails.
-        await auth.client.storage.from("videos").remove([key]);
         throw new Error(data?.message ?? "Impossible d'enregistrer la video.");
       }
 
@@ -196,7 +217,7 @@ export function UploadCard({
   }
 
   return (
-    <Card className="space-y-4 bg-white p-5 sm:p-6">
+    <CardSection className="space-y-4">
       <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Upload categorie active</p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -316,7 +337,7 @@ export function UploadCard({
             {recentVideos.map((video) => (
               <div key={video.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-line bg-frost/70 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{video.videoType}</p>
+                  <p className="truncate text-sm font-semibold">{VIDEO_TYPE_LABELS[video.videoType]}</p>
                   <p className="mt-1 text-xs text-foreground/65">{new Date(video.createdAt).toLocaleString("fr-FR")}</p>
                   {video.rejectionReason ? (
                     <p className="mt-2 text-xs text-destructive">Rejet: {video.rejectionReason}</p>
@@ -327,12 +348,25 @@ export function UploadCard({
                     label={VIDEO_STATUS_LABELS[video.status as keyof typeof VIDEO_STATUS_LABELS] ?? video.status}
                     tone={video.status === "approved" ? "success" : video.status === "rejected" ? "warning" : "neutral"}
                   />
+                  {video.status === "rejected" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setActiveType(video.videoType);
+                        fileInputRef.current?.click();
+                      }}
+                      disabled={!canUpload}
+                    >
+                      Re-uploader
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => previewVideo(video.fileUrl)}
-                    disabled={!auth.client}
+                    disabled={!auth.user}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
                     Voir
@@ -343,6 +377,6 @@ export function UploadCard({
           </div>
         )}
       </div>
-    </Card>
+    </CardSection>
   );
 }

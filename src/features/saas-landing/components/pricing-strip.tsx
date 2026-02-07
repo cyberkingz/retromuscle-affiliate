@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,10 +13,10 @@ export function PricingStrip({ plans }: PricingStripProps) {
     <section className="space-y-12 animate-fade-up [animation-delay:260ms]">
       <div className="text-center space-y-4">
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
-          Choisis ton rythme de revenus
+          Packs de missions
         </h2>
         <p className="mx-auto max-w-2xl text-foreground/70">
-          Plus tu prends de missions, plus ton potentiel de revenu mensuel augmente.
+          Un quota clair, des credits inclus, et des missions qui arrivent chaque mois. Tu choisis ton rythme.
         </p>
       </div>
 
@@ -49,29 +48,25 @@ export function PricingStrip({ plans }: PricingStripProps) {
               </CardHeader>
 
               <CardContent className="flex-1 text-center space-y-4">
-                <div className="flex items-center justify-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-mint" />
-                  <span>{formatCurrency(plan.credits)} credits</span>
+                <div className="rounded-2xl border border-line bg-white/70 px-4 py-3 text-sm text-foreground/75">
+                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Credits inclus</p>
+                  <p className="mt-1 font-medium">{formatCurrency(plan.credits)}</p>
                 </div>
-                <p className="text-xs text-foreground/60">Briefs prets + accompagnement + paiement mensuel</p>
+                <p className="text-xs text-foreground/60">
+                  Brief clair, upload simple, validation rapide, paiement mensuel.
+                </p>
               </CardContent>
-
-              <CardFooter>
-                <Button asChild className="w-full" variant={featured ? "default" : "outline"}>
-                  <Link href="/apply">Choisir ce pack</Link>
-                </Button>
-              </CardFooter>
             </Card>
           );
         })}
       </div>
 
-      <div className="flex justify-center">
-        <p className="rounded-full border border-line bg-white/70 px-4 py-2 text-sm text-foreground/70">
-          Tu hesites ?{" "}
-          <Link href="/apply" className="font-semibold underline underline-offset-4 hover:text-secondary">
-            Commence avec une inscription rapide
-          </Link>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Button asChild size="lg" className="h-14 px-8">
+          <Link href="/apply">Je m&apos;inscris au programme</Link>
+        </Button>
+        <p className="text-sm text-foreground/70">
+          Tu hesites sur le pack ? Pas grave. On ajuste apres validation de ton dossier.
         </p>
       </div>
     </section>

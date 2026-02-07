@@ -16,8 +16,8 @@ Key runtime pieces:
 - Next.js 14 App Router (server pages for dashboards + client components for interactive flows)
 - Supabase Auth (email+password), Storage (`videos` bucket), Postgres schema in `supabase/migrations`
 - Access control uses:
-  - `rm_access_token` cookie (set in browser JS)
-  - `src/middleware.ts` (Edge) calling `/api/auth/redirect-target`
+  - `rm_access_token` + `rm_refresh_token` HttpOnly cookies (set server-side by `/api/auth/*`)
+  - `src/middleware.ts` (Edge) refreshes session tokens when expiring and blocks protected routes
   - server guards in `src/features/auth/server/route-guards.ts`
   - API guards in `src/features/auth/server/api-guards.ts`
 
@@ -44,20 +44,18 @@ UX improvements already done:
 ## 2) Production Blockers (P0)
 
 P0-01 Auth token storage model (XSS surface)
+- Status: DONE (cookie-based, HttpOnly)
 - Today:
-  - Browser stores Supabase session (default storage) and also writes `rm_access_token` via JS (`src/features/auth/context/auth-context.tsx`).
-  - Server pages and Edge middleware trust that cookie for routing/guarding.
-- Risk:
-  - Any XSS can read local storage and/or set/steal `rm_access_token`.
-  - The token cookie is not HttpOnly (cannot be from JS).
-- Fix path:
-  - Migrate to cookie-based auth using Supabase SSR (`@supabase/ssr`) or an equivalent server-issued HttpOnly cookie strategy.
+  - Auth uses HttpOnly cookies only (`rm_access_token`, `rm_refresh_token`) and no longer relies on a browser Supabase session.
+  - Session refresh happens in `src/middleware.ts` and on API routes via `requireApiSession()`.
+- Residual risk:
+  - CSRF protections still matter for state-changing routes (SameSite=Lax reduces risk for top-level navigations, but we should still keep endpoints POST-only + origin checks where relevant).
 
 P0-02 Missing automated test coverage for critical business rules
 - No unit tests for domain services (quotas, payout) and no integration tests for auth + onboarding + uploads.
 - Fix path:
   - Add Vitest + minimal unit tests for pure functions first (fast ROI).
-  - Add 1 E2E smoke flow once auth storage is stabilized.
+  - Add 1 E2E smoke flow once auth storage is stabilized (now possible). A working API-level smoke exists at `scripts/smoke-flow.mjs`.
 
 P0-03 Supabase Auth “Database error querying schema” recurrence risk
 - Root cause observed: NULLs in `auth.users` token columns can break GoTrue `/token` login path.
@@ -126,4 +124,3 @@ These are the next concrete items to execute (small, safe, high ROI), before big
 ## 7) References
 - Master TODO: `docs/MASTER_TODO_98.md`
 - Rolling audit loop: `docs/AUDIT_AND_TODO.md`
-

@@ -11,6 +11,8 @@ import type {
   ApplicationStatus,
   Creator,
   CreatorApplication,
+  CreatorContractSignature,
+  CreatorPayoutProfile,
   MixDefinition,
   MonthlyTracking,
   PackageDefinition,
@@ -71,6 +73,16 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     return rushes.filter((item) => item.monthlyTrackingId === monthlyTrackingId);
   }
 
+  async createRushAsset(_input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    fileName: string;
+    fileSizeMb: number;
+    fileUrl?: string | null;
+  }): Promise<RushAsset> {
+    throw new Error("Rush uploads are not available in offline mode");
+  }
+
   async createVideoAsset(_input: {
     monthlyTrackingId: string;
     creatorId: string;
@@ -100,6 +112,13 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     throw new Error("Tracking updates are not available in offline mode");
   }
 
+  async markMonthlyTrackingPaid(_input: {
+    monthlyTrackingId: string;
+    paidAt?: string | null;
+  }): Promise<MonthlyTracking> {
+    throw new Error("Payments are not available in offline mode");
+  }
+
   async listRates(): Promise<VideoRate[]> {
     return references.rates;
   }
@@ -110,6 +129,25 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async listMixDefinitions(): Promise<MixDefinition[]> {
     return Object.values(MIX_DEFINITIONS);
+  }
+
+  async getPayoutProfileByCreatorId(_creatorId: string): Promise<CreatorPayoutProfile | null> {
+    return null;
+  }
+
+  async upsertPayoutProfile(_input: {
+    creatorId: string;
+    method: CreatorPayoutProfile["method"];
+    accountHolderName?: string | null;
+    iban?: string | null;
+    paypalEmail?: string | null;
+    stripeAccount?: string | null;
+  }): Promise<CreatorPayoutProfile> {
+    throw new Error("Payout settings are not available in offline mode");
+  }
+
+  async listContractSignaturesByCreatorId(_creatorId: string): Promise<CreatorContractSignature[]> {
+    return [];
   }
 
   async listCreatorApplications(_status?: ApplicationStatus): Promise<CreatorApplication[]> {

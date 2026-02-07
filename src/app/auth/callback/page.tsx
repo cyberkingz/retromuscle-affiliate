@@ -45,7 +45,7 @@ function AuthCallbackClient() {
             (await client.auth.getSession()).data.session?.access_token;
 
           if (accessToken) {
-            const target = await resolveRedirectTarget(accessToken);
+            const target = await resolveRedirectTarget();
             router.replace(target);
             return;
           }

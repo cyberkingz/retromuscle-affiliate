@@ -36,7 +36,7 @@ export function AdminDashboardPage({ data }: AdminDashboardPageProps) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ValidationQueue rows={data.validationQueue} />
-        <PaymentsTable rows={data.payments} />
+        <PaymentsTable month={data.month} rows={data.payments} />
       </div>
     </div>
   );

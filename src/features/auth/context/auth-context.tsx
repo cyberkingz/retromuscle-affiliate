@@ -1,15 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { Session, SupabaseClient } from "@supabase/supabase-js";
+import { usePathname, useRouter } from "next/navigation";
 
-import type { AuthRole, RedirectTarget } from "@/features/auth/client/resolve-redirect-target";
-import { resolveAuthRouting } from "@/features/auth/client/resolve-redirect-target";
-import { getSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
+import type { AuthRole, RedirectTarget } from "@/features/auth/types";
+
+interface AuthUser {
+  id: string;
+  email: string | null;
+}
 
 interface AuthContextValue {
-  client: SupabaseClient | null;
-  session: Session | null;
+  user: AuthUser | null;
   role: AuthRole | null;
   redirectTarget: RedirectTarget | null;
   resolvingRole: boolean;
@@ -22,165 +24,142 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function syncAccessTokenCookie(session: Session | null) {
-  if (typeof document === "undefined") {
-    return;
+function normalizeTarget(value: unknown): RedirectTarget | null {
+  if (value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding") {
+    return value;
   }
+  return null;
+}
 
-  if (!session?.access_token) {
-    document.cookie = "rm_access_token=; path=/; max-age=0; samesite=lax";
-    return;
+function normalizeRole(value: unknown): AuthRole | null {
+  if (value === "admin" || value === "affiliate") {
+    return value;
   }
+  return null;
+}
 
-  const secure = window.location.protocol === "https:" ? "; secure" : "";
-  const maxAge = Math.max(
-    60,
-    Math.floor((new Date(session.expires_at ? session.expires_at * 1000 : Date.now() + 3600_000).getTime() - Date.now()) / 1000)
-  );
-  document.cookie = `rm_access_token=${session.access_token}; path=/; max-age=${maxAge}; samesite=lax${secure}`;
+function normalizeUser(value: unknown): AuthUser | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const input = value as Record<string, unknown>;
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  const email = typeof input.email === "string" ? input.email.trim() : null;
+  if (!id) {
+    return null;
+  }
+  return { id, email };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [client, setClient] = useState<SupabaseClient | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [role, setRole] = useState<AuthRole | null>(null);
   const [redirectTarget, setRedirectTarget] = useState<RedirectTarget | null>(null);
   const [resolvingRole, setResolvingRole] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshSession = useCallback(async () => {
-    if (!client) {
-      return;
-    }
-
-    const { data, error: sessionError } = await client.auth.getSession();
-    if (sessionError) {
-      setError(sessionError.message);
-      return;
-    }
-
-    const nextSession = data.session ?? null;
-    setSession(nextSession);
-    syncAccessTokenCookie(nextSession);
-  }, [client]);
-
-  const refreshRouting = useCallback(async () => {
-    if (!session?.access_token) {
+  const expireSession = useCallback(async () => {
+    try {
+      await fetch("/api/auth/sign-out", { method: "POST", cache: "no-store" });
+    } catch {
+      // ignore
+    } finally {
+      setUser(null);
       setRole(null);
       setRedirectTarget(null);
-      return;
+      setError(null);
     }
 
+    // Avoid redirect loops if the user is already on /login.
+    if (pathname !== "/login") {
+      router.replace("/login?reason=expired");
+    }
+  }, [router, pathname]);
+
+  const refreshSession = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/me", { cache: "no-store" });
+      if (response.status === 401 || response.status === 403) {
+        await expireSession();
+        return;
+      }
+      if (!response.ok) {
+        setUser(null);
+        setRole(null);
+        setRedirectTarget(null);
+        setError("Impossible de charger la session.");
+        return;
+      }
+
+      const data = (await response.json()) as { user?: unknown; role?: unknown; target?: unknown };
+      setUser(normalizeUser(data.user));
+      setRole(normalizeRole(data.role));
+      setRedirectTarget(normalizeTarget(data.target));
+      setError(null);
+    } catch (caught) {
+      setUser(null);
+      setRole(null);
+      setRedirectTarget(null);
+      setError(caught instanceof Error ? caught.message : "Impossible de charger la session.");
+    }
+  }, [expireSession]);
+
+  const refreshRouting = useCallback(async () => {
     setResolvingRole(true);
     try {
-      const routing = await resolveAuthRouting(session.access_token);
-      setRole(routing.role);
-      setRedirectTarget(routing.target);
-    } catch {
-      setRole(null);
-      setRedirectTarget("/onboarding");
+      const response = await fetch("/api/auth/redirect-target", { cache: "no-store" });
+      if (response.status === 401 || response.status === 403) {
+        await expireSession();
+        return;
+      }
+      if (!response.ok) {
+        setRole(null);
+        setRedirectTarget(null);
+        return;
+      }
+
+      const data = (await response.json()) as { role?: unknown; target?: unknown };
+      setRole(normalizeRole(data.role));
+      setRedirectTarget(normalizeTarget(data.target));
     } finally {
       setResolvingRole(false);
     }
-  }, [session?.access_token]);
+  }, [expireSession]);
 
   const signOut = useCallback(async () => {
-    if (!client) {
-      return;
-    }
-
-    const { error: signOutError } = await client.auth.signOut();
-    if (signOutError) {
-      setError(signOutError.message);
-      return;
-    }
-    setRole(null);
-    setRedirectTarget(null);
-  }, [client]);
-
-  useEffect(() => {
-    let supabaseClient: SupabaseClient | null = null;
     try {
-      supabaseClient = getSupabaseBrowserClient();
-      setClient(supabaseClient);
-      setError(null);
-    } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Supabase is not configured");
-      setLoading(false);
-      return;
+      await fetch("/api/auth/sign-out", { method: "POST", cache: "no-store" });
+    } finally {
+      setUser(null);
+      setRole(null);
+      setRedirectTarget(null);
     }
-
-    supabaseClient.auth
-      .getSession()
-      .then(({ data, error: sessionError }) => {
-        if (sessionError) {
-          setError(sessionError.message);
-          return;
-        }
-        const nextSession = data.session ?? null;
-        setSession(nextSession);
-        syncAccessTokenCookie(nextSession);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-
-    const {
-      data: { subscription }
-    } = supabaseClient.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      syncAccessTokenCookie(nextSession);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
-    if (!session?.access_token) {
-      setRole(null);
-      setRedirectTarget(null);
-      setResolvingRole(false);
-      return;
-    }
-
     let ignore = false;
-    setResolvingRole(true);
 
-    resolveAuthRouting(session.access_token)
-      .then((routing) => {
-        if (ignore) {
-          return;
-        }
-
-        setRole(routing.role);
-        setRedirectTarget(routing.target);
-      })
+    refreshSession()
       .catch(() => {
-        if (ignore) {
-          return;
-        }
-
-        setRole(null);
-        setRedirectTarget("/onboarding");
+        // error state already handled by refreshSession
       })
       .finally(() => {
         if (!ignore) {
-          setResolvingRole(false);
+          setLoading(false);
         }
       });
 
     return () => {
       ignore = true;
     };
-  }, [session?.access_token]);
+  }, [refreshSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      client,
-      session,
+      user,
       role,
       redirectTarget,
       resolvingRole,
@@ -190,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshRouting,
       signOut
     }),
-    [client, session, role, redirectTarget, resolvingRole, loading, error, refreshSession, refreshRouting, signOut]
+    [user, role, redirectTarget, resolvingRole, loading, error, refreshSession, refreshRouting, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

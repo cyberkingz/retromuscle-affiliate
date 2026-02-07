@@ -9,28 +9,37 @@
     "lint": "next lint",
     "typecheck": "node scripts/typecheck.mjs",
     "check:secrets": "node scripts/secret-scan.mjs",
+    "setup:hooks": "node scripts/setup-hooks.mjs",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "smoke:flow": "node scripts/smoke-flow.mjs",
+    "audit:ui": "node scripts/ui-audit.mjs",
     "seed:admin": "node scripts/seed-admin.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
-    "@supabase/supabase-js": "2.49.1",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
-    "next": "14.2.25",
+    "next": "^15.5.12",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/node": "20.17.6",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
     "autoprefixer": "10.4.20",
     "eslint": "8.57.1",
-    "eslint-config-next": "14.2.25",
+    "eslint-config-next": "^15.5.12",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vitest": "^3.2.4"
   }
 }

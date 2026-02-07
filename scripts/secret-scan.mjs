@@ -40,6 +40,7 @@ const patterns = [
 const ignore = [
   ".env.example",
   "package-lock.json",
+  "scripts/secret-scan.mjs",
   "supabase/migrations/",
   "docs/",
 ];

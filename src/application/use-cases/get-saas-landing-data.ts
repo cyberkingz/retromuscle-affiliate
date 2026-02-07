@@ -1,5 +1,9 @@
 import { getRepository } from "@/application/dependencies";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
+import { MIX_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
+import { calculatePayout } from "@/domain/services/calculate-payout";
+import { calculateQuotas } from "@/domain/services/calculate-quotas";
+import { VIDEO_TYPES } from "@/domain/types";
 
 export interface SaasLandingData {
   hero: {
@@ -7,7 +11,6 @@ export interface SaasLandingData {
     title: string;
     subtitle: string;
     primaryCta: { label: string; href: "/apply" };
-    secondaryCta: { label: string; href: "/creators" };
     visuals: {
       logoUrl: string;
       primaryImageUrl: string;
@@ -18,6 +21,26 @@ export interface SaasLandingData {
   trustPoints: Array<{ label: string; value: string }>;
   painToValue: Array<{ pain: string; value: string }>;
   flow: Array<{ title: string; description: string }>;
+  earnings: {
+    title: string;
+    subtitle: string;
+    scenarios: Array<{
+      tier: number;
+      videos: number;
+      credits: number;
+      mixName: string;
+      mixLabel: string;
+      estimatedAmount: number;
+      breakdown: Array<{ label: string; delivered: number; rate: number; subtotal: number }>;
+      assumptions: string[];
+    }>;
+  };
+  qualifier: {
+    title: string;
+    subtitle: string;
+    forWho: string[];
+    notForWho: string[];
+  };
   socialProof: {
     testimonials: Array<{ name: string; role: string; quote: string }>;
     trustedBy: string[];
@@ -33,16 +56,54 @@ export interface SaasLandingData {
 
 export async function getSaasLandingData(): Promise<SaasLandingData> {
   const repository = getRepository();
-  const packages = await repository.listPackageDefinitions();
+  const [packages, mixes, rates] = await Promise.all([
+    repository.listPackageDefinitions(),
+    repository.listMixDefinitions(),
+    repository.listRates()
+  ]);
+
+  const baselineMix =
+    mixes.find((mix) => mix.name === "EQUILIBRE") ??
+    mixes.find((mix) => mix.name === "VOLUME") ??
+    mixes[0];
+
+  const earningsScenarios = baselineMix
+    ? packages
+        .slice()
+        .sort((a, b) => a.tier - b.tier)
+        .map((pkg) => {
+          const quotas = calculateQuotas(pkg.quotaVideos, baselineMix);
+          const payout = calculatePayout(quotas, rates, pkg.monthlyCredits);
+          return {
+            tier: pkg.tier,
+            videos: pkg.quotaVideos,
+            credits: pkg.monthlyCredits,
+            mixName: baselineMix.name,
+            mixLabel: MIX_LABELS[baselineMix.name],
+            estimatedAmount: payout.total,
+            breakdown: payout.items.map((item) => ({
+              label: VIDEO_TYPE_LABELS[item.key as keyof typeof VIDEO_TYPE_LABELS],
+              delivered: item.delivered,
+              rate: item.rate,
+              subtotal: item.subtotal
+            })),
+            assumptions: [
+              `Scenario: tu livres 100% du quota (${pkg.quotaVideos} videos)`,
+              `Mix de base: ${MIX_LABELS[baselineMix.name]} (${VIDEO_TYPES.map((t) => VIDEO_TYPE_LABELS[t]).join(", ")})`,
+              "Seuls les contenus valides declenchent le paiement",
+              "Les credits mensuels sont inclus dans l'estimation"
+            ]
+          };
+        })
+    : [];
 
   return {
     hero: {
       kicker: "Programme Affilie RetroMuscle",
-      title: "Transforme ton contenu en revenu stable.",
+      title: "Transforme ton contenu en revenu mensuel.",
       subtitle:
-        "Tu recois des missions chaque mois, un cadre clair pour tourner vite, et un paiement regulier quand les contenus sont valides.",
+        "Un cadre clair, des missions chaque mois, et un paiement mensuel declenche quand tes contenus sont valides.",
       primaryCta: { label: "Je veux rejoindre le programme", href: "/apply" },
-      secondaryCta: { label: "Voir les revenus possibles", href: "/creators" },
       visuals: {
         logoUrl: BRAND_ASSETS.logo,
         primaryImageUrl: BRAND_ASSETS.heroLifestyle,
@@ -51,10 +112,10 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       }
     },
     trustPoints: [
-      { label: "Createurs actifs", value: "50+" },
-      { label: "Missions / mois", value: "10-40" },
-      { label: "Validation cible", value: "90%" },
-      { label: "Paiement", value: "Mensuel" }
+      { label: "Reponse", value: "Sous 48h" },
+      { label: "Missions", value: "Chaque mois" },
+      { label: "Paiement", value: "Mensuel" },
+      { label: "Brief", value: "Clair" }
     ],
     painToValue: [
       {
@@ -73,39 +134,55 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     flow: [
       {
         title: "1. Tu candidates",
-        description:
-          "En 3 minutes: profil, reseaux et style de contenu. L'equipe valide ton fit rapidement."
+        description: "En 3 minutes: profil, reseaux, style. Revue humaine et reponse rapide."
       },
       {
         title: "2. Tu produis",
-        description:
-          "Tu recois tes missions du mois, tu tournes avec un brief clair et tu envoies tes contenus."
+        description: "Missions du mois, brief clair, upload simple. Tu sais exactement quoi livrer."
       },
       {
         title: "3. Tu es paye",
-        description:
-          "Une fois valide, ton paiement est prepare sans discussions interminables."
+        description: "Une fois valide, ton paiement mensuel est prepare. Pas de relances, pas de flou."
       }
     ],
+    earnings: {
+      title: "Combien tu peux gagner",
+      subtitle: "Exemples d'estimation si tu livres 100% du quota (contenus valides).",
+      scenarios: earningsScenarios
+    },
+    qualifier: {
+      title: "Pour qui (et pas pour qui)",
+      subtitle: "On prefere une petite communaute engagee qu'un gros volume sans regularite.",
+      forWho: [
+        "Tu peux livrer chaque mois (meme 10 videos) avec un planning simple",
+        "Tu aimes filmer: training, OOTD, before/after, vibe retro gym",
+        "Tu veux un cadre clair: brief, validation, paiement mensuel"
+      ],
+      notForWho: [
+        "Tu ne peux pas tenir un rythme mensuel (delais trop aleatoires)",
+        "Tu n'acceptes pas les ajustements (revisions) quand un livrable est hors brief",
+        "Tu veux un paiement sans validation de qualite / specs"
+      ]
+    },
     socialProof: {
       testimonials: [
         {
-          name: "Emma",
-          role: "Affiliee RetroMuscle - Paris",
-          quote: "J'ai enfin une visibilite sur mes revenus: je sais quoi filmer et combien je touche."
+          name: "Createur (anonyme)",
+          role: "Programme Affilie RetroMuscle",
+          quote: "Enfin un cadre clair: je sais quoi filmer, quand livrer, et ce qui est valide."
         },
         {
-          name: "Marc",
-          role: "Affilie Training - Lyon",
-          quote: "Avant c'etait aleatoire. Maintenant j'ai un rythme mensuel et des paiements plus previsibles."
+          name: "Createur (anonyme)",
+          role: "Programme Affilie RetroMuscle",
+          quote: "Avant c'etait one-shot. Maintenant j'ai un rythme mensuel et une vraie regularite."
         },
         {
-          name: "Julie",
-          role: "Affiliee Lifestyle - Bruxelles",
-          quote: "Le process est simple: je cree, j'envoie, je suis payee. C'est pro et humain."
+          name: "Createur (anonyme)",
+          role: "Programme Affilie RetroMuscle",
+          quote: "Le process est simple: je cree, j'upload, je suis validee. Pas de chaos en DM."
         }
       ],
-      trustedBy: ["RetroMuscle", "Athletes Squad", "Community Team", "Creator Partners"]
+      trustedBy: []
     },
     pricing: packages.map((pkg) => ({
       tier: pkg.tier,
@@ -115,15 +192,20 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     faqs: [
       {
         question: "En combien de temps je peux commencer ?",
-        answer: "En general sous 48h apres validation de ton profil."
+        answer: "En general, une reponse sous 48h apres la soumission de ton dossier."
       },
       {
-        question: "Combien je peux gagner ?",
-        answer: "Ca depend de ton pack, de ta regularite et de la qualite des livrables valides."
+        question: "Quand suis-je paye ?",
+        answer:
+          "Paiement mensuel: une fois les contenus du cycle valides, le paiement est prepare (delais bancaires possibles)."
       },
       {
-        question: "Quand je suis paye ?",
-        answer: "Le paiement est effectue chaque mois apres validation des contenus."
+        question: "Et si une video est rejetee ?",
+        answer: "Tu vois la raison, puis tu peux re-uploader une version conforme."
+      },
+      {
+        question: "Est-ce que tout le monde est accepte ?",
+        answer: "Non. On valide selon le fit, la qualite, et les besoins campagnes du moment."
       }
     ],
     action: {

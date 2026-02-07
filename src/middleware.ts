@@ -1,15 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const ACCESS_TOKEN_COOKIE = "rm_access_token";
-
-type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
+import {
+  ACCESS_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_NAME,
+  clearAuthCookies,
+  setAuthCookies
+} from "@/features/auth/server/auth-cookies";
 
 function isSupabaseGuardEnabled() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return (
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) &&
+    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  );
 }
 
-function readAccessToken(request: NextRequest): string | null {
-  const value = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value?.trim();
+function readCookie(request: NextRequest, name: string): string | null {
+  const value = request.cookies.get(name)?.value?.trim();
   if (!value || value.length > 4096) {
     return null;
   }
@@ -17,7 +24,15 @@ function readAccessToken(request: NextRequest): string | null {
 }
 
 function isProtectedPath(pathname: string): boolean {
-  return pathname.startsWith("/admin") || pathname.startsWith("/dashboard") || pathname.startsWith("/contract") || pathname.startsWith("/onboarding");
+  return (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/uploads") ||
+    pathname.startsWith("/payouts") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/contract") ||
+    pathname.startsWith("/onboarding")
+  );
 }
 
 function isPublicAuthPath(pathname: string): boolean {
@@ -31,33 +46,33 @@ function redirectTo(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url);
 }
 
-function clearAccessTokenCookie(response: NextResponse) {
-  response.cookies.set(ACCESS_TOKEN_COOKIE, "", {
-    path: "/",
-    maxAge: 0,
-    sameSite: "lax"
-  });
-}
-
-function isRedirectTarget(value: unknown): value is RedirectTarget {
-  return value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding";
-}
-
-async function resolveRedirectTarget(request: NextRequest, accessToken: string): Promise<RedirectTarget | null> {
-  const response = await fetch(new URL("/api/auth/redirect-target", request.url), {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length < 2) {
     return null;
   }
 
-  const data = (await response.json()) as { target?: unknown };
-  return isRedirectTarget(data.target) ? data.target : null;
+  const base64 = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+
+  try {
+    const json = atob(padded);
+    const payload = JSON.parse(json) as unknown;
+    return payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function isExpiringSoon(accessToken: string): boolean {
+  const payload = decodeJwtPayload(accessToken);
+  const exp = typeof payload?.exp === "number" ? payload.exp : null;
+  if (!exp) {
+    return false;
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return exp - nowSeconds <= 90;
 }
 
 export async function middleware(request: NextRequest) {
@@ -68,9 +83,25 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const protectedPath = isProtectedPath(pathname);
   const publicAuthPath = isPublicAuthPath(pathname);
-  const accessToken = readAccessToken(request);
+  const accessToken = readCookie(request, ACCESS_TOKEN_COOKIE_NAME);
+  const refreshToken = readCookie(request, REFRESH_TOKEN_COOKIE_NAME);
 
-  if (!accessToken) {
+  // Try to refresh when the access token is missing or close to expiration.
+  let refreshed: { accessToken: string; refreshToken: string; expiresAt: number | null | undefined } | null = null;
+
+  if ((!accessToken || isExpiringSoon(accessToken)) && refreshToken) {
+    try {
+      const { refreshSupabaseSession } = await import("@/features/auth/server/auth-refresh");
+      refreshed = await refreshSupabaseSession(refreshToken);
+    } catch {
+      refreshed = null;
+    }
+  }
+
+  const effectiveAccessToken = refreshed?.accessToken ?? accessToken;
+  const hasSession = Boolean(effectiveAccessToken);
+
+  if (!hasSession) {
     if (protectedPath) {
       return redirectTo(request, "/login");
     }
@@ -78,48 +109,43 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  let target: RedirectTarget | null = null;
-  try {
-    target = await resolveRedirectTarget(request, accessToken);
-  } catch {
-    target = null;
-  }
-
-  if (!target) {
-    if (protectedPath) {
-      const response = redirectTo(request, "/login");
-      clearAccessTokenCookie(response);
-      return response;
+  if (publicAuthPath) {
+    const response = redirectTo(request, "/onboarding");
+    if (refreshed) {
+      setAuthCookies(response, refreshed);
     }
-
-    const response = NextResponse.next();
-    clearAccessTokenCookie(response);
     return response;
   }
 
-  if (publicAuthPath) {
-    return redirectTo(request, target);
+  const response = NextResponse.next();
+
+  if (refreshed) {
+    setAuthCookies(response, refreshed);
   }
 
-  if (pathname.startsWith("/admin") && target !== "/admin") {
-    return redirectTo(request, target);
+  // If refresh failed and we had no valid access token, clear cookies to avoid loops.
+  if ((!accessToken || isExpiringSoon(accessToken)) && refreshToken && !refreshed) {
+    if (protectedPath) {
+      const redirect = redirectTo(request, "/login");
+      clearAuthCookies(redirect);
+      return redirect;
+    }
+    clearAuthCookies(response);
   }
 
-  if (pathname.startsWith("/dashboard") && target !== "/dashboard") {
-    return redirectTo(request, target);
-  }
-
-  if (pathname.startsWith("/onboarding") && target !== "/onboarding") {
-    return redirectTo(request, target);
-  }
-
-  if (pathname.startsWith("/contract") && target !== "/contract") {
-    return redirectTo(request, target);
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: ["/apply", "/login", "/onboarding/:path*", "/contract/:path*", "/dashboard/:path*", "/admin/:path*"]
+  matcher: [
+    "/apply",
+    "/login",
+    "/onboarding/:path*",
+    "/contract/:path*",
+    "/dashboard/:path*",
+    "/uploads/:path*",
+    "/payouts/:path*",
+    "/settings/:path*",
+    "/admin/:path*"
+  ]
 };

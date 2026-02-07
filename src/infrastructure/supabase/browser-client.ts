@@ -27,6 +27,12 @@ export function getSupabaseBrowserClient(): SupabaseClient {
         "Set the legacy anon JWT key (the long eyJhbGciOi... value) for reliable password auth."
     );
   }
+  if (anonKey.startsWith("sb_publishable_") || anonKey.startsWith("sb_secret_")) {
+    throw new Error(
+      "Invalid NEXT_PUBLIC_SUPABASE_ANON_KEY: expected the legacy anon JWT (starts with 'eyJ...'), " +
+        "not a 'sb_publishable_*' or 'sb_secret_*' key."
+    );
+  }
 
   client = createClient(url, anonKey, {
     auth: {

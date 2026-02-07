@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import type { AdminApplicationsData } from "@/application/use-cases/get-admin-applications-data";
 import type { ApplicationStatus, CreatorApplication } from "@/domain/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DataTableCard } from "@/components/ui/data-table-card";
+import { DataTable } from "@/components/ui/data-table";
+import { Input } from "@/components/ui/input";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { toShortDate } from "@/lib/date";
+import { cn } from "@/lib/cn";
 
 type Decision = "approved" | "rejected";
 
@@ -61,6 +64,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
   const auth = useAuth();
   const [applications, setApplications] = useState(() => [...data.applications].sort(sortApplications));
   const [filter, setFilter] = useState<ApplicationStatus>(() => resolveDefaultFilter(data.applications));
+  const [search, setSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(() => data.applications[0]?.userId ?? null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -79,8 +83,73 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
   }, [applications]);
 
   const filtered = useMemo(
-    () => applications.filter((application) => application.status === filter).sort(sortApplications),
-    [applications, filter]
+    () => {
+      const needle = search.trim().toLowerCase();
+      return applications
+        .filter((application) => application.status === filter)
+        .filter((application) => {
+          if (!needle) return true;
+          return (
+            application.handle.toLowerCase().includes(needle) ||
+            application.email.toLowerCase().includes(needle) ||
+            application.fullName.toLowerCase().includes(needle)
+          );
+        })
+        .sort(sortApplications);
+    },
+    [applications, filter, search]
+  );
+
+  const columns = useMemo<ColumnDef<CreatorApplication>[]>(
+    () => [
+      {
+        id: "creator",
+        header: "Createur",
+        accessorFn: (row) => row.handle,
+        cell: ({ row }) => {
+          const application = row.original;
+          return (
+            <div className="min-w-[180px]">
+              <p className="font-semibold">{application.handle}</p>
+              <p className="text-xs text-foreground/60">{application.fullName}</p>
+            </div>
+          );
+        }
+      },
+      {
+        id: "plan",
+        header: "Pack",
+        accessorFn: (row) => `${row.packageTier}-${row.mixName}`,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.packageTier} • {row.original.mixName}
+          </span>
+        )
+      },
+      {
+        accessorKey: "followers",
+        header: "Followers",
+        cell: ({ row }) => row.original.followers.toLocaleString("fr-FR")
+      },
+      {
+        accessorKey: "country",
+        header: "Pays"
+      },
+      {
+        id: "submitted",
+        header: "Soumis",
+        accessorFn: (row) => row.submittedAt ?? row.createdAt,
+        cell: ({ row }) => (row.original.submittedAt ? toShortDate(row.original.submittedAt) : "-")
+      },
+      {
+        accessorKey: "status",
+        header: "Statut",
+        cell: ({ row }) => (
+          <StatusBadge label={statusLabel(row.original.status)} tone={statusTone(row.original.status)} />
+        )
+      }
+    ],
+    []
   );
 
   const selected = useMemo(
@@ -99,12 +168,16 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
   }
 
   async function submitDecision(decision: Decision) {
-    if (!auth.session?.access_token) {
+    if (!auth.user) {
       setErrorMessage("Session manquante. Reconnecte-toi.");
       return;
     }
     if (!selected) {
       setErrorMessage("Selection manquante.");
+      return;
+    }
+    if (decision === "rejected" && reviewNotes.trim().length === 0) {
+      setErrorMessage("Ajoute une note de review pour expliquer le refus.");
       return;
     }
 
@@ -116,8 +189,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
       const response = await fetch("/api/admin/applications/review", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.session.access_token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           userId: selected.userId,
@@ -198,59 +270,67 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Recherche (handle, email, nom)..."
+          className="h-10 w-full sm:w-[320px]"
+        />
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <DataTableCard
           title="Dossiers"
           subtitle="Clique sur un dossier pour voir le detail et valider."
           className="min-w-0"
         >
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Createur</TableHead>
-                <TableHead>Pack</TableHead>
-                <TableHead>Followers</TableHead>
-                <TableHead>Pays</TableHead>
-                <TableHead>Soumis</TableHead>
-                <TableHead>Statut</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-foreground/60">
-                    Aucun dossier dans cette vue.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((application) => {
-                  const isSelected = application.userId === selectedUserId;
-                  return (
-                    <TableRow
-                      key={application.userId}
-                      className={isSelected ? "bg-frost/70 hover:bg-frost/70" : undefined}
-                      onClick={() => selectApplication(application.userId)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <TableCell className="font-semibold">
-                        {application.handle}
-                        <div className="text-xs font-normal text-foreground/60">{application.fullName}</div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {application.packageTier} • {application.mixName}
-                      </TableCell>
-                      <TableCell>{application.followers.toLocaleString("fr-FR")}</TableCell>
-                      <TableCell>{application.country}</TableCell>
-                      <TableCell>{application.submittedAt ? toShortDate(application.submittedAt) : "-"}</TableCell>
-                      <TableCell>
-                        <StatusBadge label={statusLabel(application.status)} tone={statusTone(application.status)} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={filtered}
+            columns={columns}
+            pageSize={10}
+            emptyMessage="Aucun dossier dans cette vue."
+            getRowId={(row) => row.userId}
+            onRowClick={(row) => selectApplication(row.userId)}
+            isRowSelected={(row) => row.userId === selectedUserId}
+            renderMobileRow={(row) => {
+              const isSelected = row.userId === selectedUserId;
+              return (
+                <Card
+                  className={cn(
+                    "space-y-3 bg-white/95 p-4",
+                    isSelected ? "border-secondary/40 shadow-[0_18px_40px_-22px_rgba(8,17,66,0.55)]" : undefined
+                  )}
+                  onClick={() => selectApplication(row.userId)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      selectApplication(row.userId);
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{row.handle}</p>
+                      <p className="text-xs text-foreground/60">{row.fullName}</p>
+                    </div>
+                    <StatusBadge label={statusLabel(row.status)} tone={statusTone(row.status)} />
+                  </div>
+                  <div className="grid gap-1 text-sm text-foreground/75">
+                    <p>
+                      {row.packageTier} • {row.mixName}
+                    </p>
+                    <p>{row.followers.toLocaleString("fr-FR")} followers</p>
+                    <p>
+                      {row.country} • {row.submittedAt ? toShortDate(row.submittedAt) : "Brouillon"}
+                    </p>
+                  </div>
+                </Card>
+              );
+            }}
+          />
         </DataTableCard>
 
         <Card className="space-y-4 bg-white/95 p-5 sm:p-6">
@@ -298,16 +378,6 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                       rel="noreferrer"
                     >
                       Instagram
-                    </a>
-                  ) : null}
-                  {selected.portfolioUrl ? (
-                    <a
-                      className="underline underline-offset-4"
-                      href={selected.portfolioUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Portfolio
                     </a>
                   ) : null}
                 </div>

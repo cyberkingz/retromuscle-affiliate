@@ -19,6 +19,9 @@ interface SiteHeaderProps {
     | "/creators"
     | "/join"
     | "/dashboard"
+    | "/uploads"
+    | "/payouts"
+    | "/settings"
     | "/admin"
     | "/admin/applications";
 }
@@ -26,6 +29,13 @@ interface SiteHeaderProps {
 const marketingLinks: Array<{ href: Route; label: string }> = [
   { href: "/", label: "Pourquoi rejoindre" },
   { href: "/creators", label: "Revenus" }
+];
+
+const creatorLinks: Array<{ href: Route; label: string }> = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/uploads", label: "Uploads" },
+  { href: "/payouts", label: "Paiements" },
+  { href: "/settings", label: "Settings" }
 ];
 
 const adminLinks: Array<{ href: Route; label: string }> = [
@@ -36,18 +46,24 @@ const adminLinks: Array<{ href: Route; label: string }> = [
 export function SiteHeader({ currentPath }: SiteHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const auth = useAuth();
+  const isAdmin = auth.role === "admin" && Boolean(auth.user);
+  const isAffiliate = auth.role === "affiliate" && Boolean(auth.user);
+  const affiliateReady = isAffiliate && auth.redirectTarget === "/dashboard";
+
   const appTarget = auth.redirectTarget ?? "/onboarding";
-  const appLabel = auth.role === "admin" ? "Admin" : "Mon espace";
-  const links = auth.role === "admin" && auth.session ? adminLinks : marketingLinks;
+  const appLabel = isAdmin ? "Admin" : affiliateReady ? "Dashboard" : "Mon espace";
+  const links = isAdmin ? adminLinks : affiliateReady ? creatorLinks : marketingLinks;
 
   return (
     <header className="sticky top-0 z-50">
-      <div className="border-b border-secondary/60 bg-secondary text-secondary-foreground">
-        <div className="container-wide flex h-8 items-center justify-center text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
-          <span className="hidden xs:inline">PROGRAMME AFFILIE OUVERT • </span>
-          REPONSE SOUS 48H • PAIEMENTS MENSUELS
+      {!isAdmin ? (
+        <div className="border-b border-secondary/60 bg-secondary text-secondary-foreground">
+          <div className="container-wide flex h-8 items-center justify-center text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
+            <span className="hidden xs:inline">PROGRAMME AFFILIE OUVERT • </span>
+            REPONSE SOUS 48H • PAIEMENTS MENSUELS
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="border-b border-line bg-background/95 backdrop-blur">
         <div className="container-wide flex h-16 items-center justify-between md:h-20 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4">
@@ -89,11 +105,13 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
-            {!auth.loading && auth.session ? (
+            {!auth.loading && auth.user ? (
               <>
-                <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
-                  <Link href={appTarget}>{appLabel}</Link>
-                </Button>
+                {!affiliateReady ? (
+                  <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
+                    <Link href={appTarget}>{appLabel}</Link>
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
                   className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
@@ -189,15 +207,17 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                 );
               })}
 
-              {!auth.loading && auth.session ? (
+              {!auth.loading && auth.user ? (
                 <>
-                  <Link
-                    href={appTarget}
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
-                  >
-                    {appLabel}
-                  </Link>
+                  {!affiliateReady ? (
+                    <Link
+                      href={appTarget}
+                      onClick={() => setMobileOpen(false)}
+                      className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                    >
+                      {appLabel}
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {

@@ -3,8 +3,12 @@ import { NextResponse } from "next/server";
 import { recordVideoUpload } from "@/application/use-cases/record-video-upload";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
 import { requireApiRole } from "@/features/auth/server/api-guards";
+import { setAuthCookies } from "@/features/auth/server/auth-cookies";
+import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
+import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
-import { getRequestId } from "@/lib/request-id";
+import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
 
 interface UploadVideoPayload {
@@ -64,33 +68,44 @@ function parsePayload(body: unknown): UploadVideoPayload {
 }
 
 export async function POST(request: Request) {
-  const requestId = getRequestId(request);
-  const limited = rateLimit({ request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
+  const ctx = createApiContext(request);
+  if (!isAllowedOrigin(request)) {
+    return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
+  }
+
+  const limited = rateLimit({ ctx, request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
   if (limited) {
-    limited.headers.set("x-request-id", requestId);
     return limited;
   }
 
-  const auth = await requireApiRole(request, "affiliate", { requestId });
+  const auth = await requireApiRole(request, "affiliate", { ctx });
   if (!auth.ok) {
     return auth.response;
   }
 
   let payload: UploadVideoPayload;
   try {
-    payload = parsePayload(await request.json());
+    payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 }));
   } catch (error) {
-    const response = NextResponse.json(
-      { message: error instanceof Error ? error.message : "Invalid payload" },
-      { status: 400 }
-    );
-    response.headers.set("x-request-id", requestId);
+    const response = apiError(ctx, {
+      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
+      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
+      message:
+        error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
+          ? "Payload trop volumineux."
+          : error instanceof Error && error.message === "INVALID_JSON"
+            ? "Payload invalide."
+            : error instanceof Error
+              ? error.message
+              : "Invalid payload"
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
   if (!payload.fileUrl.startsWith(`${auth.session.userId}/`)) {
-    const response = NextResponse.json({ message: "Invalid fileUrl prefix" }, { status: 400 });
-    response.headers.set("x-request-id", requestId);
+    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid fileUrl prefix" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
@@ -105,15 +120,20 @@ export async function POST(request: Request) {
       fileSizeMb: payload.fileSizeMb
     });
 
-    const response = NextResponse.json(video, { status: 201 });
-    response.headers.set("x-request-id", requestId);
+    const response = apiJson(ctx, video, { status: 201 });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const response = NextResponse.json(
-      { message: error instanceof Error ? error.message : "Unable to record upload" },
-      { status: 500 }
-    );
-    response.headers.set("x-request-id", requestId);
+    // Best-effort cleanup: if DB insert fails, remove the previously uploaded object.
+    try {
+      const supabase = createSupabaseServerClient();
+      await supabase.storage.from("videos").remove([payload.fileUrl]);
+    } catch {
+      // ignore
+    }
+
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to record upload" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, PlayCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ interface LandingHeroProps {
   title: string;
   subtitle: string;
   primaryCta: { label: string; href: Route };
-  secondaryCta: { label: string; href: Route };
   visuals: {
     logoUrl: string;
     primaryImageUrl: string;
@@ -25,7 +24,6 @@ export function LandingHero({
   title,
   subtitle,
   primaryCta,
-  secondaryCta,
   visuals
 }: LandingHeroProps) {
   return (
@@ -38,7 +36,7 @@ export function LandingHero({
             </Badge>
           </div>
 
-          <h1 className="font-display text-xl uppercase leading-[1.02] tracking-tight text-secondary sm:text-2xl md:text-3xl lg:text-4xl mx-auto lg:mx-0">
+          <h1 className="font-display text-lg uppercase leading-[1.04] tracking-tight text-secondary sm:text-xl md:text-2xl lg:text-3xl mx-auto lg:mx-0">
             {title}
           </h1>
 
@@ -53,12 +51,6 @@ export function LandingHero({
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-14 w-full px-8 text-base sm:w-auto">
-              <Link href={secondaryCta.href}>
-                <PlayCircle className="h-5 w-5" />
-                {secondaryCta.label}
-              </Link>
-            </Button>
           </div>
 
           <div className="grid gap-3 pt-2 sm:grid-cols-3">
@@ -67,12 +59,12 @@ export function LandingHero({
               <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Reponse a ton profil</p>
             </div>
             <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">90%</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Validation cible</p>
+              <p className="font-display text-3xl uppercase leading-none text-secondary">Mensuel</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Missions + paiement</p>
             </div>
             <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">50+</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Affilies actifs</p>
+              <p className="font-display text-3xl uppercase leading-none text-secondary">Brief</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Specs claires</p>
             </div>
           </div>
 
@@ -105,7 +97,7 @@ export function LandingHero({
               </div>
             </div>
 
-            <div className="space-y-3 p-4 pb-5 sm:p-5 sm:pb-6">
+            <div className="space-y-3 p-4 pb-7 sm:p-5 sm:pb-8">
               <div className="grid gap-3 sm:grid-cols-[0.7fr_1.3fr]">
                 <div className="relative h-32 overflow-hidden rounded-2xl border border-line">
                   <Image

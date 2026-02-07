@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
-
 import { getAdminDashboardData } from "@/application/use-cases/get-admin-dashboard-data";
 import { requireApiRole } from "@/features/auth/server/api-guards";
+import { setAuthCookies } from "@/features/auth/server/auth-cookies";
+import { apiError, apiJson, createApiContext } from "@/lib/api-response";
 import { parseMonthParam } from "@/lib/validation";
 
 export async function GET(request: Request) {
-  const auth = await requireApiRole(request, "admin");
+  const ctx = createApiContext(request);
+  const auth = await requireApiRole(request, "admin", { ctx });
   if (!auth.ok) {
     return auth.response;
   }
@@ -15,16 +16,17 @@ export async function GET(request: Request) {
   try {
     month = parseMonthParam(searchParams.get("month"));
   } catch (error) {
-    const response = NextResponse.json(
-      { message: error instanceof Error ? error.message : "Invalid query params" },
-      { status: 400 }
-    );
-    response.headers.set("x-request-id", auth.requestId);
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: error instanceof Error ? error.message : "Invalid query params"
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
   const data = await getAdminDashboardData({ month });
-  const response = NextResponse.json(data);
-  response.headers.set("x-request-id", auth.requestId);
+  const response = apiJson(ctx, data, { status: 200 });
+  if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
   return response;
 }

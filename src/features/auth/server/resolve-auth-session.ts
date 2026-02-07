@@ -1,9 +1,11 @@
 import "server-only";
 
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/infrastructure/supabase/server-client";
+import type { AuthRole, RedirectTarget } from "@/features/auth/types";
+import { ACCESS_TOKEN_COOKIE_NAME } from "@/features/auth/server/auth-cookies";
 
-export type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
-export type AuthRole = "admin" | "affiliate";
+export type { AuthRole, RedirectTarget } from "@/features/auth/types";
+export { ACCESS_TOKEN_COOKIE_NAME } from "@/features/auth/server/auth-cookies";
 
 export interface ResolvedAuthSession {
   role: AuthRole;
@@ -12,7 +14,6 @@ export interface ResolvedAuthSession {
   email?: string;
 }
 
-export const ACCESS_TOKEN_COOKIE_NAME = "rm_access_token";
 const MAX_ACCESS_TOKEN_LENGTH = 4096;
 
 function normalizeRole(value: unknown): string {
@@ -38,14 +39,6 @@ export function sanitizeAccessToken(value: string | null | undefined): string | 
   }
 
   return token;
-}
-
-export function readBearerToken(authorizationHeader: string | null): string | null {
-  if (!authorizationHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  return sanitizeAccessToken(authorizationHeader.slice("Bearer ".length));
 }
 
 export async function resolveAuthSessionFromAccessToken(

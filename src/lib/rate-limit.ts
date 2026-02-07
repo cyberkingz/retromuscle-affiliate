@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { apiError, type ApiContext } from "@/lib/api-response";
+
 interface RateLimitOptions {
   request: Request;
+  ctx: ApiContext;
   key: string;
   limit: number;
   windowMs: number;
@@ -48,17 +51,15 @@ export function rateLimit(options: RateLimitOptions): NextResponse | null {
     return null;
   }
 
-  return NextResponse.json(
-    { message: "Too many requests" },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": String(retryAfterSeconds),
-        "X-RateLimit-Limit": String(options.limit),
-        "X-RateLimit-Remaining": String(remaining),
-        "X-RateLimit-Reset": String(Math.floor(state.resetAt / 1000))
-      }
+  return apiError(options.ctx, {
+    status: 429,
+    code: "RATE_LIMITED",
+    message: "Too many requests",
+    headers: {
+      "Retry-After": String(retryAfterSeconds),
+      "X-RateLimit-Limit": String(options.limit),
+      "X-RateLimit-Remaining": String(remaining),
+      "X-RateLimit-Reset": String(Math.floor(state.resetAt / 1000))
     }
-  );
+  });
 }
-

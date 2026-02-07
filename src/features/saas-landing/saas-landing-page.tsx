@@ -7,6 +7,8 @@ import { PricingStrip } from "@/features/saas-landing/components/pricing-strip";
 import { FaqGrid } from "@/features/saas-landing/components/faq-grid";
 import { SocialProofWall } from "@/features/saas-landing/components/social-proof-wall";
 import { ActionBand } from "@/features/saas-landing/components/action-band";
+import { EarningsSection } from "@/features/saas-landing/components/earnings-section";
+import { QualifierSection } from "@/features/saas-landing/components/qualifier-section";
 
 interface SaasLandingPageProps {
   data: SaasLandingData;
@@ -19,6 +21,8 @@ export function SaasLandingPage({ data }: SaasLandingPageProps) {
       <TrustStrip points={data.trustPoints} />
       <PainValueGrid items={data.painToValue} />
       <FlowSection items={data.flow} />
+      <EarningsSection {...data.earnings} />
+      <QualifierSection {...data.qualifier} />
       <SocialProofWall
         testimonials={data.socialProof.testimonials}
         trustedBy={data.socialProof.trustedBy}

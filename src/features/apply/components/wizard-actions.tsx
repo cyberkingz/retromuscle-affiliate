@@ -22,7 +22,7 @@ export function WizardActions({
   const isLastStep = step >= maxStep;
 
   return (
-    <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-4 sm:px-5">
+    <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-5 sm:px-6">
       <Button type="button" onClick={onPrev} disabled={step === 0} variant="outline" size="pill">
         Precedent
       </Button>

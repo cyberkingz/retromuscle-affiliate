@@ -2,6 +2,8 @@ import type {
   ApplicationStatus,
   Creator,
   CreatorApplication,
+  CreatorContractSignature,
+  CreatorPayoutProfile,
   MixDefinition,
   MonthlyTracking,
   PackageDefinition,
@@ -24,6 +26,13 @@ export interface CreatorRepository {
   listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]>;
   listVideosByTracking(monthlyTrackingId: string): Promise<VideoAsset[]>;
   listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]>;
+  createRushAsset(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    fileName: string;
+    fileSizeMb: number;
+    fileUrl?: string | null;
+  }): Promise<RushAsset>;
   createVideoAsset(input: {
     monthlyTrackingId: string;
     creatorId: string;
@@ -44,10 +53,25 @@ export interface CreatorRepository {
     monthlyTrackingId: string;
     delivered: MonthlyTracking["delivered"];
   }): Promise<MonthlyTracking>;
+  markMonthlyTrackingPaid(input: { monthlyTrackingId: string; paidAt?: string | null }): Promise<MonthlyTracking>;
 
   listRates(): Promise<VideoRate[]>;
   listPackageDefinitions(): Promise<PackageDefinition[]>;
   listMixDefinitions(): Promise<MixDefinition[]>;
+
+  // Creator payout details (creator-facing + admin views)
+  getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null>;
+  upsertPayoutProfile(input: {
+    creatorId: string;
+    method: CreatorPayoutProfile["method"];
+    accountHolderName?: string | null;
+    iban?: string | null;
+    paypalEmail?: string | null;
+    stripeAccount?: string | null;
+  }): Promise<CreatorPayoutProfile>;
+
+  // Contract signatures (creator + admin views)
+  listContractSignaturesByCreatorId(creatorId: string): Promise<CreatorContractSignature[]>;
 
   // Applications (admin-facing)
   listCreatorApplications(status?: ApplicationStatus): Promise<CreatorApplication[]>;

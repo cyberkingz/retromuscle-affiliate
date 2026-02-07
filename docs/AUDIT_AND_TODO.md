@@ -14,7 +14,7 @@ Audit -> TODO -> Execute -> Audit again.
 - Storage buckets + upload/review pipeline for videos is implemented (private buckets + signed previews + admin review).
 
 ### Current risks (production)
-- Auth cookie uses a JS-written access token (`rm_access_token`) and is not HttpOnly (XSS risk).
+- CSRF/origin hardening for state-changing routes is still needed (SameSite=Lax helps, but we should add explicit origin checks for sensitive POST endpoints).
 - Supabase dashboard security feature “Leaked Password Protection” is disabled (manual toggle).
 - UX/design still needs a polishing pass across the whole app (padding consistency, tables, mobile conversion).
 
@@ -44,12 +44,12 @@ Admin: Login -> Applications review -> Video review -> Payout ops
 ## 4) Backend / API / Auth Audit
 
 ### What exists
-- Bearer-token protected admin endpoints.
+- Cookie-based auth (HttpOnly) for all API endpoints.
 - Creator dashboard endpoint verifies creator ownership unless admin.
-- Redirect-target resolver used by middleware to enforce route access.
+- Redirect-target logic is enforced server-side by `protectPage()` (role-based redirects without client JS).
 
 ### Issues to fix
-- Move away from JS-set access token cookie to a secure HttpOnly session approach.
+- Standardize API error envelope + codes across all routes (some still return `{ message }` only).
 - Add rate-limits + consistent error envelopes.
 - Add tests for critical flows (auth, onboarding save, upload review).
 - Supabase Auth incident: `/auth/v1/token` 500 "Database error querying schema" can happen when `auth.users.email_change` is NULL
@@ -79,9 +79,9 @@ Legend:
 - [x] Prefer anon JWT key over publishable key in browser Supabase client (fixes /auth/v1/token reliability).
 - [x] Enforce `SUPABASE_SERVICE_ROLE_KEY` for server client (avoid using non-JWT `sb_secret_*`).
 - [x] Fix Supabase linter `auth_rls_initplan` warnings for auth.jwt() policies (new migration).
-- [ ] Replace `rm_access_token` JS cookie with HttpOnly cookie session (Supabase SSR approach).
+- [x] Replace client-side token passing with HttpOnly cookie session (server-issued cookies + refresh).
 - [ ] Add a strict CSP + security headers (at least `frame-ancestors`, `object-src`, `base-uri`).
-- [ ] Add basic API rate limiting (admin + upload endpoints).
+- [x] Add basic API rate limiting (admin + upload endpoints).
 - [ ] Standardize API error envelope `{ code, message, details? }` everywhere.
 - [ ] Ensure `/api/*` never leaks raw DB errors (audit all routes).
 - [ ] Add a “session expired” UX (clear cookie + redirect + toast).

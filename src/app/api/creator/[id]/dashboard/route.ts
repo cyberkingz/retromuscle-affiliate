@@ -1,46 +1,38 @@
-import { NextResponse } from "next/server";
-
 import { getCreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import {
   findCreatorIdForUser,
   type ResolvedAuthSession
 } from "@/features/auth/server/resolve-auth-session";
 import { requireApiSession } from "@/features/auth/server/api-guards";
+import { setAuthCookies } from "@/features/auth/server/auth-cookies";
+import { apiError, apiJson, createApiContext } from "@/lib/api-response";
 import { isUuid, parseMonthParam } from "@/lib/validation";
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
-}
-
-function safeMessage(error: unknown, fallback: string) {
-  if (process.env.NODE_ENV !== "production" && error instanceof Error) {
-    return error.message;
-  }
-  return fallback;
-}
-
-function jsonWithRequestId(requestId: string, status: number, body: Record<string, unknown>) {
-  const response = NextResponse.json(body, { status });
-  response.headers.set("x-request-id", requestId);
-  return response;
+  }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
-  const auth = await requireApiSession(request);
+  const ctx = createApiContext(request);
+  const auth = await requireApiSession(request, { ctx });
   if (!auth.ok) {
     return auth.response;
   }
 
   const authSession: ResolvedAuthSession = auth.session;
   if (authSession.role !== "admin" && authSession.target !== "/dashboard") {
-    return jsonWithRequestId(auth.requestId, 403, { message: "Forbidden" });
+    const response = apiError(ctx, { status: 403, code: "FORBIDDEN", message: "Forbidden" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
   }
 
-  const creatorId = context.params.id?.trim();
+  const creatorId = (await context.params).id?.trim();
   if (!creatorId || !isUuid(creatorId)) {
-    return jsonWithRequestId(auth.requestId, 400, { message: "Invalid creator id" });
+    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid creator id" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
   }
 
   if (authSession.role !== "admin") {
@@ -48,11 +40,15 @@ export async function GET(request: Request, context: RouteContext) {
     try {
       ownCreatorId = await findCreatorIdForUser({ userId: authSession.userId, email: authSession.email });
     } catch {
-      return jsonWithRequestId(auth.requestId, 500, { message: "Unable to resolve creator mapping" });
+      const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to resolve creator mapping" });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
     }
 
     if (!ownCreatorId || ownCreatorId !== creatorId) {
-      return jsonWithRequestId(auth.requestId, 403, { message: "Forbidden" });
+      const response = apiError(ctx, { status: 403, code: "FORBIDDEN", message: "Forbidden" });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
     }
   }
 
@@ -61,17 +57,28 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     month = parseMonthParam(searchParams.get("month"));
   } catch (error) {
-    return jsonWithRequestId(auth.requestId, 400, { message: safeMessage(error, "Invalid query params") });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: error instanceof Error ? error.message : "Invalid query params"
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
   }
 
   try {
     const data = await getCreatorDashboardData({ creatorId, month });
-    const response = NextResponse.json(data);
-    response.headers.set("x-request-id", auth.requestId);
+    const response = apiJson(ctx, data, { status: 200 });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const message = safeMessage(error, "Unable to load dashboard");
     const status = error instanceof Error && error.message.toLowerCase().includes("not found") ? 404 : 500;
-    return jsonWithRequestId(auth.requestId, status, { message });
+    const response = apiError(ctx, {
+      status,
+      code: status === 404 ? "NOT_FOUND" : "INTERNAL",
+      message: status === 404 ? "Not found" : "Unable to load dashboard"
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
   }
 }

@@ -2,7 +2,7 @@ import { getRepository } from "@/application/dependencies";
 import { MIX_LABELS, PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
-import { VIDEO_TYPES } from "@/domain/types";
+import { VIDEO_TYPES, type VideoType } from "@/domain/types";
 import { clampPercent } from "@/lib/progress";
 import { resolveMonth } from "@/application/use-cases/shared";
 
@@ -53,7 +53,7 @@ export interface CreatorDashboardData {
     rejectedCount: number;
     recentVideos: Array<{
       id: string;
-      videoType: string;
+      videoType: VideoType;
       status: string;
       createdAt: string;
       fileUrl: string;
@@ -63,7 +63,22 @@ export interface CreatorDashboardData {
   rushes: {
     totalFiles: number;
     totalSizeMb: number;
+    recentRushes: Array<{
+      id: string;
+      fileName: string;
+      fileSizeMb: number;
+      fileUrl?: string;
+      createdAt: string;
+    }>;
   };
+  activity: Array<{
+    id: string;
+    kind: "upload" | "approved" | "rejected" | "rush" | "paid" | "contract";
+    title: string;
+    detail?: string;
+    timestamp: string;
+    tone: "neutral" | "success" | "warning";
+  }>;
   paymentHistory: Array<{
     month: string;
     deliveredTotal: number;
@@ -142,6 +157,76 @@ export async function getCreatorDashboardData(input: {
     repository.listRushesByTracking(currentTracking.id)
   ]);
 
+  const activity = [
+    creator.contractSignedAt
+      ? {
+          id: `contract-${creator.contractSignedAt}`,
+          kind: "contract" as const,
+          title: "Contrat signe",
+          timestamp: creator.contractSignedAt,
+          tone: "success" as const
+        }
+      : null,
+    currentTracking.paidAt
+      ? {
+          id: `paid-${currentTracking.paidAt}`,
+          kind: "paid" as const,
+          title: "Paiement effectue",
+          timestamp: currentTracking.paidAt,
+          tone: "success" as const
+        }
+      : null,
+    ...uploadedVideos.flatMap((video) => {
+      const label = VIDEO_TYPE_LABELS[video.videoType];
+      const items: CreatorDashboardData["activity"] = [
+        {
+          id: `upload-${video.id}`,
+          kind: "upload" as const,
+          title: `Upload ${label}`,
+          detail: `${video.durationSeconds}s • ${video.resolution}`,
+          timestamp: video.createdAt,
+          tone: "neutral" as const
+        }
+      ];
+
+      if (video.reviewedAt) {
+        if (video.status === "approved") {
+          items.push({
+            id: `approved-${video.id}`,
+            kind: "approved" as const,
+            title: `Valide: ${label}`,
+            timestamp: video.reviewedAt,
+            tone: "success" as const
+          });
+        }
+
+        if (video.status === "rejected") {
+          items.push({
+            id: `rejected-${video.id}`,
+            kind: "rejected" as const,
+            title: `Rejete: ${label}`,
+            detail: video.rejectionReason ?? undefined,
+            timestamp: video.reviewedAt,
+            tone: "warning" as const
+          });
+        }
+      }
+
+      return items;
+    }),
+    ...rushes.map((rush) => ({
+      id: `rush-${rush.id}`,
+      kind: "rush" as const,
+      title: `Rush: ${rush.fileName}`,
+      detail: `${rush.fileSizeMb}MB`,
+      timestamp: rush.createdAt,
+      tone: "neutral" as const
+    }))
+  ]
+    .filter(Boolean)
+    .sort((a, b) => b!.timestamp.localeCompare(a!.timestamp))
+    .slice(0, 12) as CreatorDashboardData["activity"];
+
   const paymentHistory = trackings.map((tracking) => {
     const pkg = packageMap.get(tracking.packageTier);
     if (!pkg) {
@@ -212,7 +297,7 @@ export async function getCreatorDashboardData(input: {
       rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
       recentVideos: uploadedVideos.slice(0, 8).map((video) => ({
         id: video.id,
-        videoType: VIDEO_TYPE_LABELS[video.videoType],
+        videoType: video.videoType,
         status: video.status,
         createdAt: video.createdAt,
         fileUrl: video.fileUrl,
@@ -221,8 +306,16 @@ export async function getCreatorDashboardData(input: {
     },
     rushes: {
       totalFiles: rushes.length,
-      totalSizeMb: rushes.reduce((sum, rush) => sum + rush.fileSizeMb, 0)
+      totalSizeMb: rushes.reduce((sum, rush) => sum + rush.fileSizeMb, 0),
+      recentRushes: rushes.slice(0, 10).map((rush) => ({
+        id: rush.id,
+        fileName: rush.fileName,
+        fileSizeMb: rush.fileSizeMb,
+        fileUrl: rush.fileUrl,
+        createdAt: rush.createdAt
+      }))
     },
+    activity,
     paymentHistory
   };
 }

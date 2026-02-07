@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { CardSection } from "@/components/layout/card-section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ApplyMarketingColumn } from "@/features/apply/components/apply-marketing-column";
 import { AuthCredentialsPanel } from "@/features/apply/components/auth-credentials-panel";
@@ -23,31 +23,33 @@ export function SignupPage({ marketing }: SignupPageProps) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!flow.loadingSession && flow.session) {
+    if (!flow.loadingSession && flow.user) {
       let cancelled = false;
 
-      resolveRedirectTarget(flow.session.access_token).then((target) => {
-        if (!cancelled) {
-          router.replace(target);
-        }
-      }).catch(() => {
-        if (!cancelled) {
-          router.replace("/onboarding");
-        }
-      });
+      resolveRedirectTarget()
+        .then((target) => {
+          if (!cancelled) {
+            router.replace(target);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            router.replace("/onboarding");
+          }
+        });
 
       return () => {
         cancelled = true;
       };
     }
-  }, [flow.loadingSession, flow.session, router]);
+  }, [flow.loadingSession, flow.user, router]);
 
   return (
-    <div className="mx-auto max-w-[1280px] pt-2 sm:pt-4 md:pt-6">
+    <div className="mx-auto max-w-[1280px]">
       <div className="grid gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch xl:grid-cols-[1fr_420px]">
         {/* Left Column: Sign up Form */}
         <section className="space-y-4">
-          <Card className="border-line bg-white/95 p-5 sm:p-7 md:p-8">
+          <CardSection padding="lg">
             <SectionHeading
               eyebrow="Inscription"
               title="Cree ton compte createur"
@@ -59,10 +61,10 @@ export function SignupPage({ marketing }: SignupPageProps) {
                 <div className="flex h-40 items-center justify-center">
                   <p className="text-sm animate-pulse text-foreground/70">Chargement session...</p>
                 </div>
-              ) : flow.session ? (
+              ) : flow.user ? (
                 <div className="space-y-4 py-4">
                   <div className="rounded-xl border border-mint/20 bg-mint/5 p-4 text-sm text-foreground/80">
-                    Connecte en tant que <span className="font-semibold">{flow.session.user.email}</span>.
+                    Connecte en tant que <span className="font-semibold">{flow.user.email}</span>.
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button asChild size="pill">
@@ -91,7 +93,7 @@ export function SignupPage({ marketing }: SignupPageProps) {
               )}
             </div>
 
-            {!flow.loadingSession && !flow.session ? (
+            {!flow.loadingSession && !flow.user ? (
               <p className="mt-5 text-center text-sm text-foreground/70 sm:text-left">
                 Deja inscrit ?{" "}
                 <Link href="/login" className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80">
@@ -99,19 +101,19 @@ export function SignupPage({ marketing }: SignupPageProps) {
                 </Link>
               </p>
             ) : null}
-          </Card>
+          </CardSection>
 
           <FlashMessages statusMessage={flow.statusMessage} />
         </section>
 
         {/* Right Column: Marketing info */}
         <aside className="hidden lg:block">
-          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.user)} />
         </aside>
 
         {/* Mobile Marketing info (shown below on small screens) */}
         <aside className="lg:hidden">
-          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.user)} />
         </aside>
       </div>
     </div>

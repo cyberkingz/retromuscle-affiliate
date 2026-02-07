@@ -6,6 +6,7 @@ import { PayoutBreakdownTable } from "@/features/creator-dashboard/components/pa
 import { QuotasGrid } from "@/features/creator-dashboard/components/quotas-grid";
 import { RushesSummaryCard } from "@/features/creator-dashboard/components/rushes-summary-card";
 import { UploadCard } from "@/features/creator-dashboard/components/upload-card";
+import { ActivityFeedCard } from "@/features/creator-dashboard/components/activity-feed-card";
 import { formatCurrency } from "@/lib/currency";
 import { monthToLabel, toShortDate } from "@/lib/date";
 
@@ -48,10 +49,14 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
           recentVideos={data.upload.recentVideos}
         />
         <RushesSummaryCard
+          monthlyTrackingId={data.upload.monthlyTrackingId}
           totalFiles={data.rushes.totalFiles}
           totalSizeLabel={`${(data.rushes.totalSizeMb / 1024).toFixed(1)} GB`}
+          rushes={data.rushes.recentRushes}
         />
       </div>
+
+      <ActivityFeedCard items={data.activity} />
 
       <PayoutBreakdownTable items={data.payoutBreakdown} />
       <PaymentHistoryTable history={data.paymentHistory} />

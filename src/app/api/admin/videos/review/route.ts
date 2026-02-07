@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
 import { requireApiRole } from "@/features/auth/server/api-guards";
+import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
+import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
-import { getRequestId } from "@/lib/request-id";
+import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
 
 interface ReviewVideoPayload {
@@ -41,27 +44,38 @@ function parsePayload(body: unknown): ReviewVideoPayload {
 }
 
 export async function POST(request: Request) {
-  const requestId = getRequestId(request);
-  const limited = rateLimit({ request, key: "admin:videos:review", limit: 120, windowMs: 60_000 });
+  const ctx = createApiContext(request);
+  if (!isAllowedOrigin(request)) {
+    return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
+  }
+
+  const limited = rateLimit({ ctx, request, key: "admin:videos:review", limit: 120, windowMs: 60_000 });
   if (limited) {
-    limited.headers.set("x-request-id", requestId);
     return limited;
   }
 
-  const auth = await requireApiRole(request, "admin", { requestId });
+  const auth = await requireApiRole(request, "admin", { ctx });
   if (!auth.ok) {
     return auth.response;
   }
 
   let payload: ReviewVideoPayload;
   try {
-    payload = parsePayload(await request.json());
+    payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 }));
   } catch (error) {
-    const response = NextResponse.json(
-      { message: error instanceof Error ? error.message : "Invalid payload" },
-      { status: 400 }
-    );
-    response.headers.set("x-request-id", requestId);
+    const response = apiError(ctx, {
+      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
+      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
+      message:
+        error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
+          ? "Payload trop volumineux."
+          : error instanceof Error && error.message === "INVALID_JSON"
+            ? "Payload invalide."
+            : error instanceof Error
+              ? error.message
+              : "Invalid payload"
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
@@ -75,7 +89,7 @@ export async function POST(request: Request) {
 
     void writeAdminAuditLog({
       request,
-      requestId,
+      requestId: ctx.requestId,
       adminUserId: auth.session.userId,
       action: `video.${payload.decision}`,
       entityType: "video",
@@ -83,18 +97,15 @@ export async function POST(request: Request) {
       metadata: {
         decision: payload.decision,
         rejectionReason: payload.rejectionReason ?? null
-      }
+        }
     });
 
-    const response = NextResponse.json(result, { status: 200 });
-    response.headers.set("x-request-id", requestId);
+    const response = apiJson(ctx, result, { status: 200 });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const response = NextResponse.json(
-      { message: error instanceof Error ? error.message : "Unable to review video" },
-      { status: 500 }
-    );
-    response.headers.set("x-request-id", requestId);
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to review video" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }

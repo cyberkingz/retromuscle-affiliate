@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CardSection } from "@/components/layout/card-section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { FlashMessages } from "@/features/apply/components/flash-messages";
 import { PendingReviewPanel } from "@/features/apply/components/pending-review-panel";
@@ -23,36 +24,57 @@ export function OnboardingFlow() {
   const flow = useOnboardingFlow();
   const router = useRouter();
   const isPendingReview = flow.application?.status === "pending_review";
+  const focusField = flow.focusField;
+  const clearFocusField = flow.clearFocusField;
 
   useEffect(() => {
-    if (flow.loadingSession || !flow.session) {
+    if (flow.loadingSession || !flow.user) {
       return;
     }
 
     let cancelled = false;
-    resolveRedirectTarget(flow.session.access_token).then((target) => {
-      if (!cancelled && target !== "/onboarding") {
-        router.replace(target);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        router.replace("/login");
-      }
-    });
+    resolveRedirectTarget()
+      .then((target) => {
+        if (!cancelled && target !== "/onboarding") {
+          router.replace(target);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          router.replace("/login");
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [flow.loadingSession, flow.session, router]);
+  }, [flow.loadingSession, flow.user, router]);
+
+  useEffect(() => {
+    if (!focusField) {
+      return;
+    }
+
+    const field = focusField;
+    // Defer to ensure the step content is rendered.
+    requestAnimationFrame(() => {
+      const element = document.querySelector<HTMLElement>(`[data-field="${field}"]`);
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+      clearFocusField();
+    });
+  }, [focusField, clearFocusField]);
 
   function moveToStep(nextStep: number) {
     flow.setStep(nextStep);
   }
 
   return (
-    <section className="mx-auto w-full max-w-[860px] space-y-4 pt-8 sm:pt-10">
-      {!flow.session ? (
-        <Card className="border-line bg-white/95 p-5 sm:p-7">
+    <section className="mx-auto w-full max-w-[860px] space-y-4">
+      {!flow.user ? (
+        <CardSection>
           <SectionHeading
             eyebrow="Onboarding"
             title="Connecte-toi pour continuer"
@@ -66,9 +88,9 @@ export function OnboardingFlow() {
               <Link href="/apply">Creer un compte</Link>
             </Button>
           </div>
-        </Card>
+        </CardSection>
       ) : (
-        <Card className="border-line bg-white/95 p-5 sm:p-7">
+        <CardSection>
           <SectionHeading
             eyebrow="Onboarding createur"
             title="Finalise ton inscription"
@@ -77,7 +99,7 @@ export function OnboardingFlow() {
 
           <div className="mt-5 space-y-4">
             <WizardHeader
-              email={flow.session.user.email}
+              email={flow.user.email ?? undefined}
               statusLabel={flow.application ? statusLabel(flow.application.status) : undefined}
               statusTone={flow.application ? statusTone(flow.application.status) : "neutral"}
               onSignOut={async () => {
@@ -99,44 +121,51 @@ export function OnboardingFlow() {
 
             {!isPendingReview ? (
               <>
-                <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
-                  {flow.step === 0 ? (
-                    <StepPersonalForm
-                      form={flow.form}
-                      disabled={!flow.canEdit}
-                      onFieldChange={flow.updateField}
-                    />
-                  ) : null}
+                <div className="space-y-4">
+                  <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
+                    {flow.step === 0 ? (
+                      <StepPersonalForm
+                        form={flow.form}
+                        disabled={!flow.canEdit}
+                        onFieldChange={flow.updateField}
+                      />
+                    ) : null}
 
-                  {flow.step === 1 ? (
-                    <StepProfileForm
-                      form={flow.form}
-                      disabled={!flow.canEdit}
-                      onFieldChange={flow.updateField}
-                    />
-                  ) : null}
+                    {flow.step === 1 ? (
+                      <StepProfileForm
+                        form={flow.form}
+                        disabled={!flow.canEdit}
+                        onFieldChange={flow.updateField}
+                      />
+                    ) : null}
 
-                  {flow.step === 2 ? (
-                    <StepPlanForm
-                      form={flow.form}
-                      options={flow.options}
-                      disabled={!flow.canEdit}
-                      onFieldChange={flow.updateField}
-                    />
-                  ) : null}
+                    {flow.step === 2 ? (
+                      <StepPlanForm
+                        form={flow.form}
+                        options={flow.options}
+                        disabled={!flow.canEdit}
+                        onFieldChange={flow.updateField}
+                      />
+                    ) : null}
+                  </div>
+
+                  <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
+
+                  <WizardActions
+                    step={flow.step}
+                    maxStep={WIZARD_STEPS.length - 1}
+                    canEdit={flow.canEdit}
+                    submitting={flow.submitting}
+                    onPrev={() => moveToStep(flow.step - 1)}
+                    onNext={() => {
+                      if (!flow.validateStep(flow.step)) {
+                        return;
+                      }
+                      moveToStep(flow.step + 1);
+                    }}
+                    onSubmit={flow.submitApplication}
+                  />
                 </div>
-
-                <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
-
-                <WizardActions
-                  step={flow.step}
-                  maxStep={WIZARD_STEPS.length - 1}
-                  canEdit={flow.canEdit}
-                  submitting={flow.submitting}
-                  onPrev={() => moveToStep(flow.step - 1)}
-                  onNext={() => moveToStep(flow.step + 1)}
-                  onSubmit={flow.submitApplication}
-                />
               </>
             ) : null}
           </div>
@@ -147,7 +176,7 @@ export function OnboardingFlow() {
               <p className="mt-2 text-sm text-foreground/70">{flow.application.review_notes}</p>
             </Card>
           ) : null}
-        </Card>
+        </CardSection>
       )}
     </section>
   );

@@ -7,7 +7,7 @@ export const WIZARD_STEPS: Array<{ title: string; description: string }> = [
   },
   {
     title: "Profil createur",
-    description: "Reseaux, audience, portfolio"
+    description: "Reseaux et audience"
   },
   {
     title: "Package et mix",
@@ -16,32 +16,26 @@ export const WIZARD_STEPS: Array<{ title: string; description: string }> = [
 ];
 
 export const INITIAL_FORM: ApplicationFormState = {
-  handle: "",
   fullName: "",
-  email: "",
   whatsapp: "",
   country: "",
   address: "",
   socialTiktok: "",
   socialInstagram: "",
   followers: "",
-  portfolioUrl: "",
   packageTier: 20,
   mixName: "VOLUME"
 };
 
 export function mapRecordToForm(record: ApplicationRecord): ApplicationFormState {
   return {
-    handle: record.handle ?? "",
     fullName: record.full_name ?? "",
-    email: record.email ?? "",
     whatsapp: record.whatsapp ?? "",
     country: record.country ?? "",
     address: record.address ?? "",
     socialTiktok: record.social_tiktok ?? "",
     socialInstagram: record.social_instagram ?? "",
     followers: String(record.followers ?? 0),
-    portfolioUrl: record.portfolio_url ?? "",
     packageTier: record.package_tier ?? 20,
     mixName: record.mix_name ?? "VOLUME"
   };

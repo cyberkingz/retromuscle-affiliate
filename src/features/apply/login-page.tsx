@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-import { Card } from "@/components/ui/card";
+import { CardSection } from "@/components/layout/card-section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ApplyMarketingColumn } from "@/features/apply/components/apply-marketing-column";
 import { AuthCredentialsPanel } from "@/features/apply/components/auth-credentials-panel";
@@ -20,16 +20,20 @@ interface LoginPageProps {
 export function LoginPage({ marketing }: LoginPageProps) {
   const flow = useSignupFlow("signin");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
 
   useEffect(() => {
-    if (!flow.loadingSession && flow.session) {
+    if (!flow.loadingSession && flow.user) {
       let cancelled = false;
 
-      resolveRedirectTarget(flow.session.access_token).then((target) => {
+      resolveRedirectTarget()
+        .then((target) => {
         if (!cancelled) {
           router.replace(target);
         }
-      }).catch(() => {
+      })
+        .catch(() => {
         if (!cancelled) {
           router.replace("/onboarding");
         }
@@ -39,18 +43,24 @@ export function LoginPage({ marketing }: LoginPageProps) {
         cancelled = true;
       };
     }
-  }, [flow.loadingSession, flow.session, router]);
+  }, [flow.loadingSession, flow.user, router]);
 
   return (
-    <div className="mx-auto max-w-[1280px] pt-2 sm:pt-4 md:pt-6">
+    <div className="mx-auto max-w-[1280px]">
       <div className="grid gap-8 lg:grid-cols-[1fr_400px] lg:items-stretch xl:grid-cols-[1fr_420px]">
         <section className="space-y-4">
-          <Card className="border-line bg-white/95 p-5 sm:p-7 md:p-8">
+          <CardSection padding="lg">
             <SectionHeading
               eyebrow="Connexion"
               title="Connecte ton compte"
               subtitle="Entre tes identifiants pour acceder a ton espace."
             />
+
+            {reason === "expired" ? (
+              <div className="mt-5 rounded-2xl border border-secondary/20 bg-frost/60 p-4 text-sm text-foreground/75">
+                Ta session a expire. Reconnecte-toi pour continuer.
+              </div>
+            ) : null}
 
             <div className="mt-6 rounded-2xl border border-line bg-frost/70 p-4 sm:p-6">
               {flow.loadingSession ? (
@@ -81,17 +91,17 @@ export function LoginPage({ marketing }: LoginPageProps) {
                 S&apos;inscrire
               </Link>
             </p>
-          </Card>
+          </CardSection>
 
           <FlashMessages statusMessage={flow.statusMessage} />
         </section>
 
         <aside className="hidden lg:block">
-          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.user)} />
         </aside>
 
         <aside className="lg:hidden">
-          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.session)} />
+          <ApplyMarketingColumn data={marketing} authenticated={Boolean(flow.user)} />
         </aside>
       </div>
     </div>

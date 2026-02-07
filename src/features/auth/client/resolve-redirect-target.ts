@@ -1,5 +1,4 @@
-export type RedirectTarget = "/admin" | "/dashboard" | "/contract" | "/onboarding";
-export type AuthRole = "admin" | "affiliate";
+import type { AuthRole, RedirectTarget } from "@/features/auth/types";
 
 interface ResolveAuthRoutingResult {
   role: AuthRole | null;
@@ -22,12 +21,9 @@ function normalizeRole(value: unknown): AuthRole | null {
   return null;
 }
 
-export async function resolveAuthRouting(accessToken: string): Promise<ResolveAuthRoutingResult> {
+export async function resolveAuthRouting(): Promise<ResolveAuthRoutingResult> {
   const response = await fetch("/api/auth/redirect-target", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
     cache: "no-store"
   });
 
@@ -42,7 +38,7 @@ export async function resolveAuthRouting(accessToken: string): Promise<ResolveAu
   };
 }
 
-export async function resolveRedirectTarget(accessToken: string): Promise<RedirectTarget> {
-  const routing = await resolveAuthRouting(accessToken);
+export async function resolveRedirectTarget(): Promise<RedirectTarget> {
+  const routing = await resolveAuthRouting();
   return routing.target;
 }

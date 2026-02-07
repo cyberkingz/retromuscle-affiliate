@@ -7,6 +7,8 @@ import {
   VIDEO_TYPES,
   type Creator,
   type CreatorApplication,
+  type CreatorContractSignature,
+  type CreatorPayoutProfile,
   type CreatorStatus,
   type MixDefinition,
   type MixName,
@@ -77,6 +79,7 @@ interface RushRow {
   creator_id: string;
   file_name: string;
   file_size_mb: number;
+  file_url?: string | null;
   created_at: string;
 }
 
@@ -119,6 +122,31 @@ interface CreatorApplicationRow {
   review_notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface CreatorPayoutProfileRow {
+  creator_id: string;
+  method: string;
+  account_holder_name: string | null;
+  iban: string | null;
+  paypal_email: string | null;
+  stripe_account: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ContractSignatureRow {
+  id: string;
+  creator_id: string;
+  user_id: string;
+  contract_version: string;
+  contract_checksum: string;
+  signer_name: string;
+  acceptance: Record<string, unknown>;
+  ip: string | null;
+  user_agent: string | null;
+  signed_at: string;
+  created_at: string;
 }
 
 function toVideoType(value: string): VideoType {
@@ -167,6 +195,14 @@ function toApplicationStatus(value: string): ApplicationStatus {
     throw new Error(`Unknown application status from database: ${value}`);
   }
   return value as ApplicationStatus;
+}
+
+function toPayoutMethod(value: string): CreatorPayoutProfile["method"] {
+  const allowed: CreatorPayoutProfile["method"][] = ["iban", "paypal", "stripe"];
+  if (!allowed.includes(value as CreatorPayoutProfile["method"])) {
+    throw new Error(`Unknown payout method from database: ${value}`);
+  }
+  return value as CreatorPayoutProfile["method"];
 }
 
 function toVideoTypeCount(raw: Record<string, unknown> | null | undefined): VideoTypeCount {
@@ -233,6 +269,8 @@ function mapVideo(row: VideoRow): VideoAsset {
     fileSizeMb: row.file_size_mb,
     status: toVideoStatus(row.status),
     rejectionReason: row.rejection_reason ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    reviewedBy: row.reviewed_by ?? undefined,
     createdAt: row.created_at
   };
 }
@@ -244,6 +282,7 @@ function mapRush(row: RushRow): RushAsset {
     creatorId: row.creator_id,
     fileName: row.file_name,
     fileSizeMb: row.file_size_mb,
+    fileUrl: row.file_url ?? undefined,
     createdAt: row.created_at
   };
 }
@@ -270,6 +309,42 @@ function mapCreatorApplication(row: CreatorApplicationRow): CreatorApplication {
     reviewNotes: row.review_notes ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+function mapPayoutProfile(row: CreatorPayoutProfileRow): CreatorPayoutProfile {
+  return {
+    creatorId: row.creator_id,
+    method: toPayoutMethod(row.method),
+    accountHolderName: row.account_holder_name,
+    iban: row.iban,
+    paypalEmail: row.paypal_email,
+    stripeAccount: row.stripe_account,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function mapContractSignature(row: ContractSignatureRow): CreatorContractSignature {
+  const acceptance: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(row.acceptance ?? {})) {
+    if (typeof value === "boolean") {
+      acceptance[key] = value;
+    }
+  }
+
+  return {
+    id: row.id,
+    creatorId: row.creator_id,
+    userId: row.user_id,
+    contractVersion: row.contract_version,
+    contractChecksum: row.contract_checksum,
+    signerName: row.signer_name,
+    acceptance,
+    ip: row.ip,
+    userAgent: row.user_agent,
+    signedAt: row.signed_at,
+    createdAt: row.created_at
   };
 }
 
@@ -404,6 +479,32 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     return (data as RushRow[]).map(mapRush);
   }
 
+  async createRushAsset(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    fileName: string;
+    fileSizeMb: number;
+    fileUrl?: string | null;
+  }): Promise<RushAsset> {
+    const { data, error } = await this.client
+      .from("rushes")
+      .insert({
+        monthly_tracking_id: input.monthlyTrackingId,
+        creator_id: input.creatorId,
+        file_name: input.fileName,
+        file_size_mb: input.fileSizeMb,
+        file_url: input.fileUrl ?? null
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create rush asset: ${error.message}`);
+    }
+
+    return mapRush(data as RushRow);
+  }
+
   async createVideoAsset(input: {
     monthlyTrackingId: string;
     creatorId: string;
@@ -479,6 +580,90 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return mapMonthlyTracking(data as MonthlyTrackingRow);
+  }
+
+  async markMonthlyTrackingPaid(input: {
+    monthlyTrackingId: string;
+    paidAt?: string | null;
+  }): Promise<MonthlyTracking> {
+    const paidAt = input.paidAt ?? new Date().toISOString();
+
+    const { data, error } = await this.client
+      .from("monthly_tracking")
+      .update({
+        payment_status: "paye",
+        paid_at: paidAt
+      })
+      .eq("id", input.monthlyTrackingId)
+      .select("*")
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to mark tracking paid for ${input.monthlyTrackingId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapMonthlyTracking(data as MonthlyTrackingRow);
+  }
+
+  async getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null> {
+    const { data, error } = await this.client
+      .from("creator_payout_profiles")
+      .select("*")
+      .eq("creator_id", creatorId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to get payout profile for ${creatorId}: ${error.message}`);
+    }
+
+    return data ? mapPayoutProfile(data as CreatorPayoutProfileRow) : null;
+  }
+
+  async upsertPayoutProfile(input: {
+    creatorId: string;
+    method: CreatorPayoutProfile["method"];
+    accountHolderName?: string | null;
+    iban?: string | null;
+    paypalEmail?: string | null;
+    stripeAccount?: string | null;
+  }): Promise<CreatorPayoutProfile> {
+    const { data, error } = await this.client
+      .from("creator_payout_profiles")
+      .upsert(
+        {
+          creator_id: input.creatorId,
+          method: input.method,
+          account_holder_name: input.accountHolderName ?? null,
+          iban: input.iban ?? null,
+          paypal_email: input.paypalEmail ?? null,
+          stripe_account: input.stripeAccount ?? null
+        },
+        { onConflict: "creator_id" }
+      )
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to upsert payout profile for ${input.creatorId}: ${error.message}`);
+    }
+
+    return mapPayoutProfile(data as CreatorPayoutProfileRow);
+  }
+
+  async listContractSignaturesByCreatorId(creatorId: string): Promise<CreatorContractSignature[]> {
+    const { data, error } = await this.client
+      .from("creator_contract_signatures")
+      .select("id,creator_id,user_id,contract_version,contract_checksum,signer_name,acceptance,ip,user_agent,signed_at,created_at")
+      .eq("creator_id", creatorId)
+      .order("signed_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to list contract signatures for ${creatorId}: ${error.message}`);
+    }
+
+    return (data as ContractSignatureRow[]).map(mapContractSignature);
   }
 
   async listRates(): Promise<VideoRate[]> {

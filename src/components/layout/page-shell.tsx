@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 import { cn } from "@/lib/cn";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { SupabaseConfigWarning } from "@/components/system/supabase-config-warning";
 
 interface PageShellProps extends PropsWithChildren {
   currentPath?:
@@ -14,6 +15,9 @@ interface PageShellProps extends PropsWithChildren {
     | "/creators"
     | "/join"
     | "/dashboard"
+    | "/uploads"
+    | "/payouts"
+    | "/settings"
     | "/admin"
     | "/admin/applications";
 }
@@ -40,11 +44,14 @@ export function PageShell({ children, currentPath }: PageShellProps) {
           isAuthPage
             ? "pb-6 pt-6 sm:pb-8 sm:pt-8 md:pb-10 md:pt-10"
             : isHomePage
-              ? "pb-8 pt-2 sm:pb-12 sm:pt-4 md:pt-6"
+              ? "pb-8 pt-0 sm:pb-12 sm:pt-0 md:pt-0"
               : "pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12"
         )}
       >
-        {children}
+        <div className="space-y-6">
+          <SupabaseConfigWarning />
+          {children}
+        </div>
       </main>
 
       <SiteFooter />

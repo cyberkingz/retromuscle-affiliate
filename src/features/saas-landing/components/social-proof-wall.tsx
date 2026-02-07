@@ -15,8 +15,11 @@ export function SocialProofWall({ testimonials, trustedBy }: SocialProofWallProp
           Preuve sociale
         </Badge>
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
-          Des createurs qui avancent
+          Retours (anonymises)
         </h2>
+        <p className="mx-auto max-w-2xl text-sm text-foreground/70">
+          On n&apos;affiche pas de faux logos. Cette section est faite pour accueillir des retours reels une fois le programme en regime.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -45,21 +48,23 @@ export function SocialProofWall({ testimonials, trustedBy }: SocialProofWallProp
         ))}
       </div>
 
-      <div className="rounded-3xl border border-line bg-white/70 px-4 py-8 sm:px-6">
-        <p className="mb-6 text-center text-[10px] uppercase tracking-[0.14em] text-foreground/55 sm:text-xs">
-          Accompagne par
-        </p>
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-          {trustedBy.map((brand) => (
-            <span
-              key={brand}
-              className="whitespace-nowrap rounded-full border border-line bg-frost px-3 py-1.5 text-xs font-semibold text-secondary sm:px-4 sm:py-2 sm:text-sm"
-            >
-              {brand}
-            </span>
-          ))}
+      {trustedBy.length > 0 ? (
+        <div className="rounded-3xl border border-line bg-white/70 px-4 py-8 sm:px-6">
+          <p className="mb-6 text-center text-[10px] uppercase tracking-[0.14em] text-foreground/55 sm:text-xs">
+            Accompagne par
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+            {trustedBy.map((brand) => (
+              <span
+                key={brand}
+                className="whitespace-nowrap rounded-full border border-line bg-frost px-3 py-1.5 text-xs font-semibold text-secondary sm:px-4 sm:py-2 sm:text-sm"
+              >
+                {brand}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

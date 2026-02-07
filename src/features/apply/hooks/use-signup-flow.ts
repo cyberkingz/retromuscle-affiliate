@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Session } from "@supabase/supabase-js";
 
 import { useAuth } from "@/features/auth/context/auth-context";
 import { isValidEmail } from "@/lib/validation";
 
 interface UseSignupFlowResult {
-  session: Session | null;
+  user: { id: string; email: string | null } | null;
   loadingSession: boolean;
   mode: "signup" | "signin";
   email: string;
@@ -50,37 +49,32 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
         throw new Error("Les mots de passe ne correspondent pas.");
       }
 
-      if (!auth.client) {
-        throw new Error(auth.error ?? "Supabase is not configured");
+      const endpoint = mode === "signup" ? "/api/auth/sign-up" : "/api/auth/sign-in";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { ok?: boolean; needsEmailConfirmation?: boolean; message?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Impossible de se connecter.");
       }
-      const supabase = auth.client;
 
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password
-        });
-        if (error) {
-          throw error;
-        }
-
-        if (!data.session) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) {
-            setStatusMessage("Compte cree. Connecte-toi ensuite pour continuer.");
-            return;
-          }
-        }
-
-        setStatusMessage("Compte cree. Tu peux continuer l'onboarding.");
+      if (data?.needsEmailConfirmation) {
+        setStatusMessage("Compte cree. Verifie ton email pour activer ton compte, puis reconnecte-toi.");
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        throw error;
-      }
-      setStatusMessage("Connexion reussie. Tu peux continuer l'onboarding.");
+      await auth.refreshSession();
+      await auth.refreshRouting();
+
+      setStatusMessage(mode === "signup" ? "Compte cree. Tu peux continuer l'onboarding." : "Connexion reussie.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Impossible de se connecter");
     } finally {
@@ -105,7 +99,7 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
   }
 
   return {
-    session: auth.session as Session | null,
+    user: auth.user,
     loadingSession: auth.loading,
     mode,
     email,

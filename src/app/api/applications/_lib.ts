@@ -1,12 +1,9 @@
-import { NextResponse } from "next/server";
-
 import { MIX_NAMES } from "@/domain/types";
-import { readBearerToken } from "@/features/auth/server/resolve-auth-session";
-import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import {
+  extractInstagramProfileHandle,
+  extractTiktokProfileHandle,
   isValidEmail,
   isValidInstagramUrl,
-  isValidPublicHttpUrl,
   isValidTiktokUrl
 } from "@/lib/validation";
 
@@ -22,7 +19,6 @@ export interface ApplicationPayload {
   socialTiktok?: string;
   socialInstagram?: string;
   followers: number;
-  portfolioUrl?: string;
   packageTier: (typeof PACKAGE_TIERS)[number];
   mixName: (typeof MIX_NAMES)[number];
   submit: boolean;
@@ -56,9 +52,6 @@ export function parsePayload(
 
   const input = body as Record<string, unknown>;
 
-  if (!isNonEmptyString(input.handle)) {
-    throw new Error("Ajoute ton handle createur.");
-  }
   if (!isNonEmptyString(input.fullName)) {
     throw new Error("Ajoute ton nom complet.");
   }
@@ -78,11 +71,8 @@ export function parsePayload(
     throw new Error("Choisis un mix valide.");
   }
 
-  const email = (options?.authEmail ?? sanitizeOptionalString(input.email) ?? "").trim();
-  if (!email) {
-    throw new Error("Impossible de recuperer l'email du compte. Reconnecte-toi.");
-  }
-  if (!isValidEmail(email)) {
+  const email = (options?.authEmail ?? "").trim().toLowerCase();
+  if (!email || !isValidEmail(email)) {
     throw new Error("Email invalide.");
   }
 
@@ -93,7 +83,6 @@ export function parsePayload(
 
   const socialTiktok = sanitizeOptionalString(input.socialTiktok);
   const socialInstagram = sanitizeOptionalString(input.socialInstagram);
-  const portfolioUrl = sanitizeOptionalString(input.portfolioUrl);
 
   if (socialTiktok && !isValidTiktokUrl(socialTiktok)) {
     throw new Error("Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte");
@@ -101,12 +90,19 @@ export function parsePayload(
   if (socialInstagram && !isValidInstagramUrl(socialInstagram)) {
     throw new Error("Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte");
   }
-  if (portfolioUrl && !isValidPublicHttpUrl(portfolioUrl)) {
-    throw new Error("Lien portfolio invalide. Exemple: https://tonsite.com");
+
+  const derivedHandle =
+    (socialTiktok ? extractTiktokProfileHandle(socialTiktok) : null) ??
+    (socialInstagram ? extractInstagramProfileHandle(socialInstagram) : null);
+
+  const handle = derivedHandle ?? "";
+
+  if (!handle) {
+    throw new Error("Ajoute un lien TikTok ou Instagram valide (profil public) pour detecter ton handle.");
   }
 
   return {
-    handle: input.handle.trim(),
+    handle,
     fullName: input.fullName.trim(),
     email,
     whatsapp: input.whatsapp.trim(),
@@ -115,41 +111,8 @@ export function parsePayload(
     socialTiktok,
     socialInstagram,
     followers,
-    portfolioUrl,
     packageTier: input.packageTier,
     mixName: input.mixName,
     submit: Boolean(input.submit)
   };
-}
-
-export async function requireUserFromRequest(request: Request): Promise<{
-  client: ReturnType<typeof createSupabaseServerClient>;
-  userId: string;
-  email?: string;
-}> {
-  const token = readBearerToken(request.headers.get("authorization"));
-  if (!token) {
-    throw new Error("Missing bearer token");
-  }
-
-  const client = createSupabaseServerClient();
-  const { data, error } = await client.auth.getUser(token);
-
-  if (error || !data.user) {
-    throw new Error("Invalid auth token");
-  }
-
-  return {
-    client,
-    userId: data.user.id,
-    email: data.user.email ?? undefined
-  };
-}
-
-export function badRequest(message: string) {
-  return NextResponse.json({ message }, { status: 400 });
-}
-
-export function unauthorized(message = "Unauthorized") {
-  return NextResponse.json({ message }, { status: 401 });
 }

@@ -31,3 +31,21 @@ export function creatorStatusTone(statusLabel: string): BadgeTone {
 
   return "neutral";
 }
+
+export function videoStatusTone(statusLabel: string): BadgeTone {
+  const value = normalize(statusLabel);
+
+  if (value.includes("approved") || value.includes("valide")) {
+    return "success";
+  }
+
+  if (value.includes("rejected") || value.includes("refuse")) {
+    return "neutral";
+  }
+
+  if (value.includes("pending") || value.includes("review") || value.includes("attente")) {
+    return "warning";
+  }
+
+  return "neutral";
+}

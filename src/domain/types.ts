@@ -23,6 +23,7 @@ export type CreatorStatus = "candidat" | "actif" | "pause" | "inactif";
 export type PaymentStatus = "a_faire" | "en_cours" | "paye";
 export type VideoStatus = "uploaded" | "pending_review" | "approved" | "rejected";
 export type ApplicationStatus = "draft" | "pending_review" | "approved" | "rejected";
+export type PayoutMethod = "iban" | "paypal" | "stripe";
 
 export type VideoTypeCount = Record<VideoType, number>;
 
@@ -92,6 +93,8 @@ export interface VideoAsset {
   fileSizeMb: number;
   status: VideoStatus;
   rejectionReason?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
   createdAt: string;
 }
 
@@ -101,6 +104,32 @@ export interface RushAsset {
   creatorId: string;
   fileName: string;
   fileSizeMb: number;
+  fileUrl?: string;
+  createdAt: string;
+}
+
+export interface CreatorPayoutProfile {
+  creatorId: string;
+  method: PayoutMethod;
+  accountHolderName?: string | null;
+  iban?: string | null;
+  paypalEmail?: string | null;
+  stripeAccount?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatorContractSignature {
+  id: string;
+  creatorId: string;
+  userId: string;
+  contractVersion: string;
+  contractChecksum: string;
+  signerName: string;
+  acceptance: Record<string, boolean>;
+  ip?: string | null;
+  userAgent?: string | null;
+  signedAt: string;
   createdAt: string;
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
 
 import { useAuth } from "@/features/auth/context/auth-context";
 import { INITIAL_FORM, mapRecordToForm } from "@/features/apply/state";
@@ -12,7 +11,6 @@ import type {
 } from "@/features/apply/types";
 import {
   isValidInstagramUrl,
-  isValidPublicHttpUrl,
   isValidTiktokUrl,
   normalizeHttpUrl
 } from "@/lib/validation";
@@ -34,11 +32,8 @@ async function fetchOnboardingOptions(): Promise<OnboardingOptions> {
   };
 }
 
-async function fetchExistingApplication(accessToken: string): Promise<ApplicationRecord | null> {
+async function fetchExistingApplication(): Promise<ApplicationRecord | null> {
   const response = await fetch("/api/applications/me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
     cache: "no-store"
   });
 
@@ -51,11 +46,12 @@ async function fetchExistingApplication(accessToken: string): Promise<Applicatio
 }
 
 interface UseOnboardingFlowResult {
-  session: Session | null;
+  user: { id: string; email: string | null } | null;
   loadingSession: boolean;
   options: OnboardingOptions | null;
   application: ApplicationRecord | null;
   form: ApplicationFormState;
+  focusField: keyof ApplicationFormState | null;
   step: number;
   stepPercent: number;
   submitting: boolean;
@@ -67,49 +63,89 @@ interface UseOnboardingFlowResult {
     field: K,
     value: ApplicationFormState[K]
   ): void;
+  validateStep(step: number): boolean;
+  clearFocusField(): void;
   submitApplication(): Promise<void>;
   signOut(): Promise<void>;
 }
 
-function validateBeforeSubmit(form: ApplicationFormState): string | null {
-  if (!form.handle.trim()) return "Ajoute ton handle createur.";
-  if (!form.fullName.trim()) return "Ajoute ton nom complet.";
-  if (!form.whatsapp.trim()) return "Ajoute ton numero WhatsApp.";
-  if (!form.country.trim()) return "Ajoute ton pays.";
-  if (!form.address.trim()) return "Ajoute ton adresse de livraison.";
+type StepValidationResult =
+  | { ok: true }
+  | { ok: false; field: keyof ApplicationFormState; message: string };
 
+function fail(field: keyof ApplicationFormState, message: string): StepValidationResult {
+  return { ok: false, field, message };
+}
+
+function normalizeDigits(value: string): string {
+  return value.replace(/[^\d]/g, "");
+}
+
+function parseFollowers(value: string): number | null {
+  const digits = normalizeDigits(value.trim());
+  if (!digits) return null;
+  const parsed = Number(digits);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0 || parsed > 100000000) {
+    return null;
+  }
+  return parsed;
+}
+
+function validateStep0(form: ApplicationFormState): StepValidationResult {
+  if (!form.fullName.trim()) return fail("fullName", "Ajoute ton nom complet.");
+  if (!form.whatsapp.trim()) return fail("whatsapp", "Ajoute ton numero WhatsApp.");
+  if (!form.country.trim()) return fail("country", "Ajoute ton pays.");
+  if (!form.address.trim()) return fail("address", "Ajoute ton adresse de livraison.");
+  return { ok: true };
+}
+
+function validateStep1(form: ApplicationFormState): StepValidationResult {
   const tiktok = form.socialTiktok.trim();
   const instagram = form.socialInstagram.trim();
 
   if (!tiktok && !instagram) {
-    return "Ajoute au moins un reseau social (TikTok ou Instagram).";
+    return fail("socialTiktok", "Ajoute au moins un reseau social (TikTok ou Instagram).");
   }
   if (tiktok && !isValidTiktokUrl(tiktok)) {
-    return "Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte";
+    return fail("socialTiktok", "Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte");
   }
   if (instagram && !isValidInstagramUrl(instagram)) {
-    return "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte";
+    return fail("socialInstagram", "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte");
   }
 
-  if (!form.followers.trim()) return "Ajoute ton nombre de followers.";
-
-  const followersCount = Number(form.followers);
-  if (!Number.isFinite(followersCount) || !Number.isInteger(followersCount) || followersCount < 0) {
-    return "Le nombre de followers est invalide.";
+  const followers = parseFollowers(form.followers);
+  if (followers === null) {
+    return fail("followers", "Le nombre de followers est invalide.");
   }
 
-  if (!form.portfolioUrl.trim()) return "Ajoute un lien portfolio.";
-  if (!isValidPublicHttpUrl(form.portfolioUrl)) {
-    return "Lien portfolio invalide. Exemple: https://tonsite.com";
-  }
+  return { ok: true };
+}
 
-  return null;
+function validateStep2(form: ApplicationFormState): StepValidationResult {
+  if (!form.packageTier) return fail("packageTier", "Choisis un package valide.");
+  if (!form.mixName) return fail("mixName", "Choisis un mix valide.");
+  return { ok: true };
+}
+
+function validateWizardStep(step: number, form: ApplicationFormState): StepValidationResult {
+  if (step === 0) return validateStep0(form);
+  if (step === 1) return validateStep1(form);
+  return validateStep2(form);
+}
+
+function validateBeforeSubmit(form: ApplicationFormState): StepValidationResult {
+  const first = validateStep0(form);
+  if (!first.ok) return first;
+  const second = validateStep1(form);
+  if (!second.ok) return second;
+  return validateStep2(form);
 }
 
 export function useOnboardingFlow(): UseOnboardingFlowResult {
   const auth = useAuth();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [focusField, setFocusField] = useState<keyof ApplicationFormState | null>(null);
 
   const [options, setOptions] = useState<OnboardingOptions | null>(null);
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
@@ -144,18 +180,13 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   }, []);
 
   useEffect(() => {
-    if (!auth.session) {
+    if (!auth.user) {
       return;
     }
 
     let ignore = false;
 
-    const sessionEmail = auth.session.user.email ?? "";
-    if (sessionEmail) {
-      setForm((current) => (current.email ? current : { ...current, email: sessionEmail }));
-    }
-
-    fetchExistingApplication(auth.session.access_token)
+    fetchExistingApplication()
       .then((record) => {
         if (ignore || !record) {
           return;
@@ -171,7 +202,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     return () => {
       ignore = true;
     };
-  }, [auth.session]);
+  }, [auth.user]);
 
   const canEdit = application?.status !== "pending_review" && application?.status !== "approved";
   const stepPercent = useMemo(() => ((step + 1) / 3) * 100, [step]);
@@ -187,15 +218,33 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     setStep(Math.max(0, Math.min(2, nextStep)));
   }
 
+  function validateStep(currentStep: number): boolean {
+    const result = validateWizardStep(currentStep, form);
+    if (result.ok) {
+      setErrorMessage(null);
+      return true;
+    }
+
+    setErrorMessage(result.message);
+    setStatusMessage(null);
+    setFocusField(result.field);
+    return false;
+  }
+
+  function clearFocusField() {
+    setFocusField(null);
+  }
+
   async function persistApplication() {
-    if (!auth.session) {
+    if (!auth.user) {
       return;
     }
 
-    const validationMessage = validateBeforeSubmit(form);
-    if (validationMessage) {
-      setErrorMessage(validationMessage);
+    const validation = validateBeforeSubmit(form);
+    if (!validation.ok) {
+      setErrorMessage(validation.message);
       setStatusMessage(null);
+      setFocusField(validation.field);
       return;
     }
 
@@ -204,22 +253,24 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     setSubmitting(true);
 
     try {
+      const followers = parseFollowers(form.followers);
+      if (followers === null) {
+        throw new Error("Le nombre de followers est invalide.");
+      }
+
       const response = await fetch("/api/applications/me", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.session.access_token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          handle: form.handle,
           fullName: form.fullName,
           whatsapp: form.whatsapp,
           country: form.country,
           address: form.address,
           socialTiktok: form.socialTiktok ? normalizeHttpUrl(form.socialTiktok) : "",
           socialInstagram: form.socialInstagram ? normalizeHttpUrl(form.socialInstagram) : "",
-          followers: Number(form.followers),
-          portfolioUrl: normalizeHttpUrl(form.portfolioUrl),
+          followers,
           packageTier: Number(form.packageTier),
           mixName: form.mixName,
           submit: true
@@ -256,11 +307,12 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   }
 
   return {
-    session: auth.session as Session | null,
+    user: auth.user,
     loadingSession: auth.loading,
     options,
     application,
     form,
+    focusField,
     step,
     stepPercent,
     submitting,
@@ -269,6 +321,8 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     canEdit,
     setStep: setSafeStep,
     updateField,
+    validateStep,
+    clearFocusField,
     submitApplication,
     signOut
   };

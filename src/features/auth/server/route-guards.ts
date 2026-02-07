@@ -17,7 +17,7 @@ export async function getAuthSessionFromCookies(): Promise<ResolvedAuthSession |
     return null;
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = sanitizeAccessToken(cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value);
 
   if (!accessToken) {
@@ -55,6 +55,21 @@ export async function protectPage(expectedTarget: RedirectTarget) {
   }
 
   if (target !== expectedTarget) {
-    redirect(target);
+    redirect(`/not-authorized?next=${encodeURIComponent(expectedTarget)}`);
+  }
+}
+
+export async function protectPageWithReturn(expectedTarget: RedirectTarget, returnTo: string) {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  const target = await getRedirectTargetFromCookies();
+  if (!target) {
+    redirect("/login");
+  }
+
+  if (target !== expectedTarget) {
+    redirect(`/not-authorized?next=${encodeURIComponent(returnTo)}`);
   }
 }

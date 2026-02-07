@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+# Fast secret scan on staged changes.
+npm run -s check:secrets -- --staged

@@ -35,6 +35,7 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
+  typedRoutes: true,
   images: {
     remotePatterns: [
       {
@@ -51,9 +52,7 @@ const nextConfig = {
       }
     ];
   },
-  experimental: {
-    typedRoutes: true
-  }
+  experimental: {}
 };
 
 export default nextConfig;

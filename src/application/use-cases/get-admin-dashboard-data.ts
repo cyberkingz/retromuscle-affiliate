@@ -15,6 +15,7 @@ export interface AdminDashboardData {
   metrics: {
     creatorsComplete: number;
     creatorsPending: number;
+    validationTodo: number;
     paymentsTodo: number;
     totalToPay: number;
   };
@@ -29,6 +30,7 @@ export interface AdminDashboardData {
     status: string;
   }>;
   monthlyRows: Array<{
+    monthlyTrackingId: string;
     creatorId: string;
     handle: string;
     packageTier: number;
@@ -52,6 +54,9 @@ export interface AdminDashboardData {
     resolution: string;
   }>;
   payments: Array<{
+    monthlyTrackingId: string;
+    creatorId: string;
+    email: string;
     creatorHandle: string;
     deliveredSummary: string;
     amount: number;
@@ -62,20 +67,34 @@ export interface AdminDashboardData {
 
 export async function getAdminDashboardData(input?: { month?: string }): Promise<AdminDashboardData> {
   const repository = getRepository();
-  const [creators, allTrackings, rates, packages, pendingVideos] = await Promise.all([
+  const [creators, rates, packages, pendingVideos] = await Promise.all([
     repository.listCreators(),
-    repository.listMonthlyTrackings(),
     repository.listRates(),
     repository.listPackageDefinitions(),
     repository.listVideosByStatus("pending_review")
   ]);
 
-  const targetMonth = resolveMonth(
-    input?.month,
-    Array.from(new Set(allTrackings.map((tracking) => tracking.month)))
-  );
+  let targetMonth: string;
+  let monthTrackings = [] as Awaited<ReturnType<typeof repository.listMonthlyTrackings>>;
 
-  const monthTrackings = allTrackings.filter((tracking) => tracking.month === targetMonth);
+  if (input?.month) {
+    const trackings = await repository.listMonthlyTrackings(input.month);
+    targetMonth = resolveMonth(input.month, Array.from(new Set(trackings.map((tracking) => tracking.month))));
+    monthTrackings = trackings;
+  } else {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const current = await repository.listMonthlyTrackings(currentMonth);
+
+    if (current.length > 0) {
+      targetMonth = currentMonth;
+      monthTrackings = current;
+    } else {
+      const allTrackings = await repository.listMonthlyTrackings();
+      targetMonth = resolveMonth(undefined, Array.from(new Set(allTrackings.map((tracking) => tracking.month))));
+      monthTrackings = allTrackings.filter((tracking) => tracking.month === targetMonth);
+    }
+  }
   const packageMap = new Map(packages.map((pkg) => [pkg.tier, pkg]));
   const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
 
@@ -90,7 +109,8 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
     const summary = summarizeTracking(tracking.quotas, tracking.delivered);
     const payout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
 
-      return {
+    return {
+      monthlyTrackingId: tracking.id,
         creatorId: creator.id,
         handle: creator.handle,
         packageTier: tracking.packageTier,
@@ -117,6 +137,7 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
   const metrics = {
     creatorsComplete,
     creatorsPending,
+    validationTodo: pendingVideos.length,
     paymentsTodo: paymentsTodoRows.length,
     totalToPay: paymentsTodoRows.reduce((sum, row) => sum + row.payoutAmount, 0)
   };
@@ -148,6 +169,9 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       };
     }),
     payments: monthlyRows.map((row) => ({
+      monthlyTrackingId: row.monthlyTrackingId,
+      creatorId: row.creatorId,
+      email: creatorById.get(row.creatorId)?.email ?? "",
       creatorHandle: row.handle,
       deliveredSummary: `${row.deliveredTotal}/${row.packageTier}`,
       amount: row.payoutAmount,

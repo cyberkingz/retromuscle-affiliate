@@ -22,9 +22,9 @@ export async function getApplyPageData(): Promise<ApplyPageData> {
       ],
       socialProof: {
         stats: [
-          { label: "Createurs actifs", value: "50+" },
-          { label: "Taux acceptance", value: "90%" },
-          { label: "Cycle moyen", value: "<30 jours" }
+          { label: "Reponse", value: "Sous 48h" },
+          { label: "Missions", value: "Mensuel" },
+          { label: "Paiement", value: "Mensuel" }
         ],
         creators: [
           {
@@ -53,7 +53,7 @@ export async function getApplyPageData(): Promise<ApplyPageData> {
             quote: "J'adore l'ambiance RetroMuscle, c'est vraiment une communaute."
           }
         ],
-        trustedBy: ["RetroMuscle", "Athletes Squad", "Creator Partners", "Performance Team"]
+        trustedBy: []
       },
       desire: {
         title: "Ce que tu gagnes concretement",
@@ -65,7 +65,7 @@ export async function getApplyPageData(): Promise<ApplyPageData> {
       },
       action: {
         urgencyText: "Les places sont ouvertes chaque semaine selon les besoins campagnes.",
-        reassurance: "Tu peux sauvegarder ton dossier et revenir quand tu veux avant envoi final."
+        reassurance: "Dossier a soumettre a la derniere etape. Pas de brouillon."
       }
     }
   };

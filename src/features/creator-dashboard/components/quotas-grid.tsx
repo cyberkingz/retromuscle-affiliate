@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { CardSection } from "@/components/layout/card-section";
 import { ProgressBar } from "@/components/ui/progress-bar";
 
 interface QuotasGridProps {
@@ -18,7 +18,7 @@ export function QuotasGrid({ items }: QuotasGridProps) {
       <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">Quotas par type</h2>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
-          <Card key={item.key} className="space-y-3 bg-white p-4">
+          <CardSection key={item.key} padding="sm" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="font-semibold">{item.label}</p>
               <p className="text-xs text-foreground/60">
@@ -27,7 +27,7 @@ export function QuotasGrid({ items }: QuotasGridProps) {
             </div>
             <ProgressBar percent={item.completionPercent} />
             <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Reste: {item.remaining}</p>
-          </Card>
+          </CardSection>
         ))}
       </div>
     </section>
