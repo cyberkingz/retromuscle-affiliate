@@ -224,16 +224,8 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         setStatusMessage("Candidature refusee. Le createur verra ton feedback.");
       }
 
-      if (filter === "pending_review") {
-        const remaining = nextApplications.filter(
-          (item) => item.status === "pending_review" && item.userId !== selected.userId
-        );
-        if (remaining.length > 0) {
-          selectApplication(remaining[0]!.userId, nextApplications);
-        } else {
-          setSelectedUserId(null);
-        }
-      }
+      // Keep the current application selected so admin sees the confirmation.
+      // The detail panel will show the updated status badge + success message.
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Erreur review candidature");
     } finally {
@@ -263,7 +255,15 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
             type="button"
             size="pill"
             variant={filter === item.key ? "default" : "outline"}
-            onClick={() => setFilter(item.key)}
+            onClick={() => {
+              setFilter(item.key);
+              const matching = applications.filter((a) => a.status === item.key);
+              setSelectedUserId(matching[0]?.userId ?? null);
+              setReviewNotes(matching[0]?.reviewNotes ?? "");
+              setLastApproval(null);
+              setStatusMessage(null);
+              setErrorMessage(null);
+            }}
           >
             {item.label} ({counts[item.key]})
           </Button>

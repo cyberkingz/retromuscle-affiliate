@@ -165,23 +165,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       ]
     },
     socialProof: {
-      testimonials: [
-        {
-          name: "Createur (anonyme)",
-          role: "Programme Affilie RetroMuscle",
-          quote: "Enfin un cadre clair: je sais quoi filmer, quand livrer, et ce qui est valide."
-        },
-        {
-          name: "Createur (anonyme)",
-          role: "Programme Affilie RetroMuscle",
-          quote: "Avant c'etait one-shot. Maintenant j'ai un rythme mensuel et une vraie regularite."
-        },
-        {
-          name: "Createur (anonyme)",
-          role: "Programme Affilie RetroMuscle",
-          quote: "Le process est simple: je cree, j'upload, je suis validee. Pas de chaos en DM."
-        }
-      ],
+      testimonials: [],
       trustedBy: []
     },
     pricing: packages.map((pkg) => ({

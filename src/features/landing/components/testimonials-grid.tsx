@@ -6,6 +6,8 @@ interface TestimonialsGridProps {
 }
 
 export function TestimonialsGrid({ items }: TestimonialsGridProps) {
+  if (items.length === 0) return null;
+
   return (
     <section className="space-y-4">
       <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">Temoignages affilies</h3>

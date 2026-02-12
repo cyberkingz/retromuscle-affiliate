@@ -8,6 +8,8 @@ interface SocialProofWallProps {
 }
 
 export function SocialProofWall({ testimonials, trustedBy }: SocialProofWallProps) {
+  if (testimonials.length === 0 && trustedBy.length === 0) return null;
+
   return (
     <section className="space-y-12 animate-fade-up [animation-delay:200ms]">
       <div className="text-center space-y-4">
@@ -15,10 +17,10 @@ export function SocialProofWall({ testimonials, trustedBy }: SocialProofWallProp
           Preuve sociale
         </Badge>
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
-          Retours (anonymises)
+          Retours createurs
         </h2>
         <p className="mx-auto max-w-2xl text-sm text-foreground/70">
-          On n&apos;affiche pas de faux logos. Cette section est faite pour accueillir des retours reels une fois le programme en regime.
+          Les retours de nos createurs seront affiches ici au fur et a mesure du programme.
         </p>
       </div>
 

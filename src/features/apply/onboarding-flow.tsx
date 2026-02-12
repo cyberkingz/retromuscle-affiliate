@@ -86,8 +86,8 @@ export function OnboardingFlow() {
         <CardSection>
           <SectionHeading
             eyebrow="Onboarding createur"
-            title="Finalise ton inscription"
-            subtitle="Renseigne ton profil, puis envoie ton dossier a la derniere etape."
+            title={isPendingReview ? "Dossier en cours de revue" : "Finalise ton inscription"}
+            subtitle={isPendingReview ? "Notre equipe revient vers toi sous 48h." : "Renseigne ton profil, puis envoie ton dossier a la derniere etape."}
           />
 
           <div className="mt-5 space-y-4">
@@ -135,7 +135,6 @@ export function OnboardingFlow() {
 
             {isPendingReview ? (
               <>
-                <PendingReviewPanel application={flow.application!} />
                 <Card className="border-line bg-white p-5 sm:p-6">
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/50">
                     Recapitulatif de ton dossier
@@ -161,6 +160,7 @@ export function OnboardingFlow() {
                       ))}
                   </div>
                 </Card>
+                <PendingReviewPanel application={flow.application!} />
               </>
             ) : (
               <WizardStepper

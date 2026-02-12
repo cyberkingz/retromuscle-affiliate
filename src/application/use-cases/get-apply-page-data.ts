@@ -26,33 +26,7 @@ export async function getApplyPageData(): Promise<ApplyPageData> {
           { label: "Missions", value: "Mensuel" },
           { label: "Paiement", value: "Mensuel" }
         ],
-        creators: [
-          {
-            name: "Emma",
-            niche: "OOTD / Training",
-            quote: "Je sais ce que je dois livrer et je peux enfin prevoir mes revenus."
-          },
-          {
-            name: "Marc",
-            niche: "Performance",
-            quote: "J'ai un rythme de missions stable au lieu de collabs one-shot."
-          },
-          {
-            name: "Julie",
-            niche: "Lifestyle",
-            quote: "Le process est pro: brief clair, validation rapide et paiement ok."
-          },
-          {
-            name: "Lucas",
-            niche: "Workout",
-            quote: "Simple, efficace. On se concentre sur la creation, pas la negociation."
-          },
-          {
-            name: "Sarah",
-            niche: "Gymwear",
-            quote: "J'adore l'ambiance RetroMuscle, c'est vraiment une communaute."
-          }
-        ],
+        creators: [],
         trustedBy: []
       },
       desire: {

@@ -121,11 +121,12 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
                   Paye
                 </span>
               ) : isConfirming ? (
-                <div className="flex items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
-                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer le paiement ?</span>
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm min-w-[280px]">
+                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer ?</span>
                   <Button
                     type="button"
                     size="sm"
+                    className="whitespace-nowrap"
                     onClick={() => void markPaid(row.original.monthlyTrackingId)}
                     disabled={!auth.user || busy}
                   >
@@ -135,6 +136,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="whitespace-nowrap"
                     onClick={() => setConfirmingId(null)}
                     disabled={busy}
                   >

@@ -61,23 +61,12 @@ export async function getLandingPageData(): Promise<LandingPageData> {
       )
     })),
     goals: [
-      { label: "Affilies actifs", metric: "50+" },
-      { label: "Missions / mois", metric: "10-40" },
+      { label: "Missions", metric: "Mensuelles" },
       { label: "Paiement", metric: "Mensuel" },
+      { label: "Formats", metric: "5 types" },
       { label: "Reponse dossier", metric: "<48h" }
     ],
-    testimonials: [
-      {
-        author: "Emma",
-        role: "Affiliee RetroMuscle",
-        quote: "Je sais enfin combien je peux gagner chaque mois avec un cadre clair."
-      },
-      {
-        author: "Marc",
-        role: "Affilie RetroMuscle",
-        quote: "J'ai un rythme plus stable et je ne perds plus de temps en allers-retours."
-      }
-    ],
+    testimonials: [],
     faq: [
       {
         question: "Quand suis-je paye ?",

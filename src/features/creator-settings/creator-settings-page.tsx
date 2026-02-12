@@ -43,7 +43,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
   const [accountHolderName, setAccountHolderName] = useState(existing?.accountHolderName ?? "");
   const [iban, setIban] = useState("");
   const [paypalEmail, setPaypalEmail] = useState(existing?.paypalEmail ?? "");
-  const [stripeAccount, setStripeAccount] = useState(existing?.stripeAccount ?? "");
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -53,8 +52,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
 
   const requiresIban = method === "iban";
   const requiresPaypal = method === "paypal";
-  const requiresStripe = method === "stripe";
-
   // Inline validation states
   const ibanTrimmed = iban.trim();
   const ibanValid = !ibanTrimmed || isLikelyIban(ibanTrimmed);
@@ -70,7 +67,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
     setSaving(true);
     setStatusMessage(null);
     setErrorMessage(null);
-    setTouched({ accountHolderName: true, iban: true, paypalEmail: true, stripeAccount: true });
+    setTouched({ accountHolderName: true, iban: true, paypalEmail: true });
 
     try {
       if (requiresIban) {
@@ -94,12 +91,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
         }
       }
 
-      if (requiresStripe) {
-        if (!stripeAccount.trim()) {
-          throw new Error("Renseigne ton identifiant Stripe (ou laisse vide et contacte le support).");
-        }
-      }
-
       const response = await fetch("/api/creator/payout-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,8 +99,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
           method,
           accountHolderName: accountHolderName.trim() || null,
           iban: requiresIban && ibanTrimmed ? normalizeIban(ibanTrimmed) : null,
-          paypalEmail: requiresPaypal ? paypalEmail.trim().toLowerCase() : null,
-          stripeAccount: requiresStripe ? stripeAccount.trim() : null
+          paypalEmail: requiresPaypal ? paypalEmail.trim().toLowerCase() : null
         })
       });
 
@@ -194,7 +184,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
               >
                 <option value="iban">Virement bancaire (IBAN)</option>
                 <option value="paypal">PayPal</option>
-                <option value="stripe">Stripe (placeholder)</option>
               </select>
             </label>
 
@@ -288,25 +277,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
                       Format email valide.
                     </p>
                   ) : null}
-                </label>
-              </div>
-            ) : null}
-
-            {requiresStripe ? (
-              <div className="space-y-3 rounded-2xl border border-line bg-frost/60 p-4">
-                <label className="block space-y-2 text-sm">
-                  <span className="font-medium">
-                    Identifiant Stripe <span className="text-destructive">*</span>
-                  </span>
-                  <Input
-                    value={stripeAccount}
-                    onChange={(event) => setStripeAccount(event.target.value)}
-                    placeholder="acct_..."
-                    autoComplete="off"
-                  />
-                  <p className="text-xs text-foreground/60">
-                    Optionnel pour l&apos;instant. Si tu n&apos;as pas de compte, contacte le support.
-                  </p>
                 </label>
               </div>
             ) : null}
