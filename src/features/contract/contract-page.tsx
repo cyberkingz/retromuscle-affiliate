@@ -128,9 +128,9 @@ export function ContractPage() {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {highlights.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-line bg-frost/70 p-4">
+              <div key={item.title} className="overflow-hidden rounded-2xl border border-line bg-frost/70 p-4">
                 <p className="font-display text-xl uppercase text-secondary">{item.title}</p>
-                <p className="mt-2 text-sm text-foreground/75">{item.body}</p>
+                <p className="mt-2 break-words text-sm text-foreground/75">{item.body}</p>
               </div>
             ))}
           </div>

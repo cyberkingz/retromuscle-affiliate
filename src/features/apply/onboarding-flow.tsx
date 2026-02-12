@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -15,40 +16,24 @@ import { StepProfileForm } from "@/features/apply/components/step-profile-form";
 import { WizardActions } from "@/features/apply/components/wizard-actions";
 import { WizardHeader } from "@/features/apply/components/wizard-header";
 import { WizardStepper } from "@/features/apply/components/wizard-stepper";
-import { resolveRedirectTarget } from "@/features/auth/client/resolve-redirect-target";
+import { useAuthRedirect } from "@/features/auth/client/use-auth-redirect";
 import { useOnboardingFlow } from "@/features/apply/hooks/use-onboarding-flow";
 import { WIZARD_STEPS, statusLabel, statusTone } from "@/features/apply/state";
-import { useEffect } from "react";
 
 export function OnboardingFlow() {
   const flow = useOnboardingFlow();
   const router = useRouter();
   const isPendingReview = flow.application?.status === "pending_review";
+  const isRejected = flow.application?.status === "rejected";
   const focusField = flow.focusField;
   const clearFocusField = flow.clearFocusField;
 
-  useEffect(() => {
-    if (flow.loadingSession || !flow.user) {
-      return;
-    }
-
-    let cancelled = false;
-    resolveRedirectTarget()
-      .then((target) => {
-        if (!cancelled && target !== "/onboarding") {
-          router.replace(target);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          router.replace("/login");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [flow.loadingSession, flow.user, router]);
+  useAuthRedirect({
+    hasSession: Boolean(flow.user),
+    loading: flow.loadingSession,
+    stayOn: "/onboarding",
+    fallback: "/login",
+  });
 
   useEffect(() => {
     if (!focusField) {
@@ -68,6 +53,14 @@ export function OnboardingFlow() {
   }, [focusField, clearFocusField]);
 
   function moveToStep(nextStep: number) {
+    // When jumping forward, validate all intermediate steps first.
+    if (nextStep > flow.step) {
+      for (let s = flow.step; s < nextStep; s++) {
+        if (!flow.validateStep(s)) {
+          return;
+        }
+      }
+    }
     flow.setStep(nextStep);
   }
 
@@ -108,8 +101,67 @@ export function OnboardingFlow() {
               }}
             />
 
+            {isRejected ? (
+              <Card className="border-destructive/30 bg-destructive/5 p-5 sm:p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-destructive">
+                  Dossier refuse
+                </p>
+                <p className="mt-2 font-display text-lg uppercase leading-snug text-foreground/85 sm:text-xl">
+                  Ton dossier n&apos;a pas ete retenu
+                </p>
+                {flow.application?.review_notes ? (
+                  <div className="mt-3 rounded-xl border border-destructive/15 bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">
+                      Feedback equipe
+                    </p>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      {flow.application.review_notes}
+                    </p>
+                  </div>
+                ) : null}
+                <p className="mt-3 text-sm text-foreground/70">
+                  Tu peux modifier ton dossier ci-dessous et le re-soumettre.
+                </p>
+                <Button
+                  type="button"
+                  size="pill"
+                  className="mt-4"
+                  onClick={() => moveToStep(0)}
+                >
+                  Modifier et re-soumettre
+                </Button>
+              </Card>
+            ) : null}
+
             {isPendingReview ? (
-              <PendingReviewPanel application={flow.application!} />
+              <>
+                <PendingReviewPanel application={flow.application!} />
+                <Card className="border-line bg-white p-5 sm:p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/50">
+                    Recapitulatif de ton dossier
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {[
+                      { label: "Nom complet", value: flow.application!.full_name },
+                      { label: "Email", value: flow.application!.email },
+                      { label: "WhatsApp", value: flow.application!.whatsapp },
+                      { label: "Pays", value: flow.application!.country },
+                      { label: "Handle", value: flow.application!.handle || undefined },
+                      { label: "TikTok", value: flow.application!.social_tiktok },
+                      { label: "Instagram", value: flow.application!.social_instagram },
+                      { label: "Followers", value: flow.application!.followers ? String(flow.application!.followers) : undefined },
+                      { label: "Portfolio", value: flow.application!.portfolio_url },
+                    ]
+                      .filter((item) => item.value)
+                      .map((item) => (
+                        <div key={item.label} className="rounded-xl border border-line bg-frost/40 px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/50">{item.label}</p>
+                          <p className="mt-0.5 text-sm text-foreground/80">{item.value}</p>
+                        </div>
+                      ))}
+                  </div>
+                </Card>
+              </>
             ) : (
               <WizardStepper
                 step={flow.step}
@@ -122,12 +174,23 @@ export function OnboardingFlow() {
             {!isPendingReview ? (
               <>
                 <div className="space-y-4">
+                  {isRejected && flow.application?.review_notes ? (
+                    <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive/70">
+                        A corriger
+                      </p>
+                      <p className="mt-1 text-sm text-foreground/75">{flow.application.review_notes}</p>
+                    </div>
+                  ) : null}
                   <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
                     {flow.step === 0 ? (
                       <StepPersonalForm
                         form={flow.form}
                         disabled={!flow.canEdit}
                         onFieldChange={flow.updateField}
+                        onBlurField={flow.validateField}
+                        errorField={flow.errorField}
+                        errorMessage={flow.errorMessage}
                       />
                     ) : null}
 
@@ -136,6 +199,9 @@ export function OnboardingFlow() {
                         form={flow.form}
                         disabled={!flow.canEdit}
                         onFieldChange={flow.updateField}
+                        onBlurField={flow.validateField}
+                        errorField={flow.errorField}
+                        errorMessage={flow.errorMessage}
                       />
                     ) : null}
 
@@ -145,17 +211,31 @@ export function OnboardingFlow() {
                         options={flow.options}
                         disabled={!flow.canEdit}
                         onFieldChange={flow.updateField}
+                        errorField={flow.errorField}
+                        errorMessage={flow.errorMessage}
                       />
                     ) : null}
                   </div>
 
                   <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
 
+                  {flow.draftRestored ? (
+                    <p className="text-center text-xs text-secondary/60 transition-opacity">
+                      Brouillon restaure depuis ta derniere visite
+                    </p>
+                  ) : null}
+                  {flow.draftSaved ? (
+                    <p className="text-center text-xs text-foreground/40 transition-opacity">
+                      Brouillon sauvegarde
+                    </p>
+                  ) : null}
+
                   <WizardActions
                     step={flow.step}
                     maxStep={WIZARD_STEPS.length - 1}
                     canEdit={flow.canEdit}
                     submitting={flow.submitting}
+                    submittingTooLong={flow.submittingTooLong}
                     onPrev={() => moveToStep(flow.step - 1)}
                     onNext={() => {
                       if (!flow.validateStep(flow.step)) {
@@ -170,7 +250,7 @@ export function OnboardingFlow() {
             ) : null}
           </div>
 
-          {flow.application?.review_notes ? (
+          {flow.application?.review_notes && !isRejected ? (
             <Card className="border-line bg-frost/70 p-4">
               <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Feedback equipe</p>
               <p className="mt-2 text-sm text-foreground/70">{flow.application.review_notes}</p>

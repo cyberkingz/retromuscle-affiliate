@@ -87,6 +87,7 @@ export interface CreatorDashboardData {
     amount: number;
     paidAt?: string;
   }>;
+  hasPayoutProfile: boolean;
 }
 
 export async function getCreatorDashboardData(input: {
@@ -105,9 +106,10 @@ export async function getCreatorDashboardData(input: {
     throw new Error("No creator found");
   }
 
-  const [creator, trackings] = await Promise.all([
+  const [creator, trackings, payoutProfile] = await Promise.all([
     repository.getCreatorById(targetCreatorId),
-    repository.listCreatorTrackings(targetCreatorId)
+    repository.listCreatorTrackings(targetCreatorId),
+    repository.getPayoutProfileByCreatorId(targetCreatorId)
   ]);
 
   if (!creator) {
@@ -316,6 +318,7 @@ export async function getCreatorDashboardData(input: {
       }))
     },
     activity,
-    paymentHistory
+    paymentHistory,
+    hasPayoutProfile: payoutProfile !== null
   };
 }

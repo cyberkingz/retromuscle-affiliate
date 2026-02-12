@@ -158,14 +158,13 @@ export async function POST(request: Request) {
     const response = apiJson(ctx, { ok: true }, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
-  } catch (error) {
+  } catch {
     const response = apiError(ctx, {
       status: 500,
       code: "INTERNAL",
-      message: error instanceof Error ? error.message : "Unable to save payout profile"
+      message: "Unable to save payout profile"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }
-

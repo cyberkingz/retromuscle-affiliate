@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+
 import type { CreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { CreatorHeader } from "@/features/creator-dashboard/components/creator-header";
 import { CreatorProgressCard } from "@/features/creator-dashboard/components/creator-progress-card";
@@ -16,7 +19,25 @@ interface CreatorDashboardPageProps {
 
 export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {!data.hasPayoutProfile ? (
+        <div
+          className="flex items-center gap-3 rounded-2xl border border-amber-400/40 bg-amber-50 px-5 py-4 text-sm text-amber-900"
+          role="alert"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <p>
+            Configure ton moyen de paiement pour recevoir tes revenus.{" "}
+            <Link
+              href="/settings"
+              className="font-semibold underline underline-offset-4 hover:text-amber-700"
+            >
+              Aller dans les parametres
+            </Link>
+          </p>
+        </div>
+      ) : null}
+
       <CreatorHeader
         handle={data.creator.handle}
         displayName={data.creator.displayName}
@@ -37,9 +58,7 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         deadlineLabel={toShortDate(data.plan.deadline)}
       />
 
-      <QuotasGrid items={data.quotasByType} />
-
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
         <UploadCard
           monthlyTrackingId={data.upload.monthlyTrackingId}
           specs={data.upload.specs}
@@ -56,10 +75,50 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         />
       </div>
 
-      <ActivityFeedCard items={data.activity} />
+      <div className="text-center">
+        <Link
+          href="/uploads"
+          className="text-sm font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80"
+        >
+          Voir tous mes uploads
+        </Link>
+      </div>
 
-      <PayoutBreakdownTable items={data.payoutBreakdown} />
-      <PaymentHistoryTable history={data.paymentHistory} />
+      <details className="rounded-[22px] border border-line bg-white/85 p-4" open>
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
+          Quotas par type ({data.quotasByType.length})
+        </summary>
+        <div className="pt-4">
+          <QuotasGrid items={data.quotasByType} />
+        </div>
+      </details>
+
+      <details className="rounded-[22px] border border-line bg-white/85 p-4">
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
+          Activite recente ({data.activity.length})
+        </summary>
+        <div className="pt-4">
+          <ActivityFeedCard items={data.activity} />
+        </div>
+      </details>
+
+      <details className="rounded-[22px] border border-line bg-white/85 p-4">
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
+          Estimation par type
+        </summary>
+        <div className="pt-4">
+          <PayoutBreakdownTable items={data.payoutBreakdown} />
+        </div>
+      </details>
+
+      <details className="rounded-[22px] border border-line bg-white/85 p-4">
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
+          Historique des paiements
+        </summary>
+        <div className="pt-4">
+          <PaymentHistoryTable history={data.paymentHistory} />
+        </div>
+      </details>
     </div>
   );
 }

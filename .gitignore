@@ -21,6 +21,18 @@ pnpm-debug.log*
 # env files
 .env*
 
+# MCP config (contains secrets)
+.mcp.json
+
+# Claude Code local state
+.claude/audio/
+.claude/config/
+.claude/tts-*.txt
+.claude/agentvibes-muted
+.claude/github-star-reminder.txt
+.claude/ralph-mission.md
+.claude/pricing-first-funnel-report.md
+
 # vercel
 .vercel
 

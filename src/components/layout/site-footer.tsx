@@ -1,9 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
+import { useAuth } from "@/features/auth/context/auth-context";
 
 export function SiteFooter() {
+  const auth = useAuth();
+  const isLoggedIn = !auth.loading && Boolean(auth.user);
+  const accountTarget = auth.redirectTarget ?? "/onboarding";
+
   return (
     <footer className="mt-14 border-t border-secondary/70 bg-secondary text-secondary-foreground">
       <div className="container-wide py-12 md:py-16">
@@ -18,10 +25,18 @@ export function SiteFooter() {
           <div className="space-y-4">
             <h4 className="text-sm uppercase tracking-[0.14em] text-white/90">Plateforme</h4>
             <ul className="space-y-2 text-sm text-white/75">
-              <li><Link href="/apply" className="hover:text-white">S&apos;inscrire</Link></li>
-              <li><Link href="/login" className="hover:text-white">Connexion</Link></li>
-              <li><Link href="/creators" className="hover:text-white">Programme createur</Link></li>
-              <li><Link href="/dashboard" className="hover:text-white">Espace createur</Link></li>
+              {isLoggedIn ? (
+                <>
+                  <li><Link href={accountTarget} className="hover:text-white">Mon espace</Link></li>
+                  <li><Link href="/creators" className="hover:text-white">Programme createur</Link></li>
+                </>
+              ) : (
+                <>
+                  <li><Link href="/apply" className="hover:text-white">S&apos;inscrire</Link></li>
+                  <li><Link href="/login" className="hover:text-white">Connexion</Link></li>
+                  <li><Link href="/creators" className="hover:text-white">Programme createur</Link></li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -30,7 +45,7 @@ export function SiteFooter() {
             <ul className="space-y-2 text-sm text-white/75">
               <li><Link href="/" className="hover:text-white">Comment ca marche</Link></li>
               <li><Link href="/creators" className="hover:text-white">Packs & revenus</Link></li>
-              <li><Link href="/join" className="hover:text-white">Guide d&apos;inscription</Link></li>
+              <li><Link href="/apply" className="hover:text-white">Guide d&apos;inscription</Link></li>
               <li><Link href="/privacy" className="hover:text-white">Confidentialite</Link></li>
               <li><Link href="/terms" className="hover:text-white">Conditions</Link></li>
             </ul>
@@ -45,6 +60,7 @@ export function SiteFooter() {
               <input
                 type="email"
                 placeholder="email@exemple.com"
+                aria-label="Email newsletter createurs"
                 className="h-11 w-full rounded-xl border border-white/40 bg-white/10 px-4 text-sm text-white placeholder:text-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
               <Button className="w-full">S&apos;abonner</Button>

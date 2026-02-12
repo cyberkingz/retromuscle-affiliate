@@ -51,7 +51,8 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
   const affiliateReady = isAffiliate && auth.redirectTarget === "/dashboard";
 
   const appTarget = auth.redirectTarget ?? "/onboarding";
-  const appLabel = isAdmin ? "Admin" : affiliateReady ? "Dashboard" : "Mon espace";
+  const accountTarget = isAdmin ? "/admin" : affiliateReady ? "/dashboard" : appTarget;
+  const accountLabel = isAdmin ? "Admin" : "Mon espace";
   const links = isAdmin ? adminLinks : affiliateReady ? creatorLinks : marketingLinks;
 
   return (
@@ -107,11 +108,9 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
           <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
             {!auth.loading && auth.user ? (
               <>
-                {!affiliateReady ? (
-                  <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
-                    <Link href={appTarget}>{appLabel}</Link>
-                  </Button>
-                ) : null}
+                <Button asChild size="sm" variant="outline" className="hidden xs:inline-flex">
+                  <Link href={accountTarget}>{accountLabel}</Link>
+                </Button>
                 <Button
                   size="sm"
                   className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
@@ -209,15 +208,13 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
 
               {!auth.loading && auth.user ? (
                 <>
-                  {!affiliateReady ? (
-                    <Link
-                      href={appTarget}
-                      onClick={() => setMobileOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
-                    >
-                      {appLabel}
-                    </Link>
-                  ) : null}
+                  <Link
+                    href={accountTarget}
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                  >
+                    {accountLabel}
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {

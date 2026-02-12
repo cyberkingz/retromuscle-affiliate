@@ -1,27 +1,10 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === "production";
 
-// Security headers (baseline). CSP is intentionally permissive for now to avoid breaking Next.js.
-// P0 follow-up: switch to nonce-based CSP and remove 'unsafe-inline'/'unsafe-eval' in production.
-const ContentSecurityPolicy = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${isProd ? "" : "'unsafe-eval'"} https:`,
-  "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https:",
-  "frame-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "upgrade-insecure-requests"
-]
-  .filter(Boolean)
-  .join("; ");
-
+// Security headers.
+// NOTE: Content-Security-Policy is set dynamically in middleware.ts using a
+// per-request nonce. Only non-CSP security headers are defined here.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: ContentSecurityPolicy },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -41,6 +24,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "retromuscle.net"
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co"
       }
     ]
   },
@@ -52,7 +39,9 @@ const nextConfig = {
       }
     ];
   },
-  experimental: {}
+  experimental: {
+    optimizePackageImports: ["lucide-react"]
+  }
 };
 
 export default nextConfig;

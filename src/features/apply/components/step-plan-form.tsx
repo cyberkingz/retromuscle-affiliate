@@ -10,9 +10,11 @@ interface StepPlanFormProps {
   options: OnboardingOptions | null;
   disabled: boolean;
   onFieldChange: ApplicationFieldUpdater;
+  errorField?: keyof ApplicationFormState | null;
+  errorMessage?: string | null;
 }
 
-export function StepPlanForm({ form, options, disabled, onFieldChange }: StepPlanFormProps) {
+export function StepPlanForm({ form, options, disabled, onFieldChange, errorField, errorMessage }: StepPlanFormProps) {
   return (
     <fieldset className="space-y-3" disabled={disabled}>
       <legend className="text-xs uppercase tracking-[0.12em] text-foreground/55">Etape 3 - Package et mix</legend>
@@ -34,6 +36,7 @@ export function StepPlanForm({ form, options, disabled, onFieldChange }: StepPla
               </SelectableCardButton>
             ))}
           </div>
+          {errorField === "packageTier" ? <p className="text-xs text-destructive">{errorMessage}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -52,6 +55,7 @@ export function StepPlanForm({ form, options, disabled, onFieldChange }: StepPla
               </SelectableCardButton>
             ))}
           </div>
+          {errorField === "mixName" ? <p className="text-xs text-destructive">{errorMessage}</p> : null}
         </div>
       </div>
     </fieldset>

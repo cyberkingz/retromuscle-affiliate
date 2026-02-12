@@ -1,11 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Barlow_Condensed, Space_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "@/app/globals.css";
 import { Providers } from "@/app/providers";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://retromuscle.net";
+const SITE_NAME = "RetroMuscle";
 
 const fontDisplay = Barlow_Condensed({
   subsets: ["latin"],
@@ -32,7 +36,7 @@ export const metadata: Metadata = {
     title: "RetroMuscle Programme Affilie",
     description: "Programme d'affiliation RetroMuscle pour createurs: missions mensuelles, validation rapide, paiements reguliers.",
     url: SITE_URL,
-    siteName: "RetroMuscle",
+    siteName: SITE_NAME,
     type: "website",
     images: [{ url: BRAND_ASSETS.heroLifestyle }]
   },
@@ -44,11 +48,49 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#061136"
+};
+
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: BRAND_ASSETS.logo
+    },
+    {
+      "@type": "WebSite",
+      name: `${SITE_NAME} Programme Affilie`,
+      url: SITE_URL,
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME
+      }
+    }
+  ]
+};
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="fr">
       <body className={`${fontDisplay.variable} ${fontBody.variable}`}>
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+        />
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

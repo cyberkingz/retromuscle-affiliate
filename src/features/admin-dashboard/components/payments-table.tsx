@@ -33,6 +33,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
   const router = useRouter();
 
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const markPaid = useCallback(
@@ -42,10 +43,8 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         return;
       }
 
-      const ok = window.confirm("Marquer ce paiement comme paye ? (action irreversible)");
-      if (!ok) return;
-
       setSubmittingId(monthlyTrackingId);
+      setConfirmingId(null);
       setError(null);
 
       try {
@@ -113,21 +112,46 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         cell: ({ row }) => {
           const isPaid = row.original.paymentStatusKey === "paye";
           const busy = submittingId === row.original.monthlyTrackingId;
+          const isConfirming = confirmingId === row.original.monthlyTrackingId;
           return (
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
               {isPaid ? (
                 <span className="inline-flex items-center gap-2 text-xs font-medium text-mint">
                   <CheckCircle2 className="h-4 w-4" />
                   Paye
                 </span>
+              ) : isConfirming ? (
+                <div className="flex items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
+                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer le paiement ?</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void markPaid(row.original.monthlyTrackingId)}
+                    disabled={!auth.user || busy}
+                  >
+                    {busy ? "..." : "Confirmer"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmingId(null)}
+                    disabled={busy}
+                  >
+                    Annuler
+                  </Button>
+                </div>
               ) : (
                 <Button
                   type="button"
                   size="sm"
-                  onClick={() => void markPaid(row.original.monthlyTrackingId)}
+                  onClick={() => {
+                    setError(null);
+                    setConfirmingId(row.original.monthlyTrackingId);
+                  }}
                   disabled={!auth.user || busy}
                 >
-                  {busy ? "..." : "Marquer paye"}
+                  Marquer paye
                 </Button>
               )}
             </div>
@@ -135,7 +159,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         }
       }
     ],
-    [auth.user, submittingId, markPaid]
+    [auth.user, submittingId, confirmingId, markPaid]
   );
 
   const action = (
@@ -189,14 +213,40 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
               <span className="font-semibold">{formatCurrency(row.amount)}</span>
             </div>
             {row.paymentStatusKey !== "paye" ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => void markPaid(row.monthlyTrackingId)}
-                disabled={!auth.user || submittingId === row.monthlyTrackingId}
-              >
-                Marquer paye
-              </Button>
+              confirmingId === row.monthlyTrackingId ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
+                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer le paiement ?</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void markPaid(row.monthlyTrackingId)}
+                    disabled={!auth.user || submittingId === row.monthlyTrackingId}
+                  >
+                    {submittingId === row.monthlyTrackingId ? "..." : "Confirmer"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmingId(null)}
+                    disabled={submittingId === row.monthlyTrackingId}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    setError(null);
+                    setConfirmingId(row.monthlyTrackingId);
+                  }}
+                  disabled={!auth.user || submittingId === row.monthlyTrackingId}
+                >
+                  Marquer paye
+                </Button>
+              )
             ) : null}
           </div>
         )}

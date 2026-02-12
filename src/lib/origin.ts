@@ -1,30 +1,36 @@
 export function resolveRequestOrigin(request: Request): string | null {
-  // Prefer forwarded headers in real deployments (Vercel, proxies).
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || request.headers.get("host")?.trim();
-
-  if (!host) {
+  try {
+    return new URL(request.url).origin;
+  } catch {
     return null;
   }
-
-  const url = new URL(request.url);
-  const proto = forwardedProto || url.protocol.replace(":", "");
-  return `${proto}://${host}`;
 }
 
-export function isAllowedOrigin(request: Request): boolean {
+export function isAllowedOrigin(
+  request: Request,
+  options?: {
+    allowMissingOrigin?: boolean;
+  }
+): boolean {
   const origin = request.headers.get("origin")?.trim();
-  // Many non-browser clients omit Origin (cron, tests, server-side fetch). Allow missing.
   if (!origin) {
-    return true;
+    return options?.allowMissingOrigin === true;
   }
 
   const expectedOrigin = resolveRequestOrigin(request);
-  if (!expectedOrigin) {
-    return false;
+  if (expectedOrigin && origin === expectedOrigin) {
+    return true;
   }
 
-  return origin === expectedOrigin;
-}
+  // Allow the canonical site URL too (useful for proxies and multi-domain setups).
+  const configuredSiteOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configuredSiteOrigin) {
+    try {
+      return origin === new URL(configuredSiteOrigin).origin;
+    } catch {
+      return false;
+    }
+  }
 
+  return false;
+}

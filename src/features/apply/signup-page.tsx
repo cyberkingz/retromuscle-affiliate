@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { CardSection } from "@/components/layout/card-section";
@@ -12,7 +10,7 @@ import { AuthCredentialsPanel } from "@/features/apply/components/auth-credentia
 import { FlashMessages } from "@/features/apply/components/flash-messages";
 import { useSignupFlow } from "@/features/apply/hooks/use-signup-flow";
 import type { ApplyMarketingData } from "@/features/apply/types";
-import { resolveRedirectTarget } from "@/features/auth/client/resolve-redirect-target";
+import { useAuthRedirect } from "@/features/auth/client/use-auth-redirect";
 
 interface SignupPageProps {
   marketing: ApplyMarketingData;
@@ -20,29 +18,10 @@ interface SignupPageProps {
 
 export function SignupPage({ marketing }: SignupPageProps) {
   const flow = useSignupFlow("signup");
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!flow.loadingSession && flow.user) {
-      let cancelled = false;
-
-      resolveRedirectTarget()
-        .then((target) => {
-          if (!cancelled) {
-            router.replace(target);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            router.replace("/onboarding");
-          }
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }
-  }, [flow.loadingSession, flow.user, router]);
+  const { redirecting } = useAuthRedirect({
+    hasSession: Boolean(flow.user),
+    loading: flow.loadingSession,
+  });
 
   return (
     <div className="mx-auto max-w-[1280px]">
@@ -60,6 +39,10 @@ export function SignupPage({ marketing }: SignupPageProps) {
               {flow.loadingSession ? (
                 <div className="flex h-40 items-center justify-center">
                   <p className="text-sm animate-pulse text-foreground/70">Chargement session...</p>
+                </div>
+              ) : flow.user && redirecting ? (
+                <div className="flex h-40 items-center justify-center">
+                  <p className="text-sm animate-pulse text-foreground/70">Redirection en cours...</p>
                 </div>
               ) : flow.user ? (
                 <div className="space-y-4 py-4">
@@ -104,6 +87,24 @@ export function SignupPage({ marketing }: SignupPageProps) {
           </CardSection>
 
           <FlashMessages statusMessage={flow.statusMessage} />
+
+          {flow.needsEmailConfirmation ? (
+            <div className="rounded-2xl border border-line bg-frost/70 p-4 sm:p-5">
+              <p className="text-sm text-foreground/75">
+                Tu n&apos;as pas recu l&apos;email ? Verifie tes spams ou clique ci-dessous pour en recevoir un nouveau.
+              </p>
+              <Button
+                type="button"
+                size="pill"
+                variant="outline"
+                className="mt-3"
+                disabled={flow.resending}
+                onClick={flow.resendVerificationEmail}
+              >
+                {flow.resending ? "Envoi en cours..." : "Renvoyer l'email"}
+              </Button>
+            </div>
+          ) : null}
         </section>
 
         {/* Right Column: Marketing info */}

@@ -75,6 +75,13 @@ export async function reviewCreatorApplication(
     throw new Error("Cannot approve a draft application");
   }
 
+  // --- Atomic approval flow ---
+  // 1. Provision creator + tracking first (idempotent via upsert).
+  // 2. Mark the application as approved only AFTER provisioning succeeds.
+  // This prevents the user from being stuck as "approved" without a creator record
+  // (which would loop them to /onboarding with no escape).
+  // If provisioning fails, the application stays in its current status and the admin can retry.
+
   const startDate = resolveTodayIsoDate();
   const creator = await repository.upsertCreatorFromApplication({
     application,
@@ -121,11 +128,24 @@ export async function reviewCreatorApplication(
     monthlyTrackingId = tracking.id;
   }
 
-  const reviewed = await repository.reviewCreatorApplication({
-    userId: input.userId,
-    status: "approved",
-    reviewNotes: input.reviewNotes ?? null
-  });
+  // Only mark approved after all provisioning succeeded.
+  // If this final step fails, the creator record already exists (idempotent upsert),
+  // so the admin can safely retry the approval.
+  let reviewed: CreatorApplication;
+  try {
+    reviewed = await repository.reviewCreatorApplication({
+      userId: input.userId,
+      status: "approved",
+      reviewNotes: input.reviewNotes ?? null
+    });
+  } catch (approvalError) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[reviewCreatorApplication] Creator provisioned but failed to mark application as approved. Admin can retry safely.",
+      { userId: input.userId, creatorId: creator.id, approvalError }
+    );
+    throw approvalError;
+  }
 
   return {
     application: reviewed,

@@ -3,6 +3,7 @@ import { MIX_LABELS, PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/c
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
 import { VIDEO_TYPES } from "@/domain/types";
+import { resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminCreatorDetailData {
   creator: {
@@ -54,6 +55,8 @@ export interface AdminCreatorDetailData {
     quotas: Record<string, number>;
     delivered: Record<string, number>;
   }>;
+  selectedMonth: string;
+  availableMonths: string[];
   currentMonth: {
     trackingId: string;
     videos: Array<{
@@ -77,7 +80,7 @@ export interface AdminCreatorDetailData {
   } | null;
 }
 
-export async function getAdminCreatorDetailData(input: { creatorId: string }): Promise<AdminCreatorDetailData> {
+export async function getAdminCreatorDetailData(input: { creatorId: string; month?: string }): Promise<AdminCreatorDetailData> {
   const repository = getRepository();
   const [creator, trackings, rates, packages] = await Promise.all([
     repository.getCreatorById(input.creatorId),
@@ -125,7 +128,14 @@ export async function getAdminCreatorDetailData(input: { creatorId: string }): P
     };
   });
 
-  const currentTracking = trackings[0] ?? null;
+  const availableMonths = [...trackings.map((t) => t.month)].sort((a, b) => b.localeCompare(a));
+  const selectedMonth = resolveMonth(
+    input.month,
+    trackings.map((t) => t.month)
+  );
+
+  const currentTracking =
+    trackings.find((t) => t.month === selectedMonth) ?? trackings[0] ?? null;
   const [currentVideos, currentRushes] = currentTracking
     ? await Promise.all([
         repository.listVideosByTracking(currentTracking.id),
@@ -170,10 +180,12 @@ export async function getAdminCreatorDetailData(input: { creatorId: string }): P
       }))
     },
     trackings: trackingsRows,
+    selectedMonth,
+    availableMonths,
     currentMonth: currentTracking
       ? {
           trackingId: currentTracking.id,
-          videos: currentVideos.slice(0, 16).map((video) => ({
+          videos: currentVideos.map((video) => ({
             id: video.id,
             videoType: VIDEO_TYPE_LABELS[video.videoType],
             status: video.status,
@@ -184,7 +196,7 @@ export async function getAdminCreatorDetailData(input: { creatorId: string }): P
             resolution: video.resolution,
             fileSizeMb: video.fileSizeMb
           })),
-          rushes: currentRushes.slice(0, 12).map((rush) => ({
+          rushes: currentRushes.map((rush) => ({
             id: rush.id,
             fileName: rush.fileName,
             fileUrl: rush.fileUrl,

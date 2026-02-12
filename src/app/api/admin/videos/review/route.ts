@@ -59,6 +59,12 @@ export async function POST(request: Request) {
     return auth.response;
   }
 
+  // Per-user rate limit (stricter, scoped to authenticated admin)
+  const userLimited = rateLimit({ ctx, request, key: "admin:videos:review", limit: 120, windowMs: 60_000, userId: auth.session.userId });
+  if (userLimited) {
+    return userLimited;
+  }
+
   let payload: ReviewVideoPayload;
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 }));

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ExternalLink, Eye, EyeOff } from "lucide-react";
 
@@ -23,9 +24,11 @@ function maskIban(value: string): string {
 
 interface AdminCreatorDetailPageProps {
   data: AdminCreatorDetailData;
+  creatorId: string;
 }
 
-export function AdminCreatorDetailPage({ data }: AdminCreatorDetailPageProps) {
+export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPageProps) {
+  const router = useRouter();
   const [showIban, setShowIban] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -208,7 +211,7 @@ export function AdminCreatorDetailPage({ data }: AdminCreatorDetailPageProps) {
       <SectionHeading
         eyebrow="Admin"
         title={`Createur ${data.creator.handle}`}
-        subtitle="Profil, contrat, paiements, et contenus du mois en cours."
+        subtitle="Profil, contrat, paiements, et contenus mensuels."
       />
 
       {error ? (
@@ -332,7 +335,7 @@ export function AdminCreatorDetailPage({ data }: AdminCreatorDetailPageProps) {
               </p>
             ) : (
               <div className="space-y-2">
-                {data.contract.signatures.slice(0, 6).map((signature) => (
+                {data.contract.signatures.map((signature) => (
                   <div key={signature.id} className="rounded-2xl border border-line bg-frost/70 px-4 py-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold">{signature.contractVersion}</p>
@@ -388,12 +391,37 @@ export function AdminCreatorDetailPage({ data }: AdminCreatorDetailPageProps) {
         </div>
       </DataTableCard>
 
+      {data.availableMonths.length > 0 ? (
+        <CardSection className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Periode affichee (videos & rushes)</p>
+            <select
+              value={data.selectedMonth}
+              onChange={(event) => {
+                const month = event.target.value;
+                router.push(`/admin/creators/${creatorId}?month=${month}`);
+              }}
+              className="h-9 rounded-xl border border-line bg-white px-3 text-sm capitalize"
+            >
+              {data.availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {monthToLabel(m)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </CardSection>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <DataTableCard title="Uploads videos (mois en cours)" subtitle="Liste des videos upload par le createur.">
+        <DataTableCard
+          title={`Uploads videos — ${monthToLabel(data.selectedMonth)}`}
+          subtitle="Liste des videos upload par le createur."
+        >
           <div className="p-5">
             {!current ? (
               <p className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
-                Aucun tracking actif.
+                Aucun tracking pour cette periode.
               </p>
             ) : (
               <DataTable
@@ -407,11 +435,14 @@ export function AdminCreatorDetailPage({ data }: AdminCreatorDetailPageProps) {
           </div>
         </DataTableCard>
 
-        <DataTableCard title="Rushes (mois en cours)" subtitle="Fichiers bruts upload (bonus).">
+        <DataTableCard
+          title={`Rushes — ${monthToLabel(data.selectedMonth)}`}
+          subtitle="Fichiers bruts upload (bonus)."
+        >
           <div className="p-5">
             {!current ? (
               <p className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
-                Aucun tracking actif.
+                Aucun tracking pour cette periode.
               </p>
             ) : (
               <DataTable

@@ -11,14 +11,14 @@ import { getSupabaseBrowserClient } from "@/infrastructure/supabase/browser-clie
 function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState("Connexion en cours...");
+  const [message, setMessage] = useState("Verification en cours...");
 
   useEffect(() => {
     let supabase: ReturnType<typeof getSupabaseBrowserClient> | null = null;
     try {
       supabase = getSupabaseBrowserClient();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Supabase is not configured");
+      setMessage(error instanceof Error ? error.message : "Service d'authentification indisponible.");
       return;
     }
     if (!supabase) {
@@ -35,16 +35,19 @@ function AuthCallbackClient() {
     async function run() {
       try {
         if (code) {
+          setMessage("Verification de ton email...");
           const { data: exchanged, error } = await client.auth.exchangeCodeForSession(code);
           if (error) {
             throw error;
           }
 
+          setMessage("Creation de ta session...");
           const accessToken =
             exchanged.session?.access_token ??
             (await client.auth.getSession()).data.session?.access_token;
 
           if (accessToken) {
+            setMessage("Redirection...");
             const target = await resolveRedirectTarget();
             router.replace(target);
             return;
@@ -53,9 +56,14 @@ function AuthCallbackClient() {
           router.replace(safeNext);
           return;
         }
-        setMessage("Callback invalide. Reviens a la page d'inscription.");
+        setMessage("Lien invalide. Retourne sur la page d'inscription pour recommencer.");
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Erreur de connexion");
+        const raw = error instanceof Error ? error.message : "";
+        if (raw.toLowerCase().includes("expired")) {
+          setMessage("Ce lien a expire. Demande un nouvel email de verification.");
+        } else {
+          setMessage("Erreur de connexion. Reessaie ou contacte le support.");
+        }
       }
     }
 
@@ -64,7 +72,7 @@ function AuthCallbackClient() {
 
   return (
     <Card className="max-w-lg bg-white p-6">
-      <p className="text-sm text-foreground/70">{message}</p>
+      <p className="text-sm animate-pulse text-foreground/70">{message}</p>
     </Card>
   );
 }
@@ -75,7 +83,7 @@ export default function AuthCallbackPage() {
       <Suspense
         fallback={
           <Card className="max-w-lg bg-white p-6">
-            <p className="text-sm text-foreground/70">Connexion en cours...</p>
+            <p className="text-sm animate-pulse text-foreground/70">Verification en cours...</p>
           </Card>
         }
       >

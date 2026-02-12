@@ -25,8 +25,14 @@ export async function GET(request: Request) {
     return response;
   }
 
-  const data = await getAdminDashboardData({ month });
-  const response = apiJson(ctx, data, { status: 200 });
-  if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-  return response;
+  try {
+    const data = await getAdminDashboardData({ month });
+    const response = apiJson(ctx, data, { status: 200 });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  } catch {
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to load admin overview" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
 }

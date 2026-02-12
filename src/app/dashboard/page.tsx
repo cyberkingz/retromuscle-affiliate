@@ -10,7 +10,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 export const metadata = createPageMetadata({
   title: "Dashboard Creator RetroMuscle",
   description: "Suis tes quotas, uploads, validations et paiements du cycle en cours.",
-  path: "/dashboard"
+  path: "/dashboard",
+  noIndex: true
 });
 
 interface DashboardRouteProps {

@@ -55,7 +55,9 @@ export async function protectPage(expectedTarget: RedirectTarget) {
   }
 
   if (target !== expectedTarget) {
-    redirect(`/not-authorized?next=${encodeURIComponent(expectedTarget)}`);
+    // Redirect to the user's actual target instead of a generic 403 page.
+    // e.g. pending_review users trying /dashboard get sent to /onboarding.
+    redirect(target);
   }
 }
 
@@ -70,6 +72,6 @@ export async function protectPageWithReturn(expectedTarget: RedirectTarget, retu
   }
 
   if (target !== expectedTarget) {
-    redirect(`/not-authorized?next=${encodeURIComponent(returnTo)}`);
+    redirect(target);
   }
 }

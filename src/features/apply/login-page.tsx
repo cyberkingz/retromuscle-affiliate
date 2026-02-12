@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { CardSection } from "@/components/layout/card-section";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -11,7 +10,7 @@ import { AuthCredentialsPanel } from "@/features/apply/components/auth-credentia
 import { FlashMessages } from "@/features/apply/components/flash-messages";
 import { useSignupFlow } from "@/features/apply/hooks/use-signup-flow";
 import type { ApplyMarketingData } from "@/features/apply/types";
-import { resolveRedirectTarget } from "@/features/auth/client/resolve-redirect-target";
+import { useAuthRedirect } from "@/features/auth/client/use-auth-redirect";
 
 interface LoginPageProps {
   marketing: ApplyMarketingData;
@@ -19,31 +18,12 @@ interface LoginPageProps {
 
 export function LoginPage({ marketing }: LoginPageProps) {
   const flow = useSignupFlow("signin");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
-
-  useEffect(() => {
-    if (!flow.loadingSession && flow.user) {
-      let cancelled = false;
-
-      resolveRedirectTarget()
-        .then((target) => {
-        if (!cancelled) {
-          router.replace(target);
-        }
-      })
-        .catch(() => {
-        if (!cancelled) {
-          router.replace("/onboarding");
-        }
-      });
-
-      return () => {
-        cancelled = true;
-      };
-    }
-  }, [flow.loadingSession, flow.user, router]);
+  const { redirecting } = useAuthRedirect({
+    hasSession: Boolean(flow.user),
+    loading: flow.loadingSession,
+  });
 
   return (
     <div className="mx-auto max-w-[1280px]">
@@ -56,16 +36,22 @@ export function LoginPage({ marketing }: LoginPageProps) {
               subtitle="Entre tes identifiants pour acceder a ton espace."
             />
 
-            {reason === "expired" ? (
+            {reason ? (
               <div className="mt-5 rounded-2xl border border-secondary/20 bg-frost/60 p-4 text-sm text-foreground/75">
-                Ta session a expire. Reconnecte-toi pour continuer.
+                {reason === "expired"
+                  ? "Ta session a expire. Reconnecte-toi pour continuer."
+                  : reason === "unauthorized"
+                    ? "Tu n'as pas acces a cette page. Connecte-toi avec le bon compte."
+                    : "Connecte-toi pour acceder a cette page."}
               </div>
             ) : null}
 
             <div className="mt-6 rounded-2xl border border-line bg-frost/70 p-4 sm:p-6">
-              {flow.loadingSession ? (
+              {flow.loadingSession || redirecting ? (
                 <div className="flex h-40 items-center justify-center">
-                  <p className="text-sm animate-pulse text-foreground/70">Chargement session...</p>
+                  <p className="text-sm animate-pulse text-foreground/70">
+                    {redirecting ? "Redirection en cours..." : "Chargement session..."}
+                  </p>
                 </div>
               ) : (
                 <AuthCredentialsPanel

@@ -4,16 +4,9 @@ import { getAdminPaymentsExportData } from "@/application/use-cases/get-admin-pa
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { apiError, createApiContext, finalizeResponse } from "@/lib/api-response";
+import { csvEscape, maskEmail, maskIban } from "@/lib/csv-utils";
 import { rateLimit } from "@/lib/rate-limit";
 import { parseMonthParam } from "@/lib/validation";
-
-function csvEscape(value: unknown): string {
-  const text = value === null || value === undefined ? "" : String(value);
-  if (/[\",\n\r]/.test(text)) {
-    return `"${text.replace(/\"/g, "\"\"")}"`;
-  }
-  return text;
-}
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
@@ -25,6 +18,12 @@ export async function GET(request: Request) {
   const auth = await requireApiRole(request, "admin", { ctx });
   if (!auth.ok) {
     return auth.response;
+  }
+
+  // Per-user rate limit (stricter, scoped to authenticated admin)
+  const userLimited = rateLimit({ ctx, request, key: "admin:payments:export", limit: 30, windowMs: 60_000, userId: auth.session.userId });
+  if (userLimited) {
+    return userLimited;
   }
 
   let month: string | undefined;
@@ -67,8 +66,8 @@ export async function GET(request: Request) {
           row.paidAt ?? "",
           row.payoutMethod ?? "",
           row.accountHolderName ?? "",
-          row.iban ?? "",
-          row.paypalEmail ?? "",
+          maskIban(row.iban),
+          maskEmail(row.paypalEmail),
           row.stripeAccount ?? "",
           row.monthlyTrackingId,
           row.creatorId

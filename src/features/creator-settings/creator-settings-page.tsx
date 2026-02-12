@@ -21,6 +21,11 @@ function isLikelyIban(value: string): boolean {
   return /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban) && iban.length >= 15 && iban.length <= 34;
 }
 
+function formatIbanPreview(value: string): string {
+  const clean = normalizeIban(value);
+  return clean.replace(/(.{4})/g, "$1 ").trim();
+}
+
 function maskLast4(value?: string | null): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) return null;
@@ -42,6 +47,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const existingIbanLast4 = useMemo(() => maskLast4(existing?.ibanLast4), [existing?.ibanLast4]);
 
@@ -49,30 +55,42 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
   const requiresPaypal = method === "paypal";
   const requiresStripe = method === "stripe";
 
+  // Inline validation states
+  const ibanTrimmed = iban.trim();
+  const ibanValid = !ibanTrimmed || isLikelyIban(ibanTrimmed);
+  const ibanFormatted = ibanTrimmed ? formatIbanPreview(ibanTrimmed) : "";
+  const holderNameValid = accountHolderName.trim().length >= 2;
+  const paypalEmailValid = !paypalEmail.trim() || isValidEmail(paypalEmail.trim());
+
+  function markTouched(field: string) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }
+
   async function savePayoutProfile() {
     setSaving(true);
     setStatusMessage(null);
     setErrorMessage(null);
+    setTouched({ accountHolderName: true, iban: true, paypalEmail: true, stripeAccount: true });
 
     try {
       if (requiresIban) {
-        if (accountHolderName.trim().length < 2) {
-          throw new Error("Renseigne le nom du titulaire du compte.");
+        if (!holderNameValid) {
+          throw new Error("Renseigne le nom du titulaire du compte (min. 2 caracteres).");
         }
 
         // Allow leaving IBAN empty if one is already on file (creator might only change the holder name).
-        if (!existingIbanLast4 && !iban.trim()) {
+        if (!existingIbanLast4 && !ibanTrimmed) {
           throw new Error("Renseigne ton IBAN (format international).");
         }
 
-        if (iban.trim() && !isLikelyIban(iban)) {
-          throw new Error("IBAN invalide. Exemple: FR76 3000 6000 0112 3456 7890 189");
+        if (ibanTrimmed && !isLikelyIban(ibanTrimmed)) {
+          throw new Error("IBAN invalide. Verifie le format. Exemple: FR76 3000 6000 0112 3456 7890 189");
         }
       }
 
       if (requiresPaypal) {
         if (!isValidEmail(paypalEmail.trim())) {
-          throw new Error("Renseigne un email PayPal valide.");
+          throw new Error("Renseigne un email PayPal valide (ex: prenom@email.com).");
         }
       }
 
@@ -89,7 +107,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
         body: JSON.stringify({
           method,
           accountHolderName: accountHolderName.trim() || null,
-          iban: requiresIban && iban.trim() ? normalizeIban(iban) : null,
+          iban: requiresIban && ibanTrimmed ? normalizeIban(ibanTrimmed) : null,
           paypalEmail: requiresPaypal ? paypalEmail.trim().toLowerCase() : null,
           stripeAccount: requiresStripe ? stripeAccount.trim() : null
         })
@@ -101,7 +119,8 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
       }
 
       setIban("");
-      setStatusMessage("Informations de paiement enregistrees.");
+      setTouched({});
+      setStatusMessage("Informations de paiement enregistrees avec succes. Tes prochains paiements utiliseront ces coordonnees.");
     } catch (caught) {
       setErrorMessage(caught instanceof Error ? caught.message : "Impossible d'enregistrer tes informations.");
     } finally {
@@ -112,7 +131,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
   return (
     <div className="space-y-6">
       <SectionHeading
-        eyebrow="Settings"
+        eyebrow="Parametres"
         title="Parametres du compte"
         subtitle="Mets a jour tes informations de paiement pour recevoir tes virements."
       />
@@ -146,7 +165,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
         <CardSection>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Paiement</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Informations de paiement</p>
               <p className="mt-2 text-sm text-foreground/75">
                 Renseigne tes coordonnees pour recevoir tes paiements mensuels.
               </p>
@@ -160,13 +179,16 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
 
           <div className="mt-5 space-y-4">
             <label className="block space-y-2 text-sm">
-              <span className="font-medium">Methode</span>
+              <span className="font-medium">
+                Methode de paiement <span className="text-destructive">*</span>
+              </span>
               <select
                 value={method}
                 onChange={(event) => {
                   setMethod(event.target.value as PayoutMethod);
                   setStatusMessage(null);
                   setErrorMessage(null);
+                  setTouched({});
                 }}
                 className="h-11 w-full rounded-xl border border-line bg-white px-3 text-sm"
               >
@@ -179,28 +201,61 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
             {requiresIban ? (
               <div className="space-y-3 rounded-2xl border border-line bg-frost/60 p-4">
                 <label className="block space-y-2 text-sm">
-                  <span className="font-medium">Titulaire du compte</span>
+                  <span className="font-medium">
+                    Titulaire du compte <span className="text-destructive">*</span>
+                  </span>
                   <Input
                     value={accountHolderName}
                     onChange={(event) => setAccountHolderName(event.target.value)}
+                    onBlur={() => markTouched("accountHolderName")}
                     placeholder="Prenom Nom"
                     autoComplete="name"
+                    className={
+                      touched.accountHolderName && !holderNameValid
+                        ? "border-destructive/50 focus:border-destructive"
+                        : undefined
+                    }
                   />
+                  {touched.accountHolderName && !holderNameValid ? (
+                    <p className="text-xs text-destructive">
+                      Le nom du titulaire est requis (min. 2 caracteres).
+                    </p>
+                  ) : null}
                 </label>
 
                 <label className="block space-y-2 text-sm">
-                  <span className="font-medium">IBAN</span>
+                  <span className="font-medium">
+                    IBAN {!existingIbanLast4 ? <span className="text-destructive">*</span> : null}
+                  </span>
                   <Input
                     value={iban}
                     onChange={(event) => setIban(event.target.value)}
+                    onBlur={() => markTouched("iban")}
                     placeholder={existingIbanLast4 ? `IBAN deja enregistre (fin ${existingIbanLast4})` : "FR76 3000 6000 0112 3456 7890 189"}
                     autoComplete="off"
+                    className={
+                      touched.iban && ibanTrimmed && !ibanValid
+                        ? "border-destructive/50 focus:border-destructive"
+                        : undefined
+                    }
                   />
-                  <p className="text-xs text-foreground/60">
-                    {existingIbanLast4
-                      ? "Pour changer ton IBAN, renseigne le nouveau puis enregistre."
-                      : "Ton IBAN est utilise uniquement pour les virements."}
-                  </p>
+                  {ibanTrimmed && ibanValid ? (
+                    <p className="text-xs text-mint">
+                      Format valide: {ibanFormatted}
+                    </p>
+                  ) : null}
+                  {touched.iban && ibanTrimmed && !ibanValid ? (
+                    <p className="text-xs text-destructive">
+                      Format IBAN invalide. Verifie le code pays (2 lettres), la cle (2 chiffres), puis le numero de compte. Exemple: FR76 3000 6000 0112 3456 7890 189
+                    </p>
+                  ) : null}
+                  {!ibanTrimmed ? (
+                    <p className="text-xs text-foreground/60">
+                      {existingIbanLast4
+                        ? "Pour changer ton IBAN, renseigne le nouveau puis enregistre."
+                        : "Ton IBAN est utilise uniquement pour les virements. Format: code pays + cle + numero de compte."}
+                    </p>
+                  ) : null}
                 </label>
               </div>
             ) : null}
@@ -208,13 +263,31 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
             {requiresPaypal ? (
               <div className="space-y-3 rounded-2xl border border-line bg-frost/60 p-4">
                 <label className="block space-y-2 text-sm">
-                  <span className="font-medium">Email PayPal</span>
+                  <span className="font-medium">
+                    Email PayPal <span className="text-destructive">*</span>
+                  </span>
                   <Input
                     value={paypalEmail}
                     onChange={(event) => setPaypalEmail(event.target.value)}
+                    onBlur={() => markTouched("paypalEmail")}
                     placeholder="paypal@email.com"
                     autoComplete="email"
+                    className={
+                      touched.paypalEmail && paypalEmail.trim() && !paypalEmailValid
+                        ? "border-destructive/50 focus:border-destructive"
+                        : undefined
+                    }
                   />
+                  {touched.paypalEmail && paypalEmail.trim() && !paypalEmailValid ? (
+                    <p className="text-xs text-destructive">
+                      Adresse email invalide. Verifie le format (ex: prenom@email.com).
+                    </p>
+                  ) : null}
+                  {paypalEmail.trim() && paypalEmailValid ? (
+                    <p className="text-xs text-mint">
+                      Format email valide.
+                    </p>
+                  ) : null}
                 </label>
               </div>
             ) : null}
@@ -222,7 +295,9 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
             {requiresStripe ? (
               <div className="space-y-3 rounded-2xl border border-line bg-frost/60 p-4">
                 <label className="block space-y-2 text-sm">
-                  <span className="font-medium">Stripe account</span>
+                  <span className="font-medium">
+                    Identifiant Stripe <span className="text-destructive">*</span>
+                  </span>
                   <Input
                     value={stripeAccount}
                     onChange={(event) => setStripeAccount(event.target.value)}
@@ -242,17 +317,17 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
               </p>
             ) : null}
             {statusMessage ? (
-              <p className="rounded-2xl border border-mint/25 bg-mint/10 px-4 py-3 text-sm text-foreground/80">
-                {statusMessage}
-              </p>
+              <div className="rounded-2xl border border-mint/25 bg-mint/10 px-4 py-3" role="status">
+                <p className="text-sm font-medium text-foreground/80">{statusMessage}</p>
+              </div>
             ) : null}
 
             <Button type="button" size="pill" onClick={() => void savePayoutProfile()} disabled={saving}>
-              {saving ? "Enregistrement..." : "Enregistrer"}
+              {saving ? "Enregistrement..." : "Enregistrer les informations"}
             </Button>
 
             <p className="text-xs text-foreground/60">
-              Besoin d&apos;aide ? Ecris-nous, on peut verifier tes infos de paiement.
+              Les champs marques d&apos;un <span className="text-destructive">*</span> sont obligatoires. Besoin d&apos;aide ? Ecris-nous, on peut verifier tes infos de paiement.
             </p>
           </div>
         </CardSection>

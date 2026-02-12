@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/features/auth/context/auth-context";
 import { INITIAL_FORM, mapRecordToForm } from "@/features/apply/state";
@@ -14,6 +14,62 @@ import {
   isValidTiktokUrl,
   normalizeHttpUrl
 } from "@/lib/validation";
+
+// ---------------------------------------------------------------------------
+// Supabase draft persistence helpers
+// ---------------------------------------------------------------------------
+const SAVE_DEBOUNCE_MS = 1_200;
+
+async function fetchDraft(): Promise<{ form: ApplicationFormState; step: number } | null> {
+  try {
+    const response = await fetch("/api/applications/draft", { cache: "no-store" });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      draft: { form_data: ApplicationFormState; step: number } | null;
+    };
+    if (!data.draft?.form_data) return null;
+    const fd = data.draft.form_data;
+    // Validate the shape before trusting it.
+    if (typeof fd.fullName !== "string" || typeof fd.whatsapp !== "string") return null;
+    return {
+      form: {
+        fullName: fd.fullName ?? "",
+        whatsapp: fd.whatsapp ?? "",
+        country: fd.country ?? "",
+        address: fd.address ?? "",
+        socialTiktok: fd.socialTiktok ?? "",
+        socialInstagram: fd.socialInstagram ?? "",
+        followers: fd.followers ?? "",
+        packageTier: fd.packageTier ?? 20,
+        mixName: fd.mixName ?? "VOLUME"
+      },
+      step: Math.max(0, Math.min(2, data.draft.step ?? 0))
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function saveDraftToServer(form: ApplicationFormState, step: number): Promise<boolean> {
+  try {
+    const response = await fetch("/api/applications/draft", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formData: form, step })
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteDraftFromServer(): Promise<void> {
+  try {
+    await fetch("/api/applications/draft", { method: "DELETE" });
+  } catch {
+    // Ignore delete failures.
+  }
+}
 
 async function fetchOnboardingOptions(): Promise<OnboardingOptions> {
   const response = await fetch("/api/onboarding/options", { cache: "no-store" });
@@ -55,6 +111,7 @@ interface UseOnboardingFlowResult {
   step: number;
   stepPercent: number;
   submitting: boolean;
+  submittingTooLong: boolean;
   statusMessage: string | null;
   errorMessage: string | null;
   canEdit: boolean;
@@ -63,7 +120,11 @@ interface UseOnboardingFlowResult {
     field: K,
     value: ApplicationFormState[K]
   ): void;
+  draftSaved: boolean;
+  draftRestored: boolean;
+  errorField: keyof ApplicationFormState | null;
   validateStep(step: number): boolean;
+  validateField(field: keyof ApplicationFormState): void;
   clearFocusField(): void;
   submitApplication(): Promise<void>;
   signOut(): Promise<void>;
@@ -149,9 +210,73 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
 
   const [options, setOptions] = useState<OnboardingOptions | null>(null);
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
+
   const [form, setForm] = useState<ApplicationFormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingTooLong, setSubmittingTooLong] = useState(false);
+  const submittingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step, setStep] = useState(0);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Auto-dismiss "Brouillon restaure" after 4 seconds.
+  const draftRestoredTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (draftRestored) {
+      draftRestoredTimerRef.current = setTimeout(() => setDraftRestored(false), 4_000);
+      return () => {
+        if (draftRestoredTimerRef.current) clearTimeout(draftRestoredTimerRef.current);
+      };
+    }
+  }, [draftRestored]);
+
+  // Track whether the initial Supabase draft load has completed to avoid
+  // saving back INITIAL_FORM before we've loaded the actual draft.
+  const draftLoadedRef = useRef(false);
+
+  // Debounced Supabase draft save whenever form or step changes.
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveDraft = useCallback((nextForm: ApplicationFormState, nextStep: number) => {
+    if (!draftLoadedRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void saveDraftToServer(nextForm, nextStep).then((ok) => {
+        if (ok) {
+          setDraftSaved(true);
+          if (draftSavedTimerRef.current) clearTimeout(draftSavedTimerRef.current);
+          draftSavedTimerRef.current = setTimeout(() => setDraftSaved(false), 1500);
+        }
+      });
+    }, SAVE_DEBOUNCE_MS);
+  }, []);
+
+  useEffect(() => {
+    saveDraft(form, step);
+  }, [form, step, saveDraft]);
+
+  // Cleanup debounce timers on unmount.
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (draftSavedTimerRef.current) clearTimeout(draftSavedTimerRef.current);
+    };
+  }, []);
+
+  // Warn user before leaving page with unsaved form data.
+  const formRef = useRef(form);
+  formRef.current = form;
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      const f = formRef.current;
+      const hasContent = f.fullName.trim() || f.whatsapp.trim() || f.socialTiktok.trim() || f.socialInstagram.trim();
+      if (hasContent) {
+        event.preventDefault();
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -179,6 +304,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     };
   }, []);
 
+  // Load existing application or draft from Supabase when user authenticates.
   useEffect(() => {
     if (!auth.user) {
       return;
@@ -186,18 +312,29 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
 
     let ignore = false;
 
-    fetchExistingApplication()
-      .then((record) => {
-        if (ignore || !record) {
-          return;
-        }
+    (async () => {
+      // First try to load an existing submitted application.
+      const record = await fetchExistingApplication().catch(() => null);
+      if (ignore) return;
 
+      if (record) {
         setApplication(record);
         setForm(mapRecordToForm(record));
-      })
-      .catch(() => {
-        // Ignore initial fetch issues and let user continue with a blank form.
-      });
+        draftLoadedRef.current = true;
+        return;
+      }
+
+      // No submitted application -- try to restore draft from Supabase.
+      const draft = await fetchDraft();
+      if (ignore) return;
+
+      if (draft) {
+        setForm(draft.form);
+        setStep(draft.step);
+        setDraftRestored(true);
+      }
+      draftLoadedRef.current = true;
+    })();
 
     return () => {
       ignore = true;
@@ -212,6 +349,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     value: ApplicationFormState[K]
   ): void {
     setForm((current) => ({ ...current, [field]: value }));
+    if (draftRestored) setDraftRestored(false);
   }
 
   function setSafeStep(nextStep: number) {
@@ -229,6 +367,19 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     setStatusMessage(null);
     setFocusField(result.field);
     return false;
+  }
+
+  function validateField(field: keyof ApplicationFormState) {
+    // Run the validation for the current step to check this specific field.
+    const result = validateWizardStep(step, form);
+    if (!result.ok && result.field === field) {
+      setErrorMessage(result.message);
+      setFocusField(result.field);
+    } else if (focusField === field) {
+      // Clear error if the field that was previously errored is now valid.
+      setErrorMessage(null);
+      setFocusField(null);
+    }
   }
 
   function clearFocusField() {
@@ -251,6 +402,9 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     setErrorMessage(null);
     setStatusMessage(null);
     setSubmitting(true);
+    setSubmittingTooLong(false);
+    if (submittingTimerRef.current) clearTimeout(submittingTimerRef.current);
+    submittingTimerRef.current = setTimeout(() => setSubmittingTooLong(true), 10_000);
 
     try {
       const followers = parseFollowers(form.followers);
@@ -287,11 +441,14 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
       }
 
       setApplication(data.application);
+      void deleteDraftFromServer();
       setStatusMessage("Dossier soumis. Tu recevras un retour apres revue de l'equipe.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Erreur sauvegarde dossier");
     } finally {
+      if (submittingTimerRef.current) clearTimeout(submittingTimerRef.current);
       setSubmitting(false);
+      setSubmittingTooLong(false);
     }
   }
 
@@ -301,6 +458,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
 
   async function signOut() {
     await auth.signOut();
+    void deleteDraftFromServer();
     setApplication(null);
     setForm(INITIAL_FORM);
     setStep(0);
@@ -316,12 +474,17 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     step,
     stepPercent,
     submitting,
+    submittingTooLong,
     statusMessage,
     errorMessage: errorMessage ?? auth.error,
     canEdit,
+    draftSaved,
+    draftRestored,
+    errorField: focusField,
     setStep: setSafeStep,
     updateField,
     validateStep,
+    validateField,
     clearFocusField,
     submitApplication,
     signOut

@@ -62,7 +62,9 @@ export async function resolveAuthSessionFromAccessToken(
 
   const user = userData.user;
   const email = user.email?.toLowerCase();
-  const metadataRole = normalizeRole(user.app_metadata?.role ?? user.user_metadata?.role);
+  // SECURITY: Only trust app_metadata.role (set by admin/service-role).
+  // Never fall back to user_metadata.role — users can self-set it via supabase.auth.updateUser().
+  const metadataRole = normalizeRole(user.app_metadata?.role);
   const isAdmin = metadataRole === "admin" || (email ? resolveAdminEmails().includes(email) : false);
 
   if (isAdmin) {

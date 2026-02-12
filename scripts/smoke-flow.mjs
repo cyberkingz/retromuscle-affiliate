@@ -77,14 +77,18 @@ async function fetchJson(baseUrl, path, options) {
 }
 
 async function api(jar, baseUrl, path, options = {}) {
+  const method = options.method ?? "GET";
   const headers = new Headers(options.headers ?? {});
   const cookie = jar.header();
   if (cookie) {
     headers.set("cookie", cookie);
   }
+  if (!headers.has("origin") && !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())) {
+    headers.set("origin", new URL(baseUrl).origin);
+  }
 
   const { response, json } = await fetchJson(baseUrl, path, {
-    method: options.method ?? "GET",
+    method,
     cache: "no-store",
     headers,
     body: options.json ? JSON.stringify(options.json) : undefined

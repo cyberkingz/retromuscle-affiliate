@@ -13,6 +13,8 @@ interface UseSignupFlowResult {
   password: string;
   confirmPassword: string;
   submitting: boolean;
+  needsEmailConfirmation: boolean;
+  resending: boolean;
   statusMessage: string | null;
   errorMessage: string | null;
   setMode(value: "signup" | "signin"): void;
@@ -20,6 +22,7 @@ interface UseSignupFlowResult {
   setPassword(value: string): void;
   setConfirmPassword(value: string): void;
   submitCredentials(): Promise<void>;
+  resendVerificationEmail(): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -30,6 +33,8 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -67,7 +72,8 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
       }
 
       if (data?.needsEmailConfirmation) {
-        setStatusMessage("Compte cree. Verifie ton email pour activer ton compte, puis reconnecte-toi.");
+        setNeedsEmailConfirmation(true);
+        setStatusMessage("Compte cree ! Verifie ton email et clique sur le lien — tu seras redirige automatiquement.");
         return;
       }
 
@@ -82,11 +88,41 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
     }
   }
 
+  async function resendVerificationEmail() {
+    if (!email || resending) return;
+    setResending(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ email })
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { ok?: boolean; message?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Impossible de renvoyer l'email.");
+      }
+
+      setStatusMessage(data?.message ?? "Email de verification renvoye.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Impossible de renvoyer l'email.");
+    } finally {
+      setResending(false);
+    }
+  }
+
   function setMode(modeValue: "signup" | "signin") {
     setModeState(modeValue);
     if (modeValue === "signin") {
       setConfirmPassword("");
     }
+    setNeedsEmailConfirmation(false);
     setStatusMessage(null);
     setErrorMessage(null);
   }
@@ -106,6 +142,8 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
     password,
     confirmPassword,
     submitting,
+    needsEmailConfirmation,
+    resending,
     statusMessage,
     errorMessage: errorMessage ?? auth.error,
     setMode,
@@ -113,6 +151,7 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
     setPassword,
     setConfirmPassword,
     submitCredentials,
+    resendVerificationEmail,
     signOut
   };
 }

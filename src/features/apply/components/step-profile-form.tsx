@@ -10,9 +10,15 @@ interface StepProfileFormProps {
   form: ApplicationFormState;
   disabled: boolean;
   onFieldChange: ApplicationFieldUpdater;
+  onBlurField?: (field: keyof ApplicationFormState) => void;
+  errorField?: keyof ApplicationFormState | null;
+  errorMessage?: string | null;
 }
 
-export function StepProfileForm({ form, disabled, onFieldChange }: StepProfileFormProps) {
+export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, errorField, errorMessage }: StepProfileFormProps) {
+  function inlineError(field: keyof ApplicationFormState) {
+    return errorField === field ? errorMessage : null;
+  }
   const tiktok = form.socialTiktok.trim();
   const instagram = form.socialInstagram.trim();
   const followersDigits = form.followers.replace(/[^\d]/g, "");
@@ -104,12 +110,18 @@ export function StepProfileForm({ form, disabled, onFieldChange }: StepProfileFo
             inputMode="numeric"
             value={followersDigits}
             onChange={(event) => onFieldChange("followers", event.target.value.replace(/[^\d]/g, ""))}
+            onBlur={() => onBlurField?.("followers")}
             disabled={disabled}
             placeholder="10000"
+            className={inlineError("followers") ? "border-destructive" : ""}
           />
-          <span className="block text-xs leading-relaxed text-foreground/55">
-            Exemple: 12500 {followersFormatted ? ` (soit ${followersFormatted})` : ""}
-          </span>
+          {inlineError("followers") ? (
+            <p className="text-xs text-destructive">{inlineError("followers")}</p>
+          ) : (
+            <span className="block text-xs leading-relaxed text-foreground/55">
+              Exemple: 12500 {followersFormatted ? ` (soit ${followersFormatted})` : ""}
+            </span>
+          )}
         </label>
       </div>
     </fieldset>

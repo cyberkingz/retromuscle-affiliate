@@ -4,7 +4,7 @@ Implementation basee sur le PRD (`PRD-UGC-Platform.md`) avec architecture modula
 
 ## Stack
 
-- Next.js 14 (App Router)
+- Next.js 15 (App Router)
 - TypeScript strict
 - Tailwind CSS
 - Architecture: `domain` -> `application` -> `features` -> `app`
@@ -20,6 +20,10 @@ Implementation basee sur le PRD (`PRD-UGC-Platform.md`) avec architecture modula
 - `/dashboard` : dashboard createur
 - `/admin` : dashboard admin
 - `/admin/applications` : revue des candidatures
+- `/admin/creators/:id` : detail createur (contrat, paiements, uploads)
+- `/uploads` : hub uploads createur
+- `/payouts` : recap paiements createur
+- `/settings` : settings createur
 - `/auth/callback` : callback auth (reserve integrations)
 
 ### Protection des routes
@@ -107,11 +111,7 @@ where
 
 ## Migrations Supabase
 
-Les migrations SQL sont dans `supabase/migrations`:
-
-- `20260204122000_create_ugc_platform_schema.sql`
-- `20260204123000_seed_ugc_reference_and_demo_data.sql`
-- `20260204124500_create_creator_applications.sql`
+Les migrations SQL sont dans `supabase/migrations` (schema + auth/RLS + storage + payout + audit + contrat).
 
 Appliquer via Supabase CLI:
 

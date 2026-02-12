@@ -76,9 +76,13 @@ export async function POST(request: Request) {
       message: "Service d'auth indisponible (configuration Supabase)."
     });
   }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: payload.email,
-    password: payload.password
+    password: payload.password,
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/callback?next=/onboarding`
+    }
   });
 
   if (signUpError) {

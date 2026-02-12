@@ -34,9 +34,6 @@ export function PendingReviewPanel({ application }: PendingReviewPanelProps) {
         <Button asChild size="pill" variant="outline">
           <Link href="/">Retour accueil</Link>
         </Button>
-        <Button asChild size="pill">
-          <Link href="/creators">Voir les revenus</Link>
-        </Button>
       </div>
     </Card>
   );

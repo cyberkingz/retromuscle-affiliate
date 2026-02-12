@@ -25,8 +25,14 @@ export async function GET(request: Request) {
 
   const status = rawStatus ? (rawStatus as ApplicationStatus) : undefined;
 
-  const data = await getAdminApplicationsData({ status });
-  const response = apiJson(ctx, data, { status: 200 });
-  if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-  return response;
+  try {
+    const data = await getAdminApplicationsData({ status });
+    const response = apiJson(ctx, data, { status: 200 });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  } catch {
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to load applications" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
 }

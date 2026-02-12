@@ -101,24 +101,33 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
     setError(null);
 
     try {
-      for (const videoId of videoIds) {
-        const response = await fetch("/api/admin/videos/review", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            videoId,
-            decision,
-            rejectionReason: decision === "rejected" ? reason ?? null : null
-          }),
-          cache: "no-store"
-        });
+      const response = await fetch("/api/admin/videos/review-batch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          videoIds,
+          decision,
+          rejectionReason: decision === "rejected" ? reason ?? null : null
+        }),
+        cache: "no-store"
+      });
 
-        if (!response.ok) {
-          const data = (await response.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(data?.message ?? "Impossible de mettre a jour la video.");
-        }
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(data?.message ?? "Impossible de mettre a jour les videos.");
+      }
+
+      const data = (await response.json().catch(() => null)) as {
+        results?: Array<{ videoId: string; ok: boolean; error?: string }>;
+      } | null;
+
+      const failures = data?.results?.filter((r) => !r.ok) ?? [];
+      if (failures.length > 0) {
+        const failedCount = failures.length;
+        const totalCount = videoIds.length;
+        setError(`${failedCount}/${totalCount} video(s) en erreur. ${failures[0]?.error ?? ""}`);
       }
 
       setRejectingId(null);
@@ -128,7 +137,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
       setRowSelection({});
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour la video.");
+      setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour les videos.");
     }
   }, [canAct, router]);
 
@@ -283,11 +292,13 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
               value={creatorFilter}
               onChange={(event) => setCreatorFilter(event.target.value)}
               placeholder="Filtrer par createur..."
+              aria-label="Filtrer par createur"
               className="h-10 w-full sm:w-[240px]"
             />
             <select
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
+              aria-label="Filtrer par type de video"
               className="h-10 rounded-xl border border-line bg-white px-3 text-sm"
             >
               <option value="ALL">Tous les types</option>
@@ -301,6 +312,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             <select
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value as "ALL" | "7D" | "30D")}
+              aria-label="Filtrer par periode"
               className="h-10 rounded-xl border border-line bg-white px-3 text-sm"
             >
               <option value="ALL">Toutes les dates</option>
