@@ -53,7 +53,7 @@ async function readVideoMetadata(file: File): Promise<{ durationSeconds: number;
 
     await new Promise<void>((resolve, reject) => {
       const timeoutId = window.setTimeout(() => {
-        reject(new Error("VIDEO_METADATA_TIMEOUT"));
+        reject(new Error("Impossible de lire les metadonnees (timeout). Verifie que le fichier est un MP4/MOV valide."));
       }, VIDEO_METADATA_TIMEOUT_MS);
 
       function cleanup() {
@@ -69,7 +69,7 @@ async function readVideoMetadata(file: File): Promise<{ durationSeconds: number;
 
       video.onerror = () => {
         cleanup();
-        reject(new Error("VIDEO_METADATA_UNREADABLE"));
+        reject(new Error("Impossible de lire la video. Verifie que le fichier est un MP4/MOV valide."));
       };
     });
 
@@ -177,29 +177,15 @@ export function UploadCard({
         throw new Error("Format invalide. Formats acceptes: MP4, MOV.");
       }
 
-      let durationSeconds = 30;
-      let resolution: VideoAsset["resolution"] = "1080x1920";
-      try {
-        const meta = await readVideoMetadata(file);
-        const parsedResolution = resolveAllowedResolution(meta.width, meta.height);
-        if (!parsedResolution) {
-          throw new Error(`Resolution non supportee (${meta.width}x${meta.height}).`);
-        }
-        if (meta.durationSeconds < 15 || meta.durationSeconds > 60) {
-          throw new Error(`Duree invalide (${meta.durationSeconds}s). Attendu: 15 a 60 secondes.`);
-        }
-        durationSeconds = meta.durationSeconds;
-        resolution = parsedResolution;
-      } catch (metadataError) {
-        const message = metadataError instanceof Error ? metadataError.message : "";
-        if (message === "VIDEO_METADATA_UNREADABLE" || message === "VIDEO_METADATA_TIMEOUT") {
-          setWarningMessage(
-            "Impossible de lire les metadonnees de ta video (duree, resolution). L'upload continue, mais l'equipe RetroMuscle verifiera manuellement. Assure-toi que ta video respecte les specs."
-          );
-        } else {
-          throw metadataError;
-        }
+      const meta = await readVideoMetadata(file);
+      const resolution = resolveAllowedResolution(meta.width, meta.height);
+      if (!resolution) {
+        throw new Error(`Resolution non supportee (${meta.width}x${meta.height}).`);
       }
+      if (meta.durationSeconds < 15 || meta.durationSeconds > 60) {
+        throw new Error(`Duree invalide (${meta.durationSeconds}s). Attendu: 15 a 60 secondes.`);
+      }
+      const durationSeconds = meta.durationSeconds;
 
       const fileSizeMb = Math.max(1, Math.ceil(file.size / (1024 * 1024)));
 
