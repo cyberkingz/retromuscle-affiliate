@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Play, ThumbsDown, ThumbsUp } from "lucide-react";
 import type { ColumnDef, RowSelectionState, SortingState } from "@tanstack/react-table";
 import {
   flexRender,
@@ -17,6 +17,8 @@ import { CardSection } from "@/components/layout/card-section";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { VideoPreviewModal } from "@/components/ui/video-preview-modal";
+import { useVideoPreview } from "@/hooks/use-video-preview";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { cn } from "@/lib/cn";
 
@@ -73,20 +75,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
     });
   }, [rows, creatorFilter, typeFilter, dateFilter]);
 
-  const openPreview = useCallback(async (fileUrl: string) => {
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/videos/preview?fileUrl=${encodeURIComponent(fileUrl)}`, { cache: "no-store" });
-      const data = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
-      if (!response.ok || !data?.signedUrl) {
-        throw new Error(data?.message ?? "Impossible de generer un lien de preview.");
-      }
-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
-    }
-  }, []);
+  const videoPreview = useVideoPreview("/api/videos/preview");
 
   const reviewMany = useCallback(async (
     videoIds: string[],
@@ -209,11 +198,17 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                 variant="outline"
                 onClick={(event) => {
                   event.stopPropagation();
-                  void openPreview(row.original.fileUrl);
+                  videoPreview.open({
+                    id: row.original.videoId,
+                    fileUrl: row.original.fileUrl,
+                    videoType: row.original.videoType,
+                    resolution: row.original.resolution,
+                    durationSeconds: row.original.durationSeconds,
+                  });
                 }}
                 disabled={!canAct}
               >
-                <ExternalLink className="mr-2 h-4 w-4" />
+                <Play className="mr-2 h-4 w-4" />
                 Voir
               </Button>
               <Button
@@ -249,7 +244,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
         }
       }
     ],
-    [canAct, openPreview, rejectingId, reviewOne]
+    [canAct, videoPreview, rejectingId, reviewOne]
   );
 
   const table = useReactTable({
@@ -499,6 +494,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
           ) : null}
         </div>
       )}
+      <VideoPreviewModal preview={videoPreview} title="Preview Video" />
     </CardSection>
   );
 }

@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.storage.from("videos").createSignedUrl(fileUrl, 60);
+  const { data, error } = await supabase.storage.from("videos").createSignedUrl(fileUrl, 300);
 
   if (error || !data?.signedUrl) {
     const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to generate preview URL" });

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Play } from "lucide-react";
 
 import type { AdminCreatorDetailData } from "@/application/use-cases/get-admin-creator-detail-data";
 import { CardSection } from "@/components/layout/card-section";
@@ -12,6 +12,9 @@ import { DataTableCard } from "@/components/ui/data-table-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
+import { VideoPreviewModal } from "@/components/ui/video-preview-modal";
+import { useVideoPreview } from "@/hooks/use-video-preview";
+import type { PreviewItem } from "@/hooks/use-video-preview";
 import { formatCurrency } from "@/lib/currency";
 import { monthToLabel, toShortDate } from "@/lib/date";
 import { paymentStatusTone, videoStatusTone } from "@/lib/status-tone";
@@ -30,40 +33,41 @@ interface AdminCreatorDetailPageProps {
 export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPageProps) {
   const router = useRouter();
   const [showIban, setShowIban] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const videoPreview = useVideoPreview("/api/videos/preview");
+  const rushPreview = useVideoPreview("/api/rushes/preview");
 
   const payouts = data.trackings;
   const current = data.currentMonth;
 
   const hasContract = Boolean(data.contract.signedAt);
 
-  async function openVideoPreview(fileUrl: string) {
-    setError(null);
-    try {
-      const response = await fetch(`/api/videos/preview?fileUrl=${encodeURIComponent(fileUrl)}`, { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
-      if (!response.ok || !payload?.signedUrl) {
-        throw new Error(payload?.message ?? "Impossible de generer un lien de preview.");
-      }
-      window.open(payload.signedUrl, "_blank", "noopener,noreferrer");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
-    }
-  }
+  const videoPreviewItems: PreviewItem[] = useMemo(
+    () =>
+      current?.videos.map((v) => ({
+        id: v.id,
+        fileUrl: v.fileUrl,
+        videoType: v.videoType,
+        resolution: v.resolution,
+        durationSeconds: v.durationSeconds,
+        fileSizeMb: v.fileSizeMb,
+        status: v.status,
+      })) ?? [],
+    [current?.videos]
+  );
 
-  async function openRushPreview(fileUrl: string) {
-    setError(null);
-    try {
-      const response = await fetch(`/api/rushes/preview?fileUrl=${encodeURIComponent(fileUrl)}`, { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
-      if (!response.ok || !payload?.signedUrl) {
-        throw new Error(payload?.message ?? "Impossible de generer un lien de preview.");
-      }
-      window.open(payload.signedUrl, "_blank", "noopener,noreferrer");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
-    }
-  }
+  const rushPreviewItems: PreviewItem[] = useMemo(
+    () =>
+      current?.rushes
+        .filter((r): r is typeof r & { fileUrl: string } => Boolean(r.fileUrl))
+        .map((r) => ({
+          id: r.id,
+          fileUrl: r.fileUrl,
+          fileName: r.fileName,
+          fileSizeMb: r.fileSizeMb,
+        })) ?? [],
+    [current?.rushes]
+  );
 
   const trackingColumns = useMemo<ColumnDef<(typeof payouts)[number]>[]>(
     () => [
@@ -146,22 +150,27 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => void openVideoPreview(row.original.fileUrl)}
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Voir
-            </Button>
-          </div>
-        )
+        cell: ({ row }) => {
+          const item = videoPreviewItems.find((v) => v.id === row.original.id);
+          return (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (item) videoPreview.open(item, videoPreviewItems);
+                }}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Voir
+              </Button>
+            </div>
+          );
+        }
       }
     ],
-    []
+    [videoPreviewItems, videoPreview]
   );
 
   const rushColumns = useMemo<ColumnDef<NonNullable<AdminCreatorDetailData["currentMonth"]>["rushes"][number]>[]>(
@@ -187,23 +196,28 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => (row.original.fileUrl ? void openRushPreview(row.original.fileUrl) : undefined)}
-              disabled={!row.original.fileUrl}
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Voir
-            </Button>
-          </div>
-        )
+        cell: ({ row }) => {
+          const item = rushPreviewItems.find((r) => r.id === row.original.id);
+          return (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (item) rushPreview.open(item, rushPreviewItems);
+                }}
+                disabled={!row.original.fileUrl}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Voir
+              </Button>
+            </div>
+          );
+        }
       }
     ],
-    []
+    [rushPreviewItems, rushPreview]
   );
 
   return (
@@ -213,12 +227,6 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
         title={`Createur ${data.creator.handle}`}
         subtitle="Profil, contrat, paiements, et contenus mensuels."
       />
-
-      {error ? (
-        <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <CardSection className="space-y-4 lg:col-span-2">
@@ -456,7 +464,9 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
           </div>
         </DataTableCard>
       </div>
+
+      <VideoPreviewModal preview={videoPreview} title="Preview Video" />
+      <VideoPreviewModal preview={rushPreview} title="Preview Rush" />
     </div>
   );
 }
-

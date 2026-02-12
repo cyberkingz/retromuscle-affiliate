@@ -29,6 +29,7 @@ function buildCsp(nonce: string): string {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https:",
+    "media-src 'self' https://*.supabase.co blob:",
     "frame-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
