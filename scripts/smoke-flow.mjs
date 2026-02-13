@@ -124,7 +124,7 @@ async function main() {
 
   const createdUserIds = [];
 
-  console.log("[1/9] Creating auth users (admin + affiliate)...");
+  console.log("[1/12] Creating auth users (admin + affiliate)...");
   {
     const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
       email: adminEmail,
@@ -152,7 +152,7 @@ async function main() {
   const adminJar = new CookieJar();
   const affiliateJar = new CookieJar();
 
-  console.log("[2/9] Fetching onboarding options (packages/mixes)...");
+  console.log("[2/12] Fetching onboarding options (packages/mixes)...");
   const options = await api(new CookieJar(), baseUrl, "/api/onboarding/options");
   assertOk("onboarding options", options);
   const pkg = options.json?.packages?.[0];
@@ -161,7 +161,7 @@ async function main() {
     throw new Error("Missing onboarding options in response");
   }
 
-  console.log("[3/9] Signing in affiliate via app API (cookie-based)...");
+  console.log("[3/12] Signing in affiliate via app API (cookie-based)...");
   const affiliateSignIn = await api(affiliateJar, baseUrl, "/api/auth/sign-in", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -169,7 +169,7 @@ async function main() {
   });
   assertOk("affiliate sign-in", affiliateSignIn);
 
-  console.log("[4/9] Submitting creator application (step 3)...");
+  console.log("[4/12] Submitting creator application (step 3)...");
   const applicationSave = await api(affiliateJar, baseUrl, "/api/applications/me", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -191,7 +191,7 @@ async function main() {
     throw new Error("Application did not transition to pending_review");
   }
 
-  console.log("[5/9] Signing in admin via app API (cookie-based)...");
+  console.log("[5/12] Signing in admin via app API (cookie-based)...");
   const adminSignIn = await api(adminJar, baseUrl, "/api/auth/sign-in", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -199,7 +199,7 @@ async function main() {
   });
   assertOk("admin sign-in", adminSignIn);
 
-  console.log("[6/9] Approving application (admin)...");
+  console.log("[6/12] Approving application (admin)...");
   const approve = await api(adminJar, baseUrl, "/api/admin/applications/review", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -211,7 +211,7 @@ async function main() {
     throw new Error("Missing creatorId after approval");
   }
 
-  console.log("[7/9] Signing contract (affiliate)...");
+  console.log("[7/12] Signing contract (affiliate)...");
   const contract = await api(affiliateJar, baseUrl, "/api/contract/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ async function main() {
   });
   assertOk("contract sign", contract);
 
-  console.log("[8/9] Uploading a dummy video (signed upload + record)...");
+  console.log("[8/12] Uploading a dummy video (signed upload + record)...");
   const dashBefore = await api(affiliateJar, baseUrl, `/api/creator/${creatorId}/dashboard`);
   assertOk("creator dashboard (before upload)", dashBefore);
   const trackingId = dashBefore.json?.upload?.monthlyTrackingId;
@@ -269,7 +269,7 @@ async function main() {
     throw new Error("Missing video id in record response");
   }
 
-  console.log("[9/9] Reviewing video (admin) and validating delivered counts...");
+  console.log("[9/12] Reviewing video (admin) and validating delivered counts...");
   const overview = await api(adminJar, baseUrl, "/api/admin/overview");
   assertOk("admin overview", overview);
   const queueIds = Array.isArray(overview.json?.validationQueue)
@@ -293,7 +293,37 @@ async function main() {
     throw new Error("Delivered counts not updated after approval");
   }
 
-  console.log("Smoke flow OK: signup -> onboarding submit -> admin approve -> contract -> upload -> approve.");
+  console.log("[10/12] Mark-paid guard: attempt WITHOUT payout profile (expect 400)...");
+  const markPaidNoProfile = await api(adminJar, baseUrl, "/api/admin/payments/mark-paid", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    json: { monthlyTrackingId: trackingId }
+  });
+  if (markPaidNoProfile.ok || markPaidNoProfile.status !== 400) {
+    throw new Error(`Expected 400 without payout profile, got HTTP ${markPaidNoProfile.status}`);
+  }
+  const guardMsg = markPaidNoProfile.json?.message ?? "";
+  if (!guardMsg.startsWith("Impossible:")) {
+    throw new Error(`Expected 'Impossible:' error message, got: ${guardMsg}`);
+  }
+
+  console.log("[11/12] Setting up payout profile (affiliate saves PayPal)...");
+  const saveProfile = await api(affiliateJar, baseUrl, "/api/creator/payout-profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    json: { method: "paypal", paypalEmail: affiliateEmail }
+  });
+  assertOk("save payout profile", saveProfile);
+
+  console.log("[12/12] Mark-paid WITH payout profile (expect 200)...");
+  const markPaidOk = await api(adminJar, baseUrl, "/api/admin/payments/mark-paid", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    json: { monthlyTrackingId: trackingId }
+  });
+  assertOk("mark paid with profile", markPaidOk);
+
+  console.log("Smoke flow OK: signup -> onboard -> approve -> contract -> upload -> review -> payment guard -> mark paid.");
 
   // Best-effort cleanup to keep the project tidy.
   try {
@@ -305,6 +335,12 @@ async function main() {
 
   try {
     await supabase.from("videos").delete().eq("id", videoId);
+  } catch {
+    // ignore
+  }
+
+  try {
+    await supabase.from("creator_payout_profiles").delete().eq("creator_id", creatorId);
   } catch {
     // ignore
   }

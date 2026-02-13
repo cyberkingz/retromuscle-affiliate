@@ -62,6 +62,7 @@ export interface AdminDashboardData {
     amount: number;
     paymentStatus: string;
     paymentStatusKey: PaymentStatus;
+    hasPayoutProfile: boolean;
   }>;
 }
 
@@ -168,15 +169,32 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
         resolution: video.resolution
       };
     }),
-    payments: monthlyRows.map((row) => ({
-      monthlyTrackingId: row.monthlyTrackingId,
-      creatorId: row.creatorId,
-      email: creatorById.get(row.creatorId)?.email ?? "",
-      creatorHandle: row.handle,
-      deliveredSummary: `${row.deliveredTotal}/${row.packageTier}`,
-      amount: row.payoutAmount,
-      paymentStatus: row.paymentStatus,
-      paymentStatusKey: row.paymentStatusKey
-    }))
+    payments: await (async () => {
+      const uniqueCreatorIds = [...new Set(monthlyRows.map((row) => row.creatorId))];
+      const profiles = await Promise.all(
+        uniqueCreatorIds.map((id) => repository.getPayoutProfileByCreatorId(id))
+      );
+      const validProfileCreatorIds = new Set(
+        uniqueCreatorIds.filter((id, i) => {
+          const p = profiles[i];
+          if (!p) return false;
+          if (p.method === "iban" && !p.iban) return false;
+          if (p.method === "paypal" && !p.paypalEmail) return false;
+          if (p.method === "stripe" && !p.stripeAccount) return false;
+          return true;
+        })
+      );
+      return monthlyRows.map((row) => ({
+        monthlyTrackingId: row.monthlyTrackingId,
+        creatorId: row.creatorId,
+        email: creatorById.get(row.creatorId)?.email ?? "",
+        creatorHandle: row.handle,
+        deliveredSummary: `${row.deliveredTotal}/${row.packageTier}`,
+        amount: row.payoutAmount,
+        paymentStatus: row.paymentStatus,
+        paymentStatusKey: row.paymentStatusKey,
+        hasPayoutProfile: validProfileCreatorIds.has(row.creatorId)
+      }));
+    })()
   };
 }

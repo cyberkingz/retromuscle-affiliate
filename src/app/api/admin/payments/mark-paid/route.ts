@@ -89,8 +89,14 @@ export async function POST(request: Request) {
     const response = apiJson(ctx, { tracking }, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
-  } catch {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to mark paid" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to mark paid";
+    const isValidation = message.startsWith("Impossible:");
+    const response = apiError(ctx, {
+      status: isValidation ? 400 : 500,
+      code: isValidation ? "BAD_REQUEST" : "INTERNAL",
+      message
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

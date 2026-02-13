@@ -136,8 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setRole(null);
       setRedirectTarget(null);
+      setError(null);
     }
-  }, []);
+
+    if (pathname !== "/login") {
+      window.location.href = "/login";
+    }
+  }, [pathname]);
 
   useEffect(() => {
     let ignore = false;

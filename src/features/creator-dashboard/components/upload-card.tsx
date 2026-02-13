@@ -332,7 +332,7 @@ export function UploadCard({
         ref={fileInputRef}
         type="file"
         accept="video/mp4,video/quicktime,.mp4,.mov"
-        className="hidden"
+        className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
@@ -395,7 +395,10 @@ export function UploadCard({
             size="pill"
             variant="outline"
             disabled={!canUpload}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(event) => {
+              event.stopPropagation();
+              fileInputRef.current?.click();
+            }}
           >
             {uploading ? `Upload... ${uploadProgress}%` : "Parcourir les fichiers"}
           </Button>

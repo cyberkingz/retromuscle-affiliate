@@ -25,6 +25,7 @@ interface PaymentsTableProps {
     amount: number;
     paymentStatus: string;
     paymentStatusKey: "a_faire" | "en_cours" | "paye";
+    hasPayoutProfile: boolean;
   }>;
 }
 
@@ -60,7 +61,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
           throw new Error(payload?.message ?? "Impossible de mettre a jour le statut.");
         }
 
-        router.refresh();
+        window.location.reload();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour le statut.");
       } finally {
@@ -113,12 +114,17 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
           const isPaid = row.original.paymentStatusKey === "paye";
           const busy = submittingId === row.original.monthlyTrackingId;
           const isConfirming = confirmingId === row.original.monthlyTrackingId;
+          const noProfile = !row.original.hasPayoutProfile;
           return (
             <div className="flex flex-col items-end gap-2">
               {isPaid ? (
                 <span className="inline-flex items-center gap-2 text-xs font-medium text-mint">
                   <CheckCircle2 className="h-4 w-4" />
                   Paye
+                </span>
+              ) : noProfile ? (
+                <span className="text-xs font-medium text-destructive">
+                  Profil paiement manquant
                 </span>
               ) : isConfirming ? (
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm min-w-[280px]">
@@ -215,7 +221,11 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
               <span className="font-semibold">{formatCurrency(row.amount)}</span>
             </div>
             {row.paymentStatusKey !== "paye" ? (
-              confirmingId === row.monthlyTrackingId ? (
+              !row.hasPayoutProfile ? (
+                <span className="text-xs font-medium text-destructive">
+                  Profil paiement manquant
+                </span>
+              ) : confirmingId === row.monthlyTrackingId ? (
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
                   <span className="text-xs text-foreground/70">Action irreversible. Confirmer le paiement ?</span>
                   <Button
