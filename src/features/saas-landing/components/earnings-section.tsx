@@ -27,7 +27,7 @@ export function EarningsSection({ title, subtitle, scenarios }: EarningsSectionP
         <p className="mx-auto max-w-2xl text-foreground/70">{subtitle}</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {scenarios.map((scenario) => (
           <CardSection key={scenario.tier} className="flex flex-col">
             <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Pack {scenario.tier}</p>
@@ -35,7 +35,7 @@ export function EarningsSection({ title, subtitle, scenarios }: EarningsSectionP
               {formatCurrency(scenario.estimatedAmount)}
             </p>
             <p className="mt-2 text-sm text-foreground/75">
-              Scenario sur {scenario.videos} videos (mix {scenario.mixLabel}).
+              Avec {scenario.videos} videos/mois (style {scenario.mixLabel}).
             </p>
 
             <div className="mt-4 grid gap-2 rounded-2xl border border-line bg-frost/60 p-4 text-sm text-foreground/75">
@@ -46,7 +46,7 @@ export function EarningsSection({ title, subtitle, scenarios }: EarningsSectionP
                 </div>
               ))}
               <p className="text-xs text-foreground/55">
-                Credits inclus: {formatCurrency(scenario.credits)}
+                Bonus fixe inclus: {formatCurrency(scenario.credits)}
               </p>
             </div>
 

@@ -14,7 +14,7 @@ export function PainValueGrid({ items }: PainValueGridProps) {
           Avant / Apres
         </Badge>
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
-          De la friction au systeme
+          Pourquoi rejoindre le programme
         </h2>
       </div>
 
@@ -23,7 +23,7 @@ export function PainValueGrid({ items }: PainValueGridProps) {
           <Card key={index} className="overflow-hidden border-line bg-white/90">
             <CardContent className="grid gap-4 p-0 sm:grid-cols-[1fr_auto_1fr] sm:items-stretch">
               <div className="space-y-2 bg-frost px-5 py-5">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">Probleme</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">Aujourd&apos;hui</span>
                 <p className="text-lg text-foreground/70 leading-snug">{item.pain}</p>
               </div>
 
@@ -34,7 +34,7 @@ export function PainValueGrid({ items }: PainValueGridProps) {
               </div>
 
               <div className="space-y-2 bg-white px-5 py-5 sm:text-right">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Resultat</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Avec RetroMuscle</span>
                 <p className="text-lg font-medium text-secondary leading-snug">{item.value}</p>
               </div>
             </CardContent>

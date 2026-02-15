@@ -20,7 +20,8 @@ import type {
   RushAsset,
   VideoAsset,
   VideoRate,
-  VideoStatus
+  VideoStatus,
+  VideoType
 } from "@/domain/types";
 
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
@@ -129,6 +130,29 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async listMixDefinitions(): Promise<MixDefinition[]> {
     return Object.values(MIX_DEFINITIONS);
+  }
+
+  async updatePackageDefinition(_input: {
+    tier: PackageTier;
+    quotaVideos: number;
+    monthlyCredits: number;
+  }): Promise<PackageDefinition> {
+    throw new Error("Config updates are not available in offline mode");
+  }
+
+  async updateMixDefinition(_input: {
+    name: MixDefinition["name"];
+    distribution: MixDefinition["distribution"];
+    positioning: string;
+  }): Promise<MixDefinition> {
+    throw new Error("Config updates are not available in offline mode");
+  }
+
+  async updateVideoRate(_input: {
+    videoType: VideoRate["videoType"];
+    ratePerVideo: number;
+  }): Promise<VideoRate> {
+    throw new Error("Config updates are not available in offline mode");
   }
 
   async getPayoutProfileByCreatorId(_creatorId: string): Promise<CreatorPayoutProfile | null> {

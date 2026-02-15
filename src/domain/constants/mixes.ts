@@ -10,7 +10,7 @@ export const MIX_DEFINITIONS: Record<MixName, MixDefinition> = {
       SPORTS_80S: 0,
       CINEMATIC: 0.05
     },
-    positioning: "Max volume performance. Direction artistique minimale."
+    positioning: "Maximum de videos. Style libre, peu de contraintes creatives."
   },
   EQUILIBRE: {
     name: "EQUILIBRE",
@@ -21,7 +21,7 @@ export const MIX_DEFINITIONS: Record<MixName, MixDefinition> = {
       SPORTS_80S: 0.1,
       CINEMATIC: 0.05
     },
-    positioning: "Mix équilibré performance + image de marque."
+    positioning: "Bon equilibre entre volume et qualite de marque."
   },
   PREMIUM_80S: {
     name: "PREMIUM_80S",
@@ -32,7 +32,7 @@ export const MIX_DEFINITIONS: Record<MixName, MixDefinition> = {
       SPORTS_80S: 0.2,
       CINEMATIC: 0.15
     },
-    positioning: "Direction artistique forte, coût créatif plus élevé."
+    positioning: "Contenu premium avec forte identite retro. Plus exigeant."
   },
   TRANSFO_HEAVY: {
     name: "TRANSFO_HEAVY",
@@ -43,6 +43,6 @@ export const MIX_DEFINITIONS: Record<MixName, MixDefinition> = {
       SPORTS_80S: 0.1,
       CINEMATIC: 0.05
     },
-    positioning: "Focus transformations Before/After."
+    positioning: "Axe sur les transformations avant/apres."
   }
 };

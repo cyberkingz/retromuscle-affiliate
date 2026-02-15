@@ -15,10 +15,10 @@ export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
 };
 
 export const MIX_LABELS: Record<MixName, string> = {
-  VOLUME: "Volume",
+  VOLUME: "Volume Max",
   EQUILIBRE: "Equilibre",
-  PREMIUM_80S: "Premium 80s",
-  TRANSFO_HEAVY: "Transfo Heavy"
+  PREMIUM_80S: "Premium Retro",
+  TRANSFO_HEAVY: "Transformations"
 };
 
 export const CREATOR_STATUS_LABELS: Record<CreatorStatus, string> = {

@@ -717,6 +717,86 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }));
   }
 
+  async updatePackageDefinition(input: {
+    tier: PackageTier;
+    quotaVideos: number;
+    monthlyCredits: number;
+  }): Promise<PackageDefinition> {
+    const { data, error } = await this.client
+      .from("package_definitions")
+      .update({
+        quota_videos: input.quotaVideos,
+        monthly_credits: input.monthlyCredits
+      })
+      .eq("tier", input.tier)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update package definition tier ${input.tier}: ${error.message}`);
+    }
+
+    const row = data as PackageDefinitionRow;
+    return {
+      tier: row.tier as PackageTier,
+      quotaVideos: row.quota_videos,
+      monthlyCredits: Number(row.monthly_credits)
+    };
+  }
+
+  async updateMixDefinition(input: {
+    name: MixName;
+    distribution: Record<VideoType, number>;
+    positioning: string;
+  }): Promise<MixDefinition> {
+    const { data, error } = await this.client
+      .from("mix_definitions")
+      .update({
+        distribution: input.distribution,
+        positioning: input.positioning
+      })
+      .eq("name", input.name)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update mix definition ${input.name}: ${error.message}`);
+    }
+
+    const row = data as MixDefinitionRow;
+    return {
+      name: toMixName(row.name),
+      distribution: toVideoTypeCount(row.distribution),
+      positioning: row.positioning ?? ""
+    };
+  }
+
+  async updateVideoRate(input: {
+    videoType: VideoType;
+    ratePerVideo: number;
+  }): Promise<VideoRate> {
+    const { data, error } = await this.client
+      .from("video_rates")
+      .update({
+        rate_per_video: input.ratePerVideo,
+        is_placeholder: false
+      })
+      .eq("video_type", input.videoType)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update video rate ${input.videoType}: ${error.message}`);
+    }
+
+    const row = data as VideoRateRow;
+    return {
+      videoType: toVideoType(row.video_type),
+      ratePerVideo: Number(row.rate_per_video),
+      isPlaceholder: row.is_placeholder ?? false
+    };
+  }
+
   async listCreatorApplications(status?: ApplicationStatus): Promise<CreatorApplication[]> {
     let query = this.client
       .from("creator_applications")

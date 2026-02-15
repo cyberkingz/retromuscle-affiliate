@@ -86,7 +86,7 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
 
       <details className="rounded-[22px] border border-line bg-white/85 p-4" open>
         <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
-          Quotas par type ({data.quotasByType.length})
+          Detail par type ({data.quotasByType.length})
         </summary>
         <div className="pt-4">
           <QuotasGrid items={data.quotasByType} />
@@ -104,7 +104,7 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
 
       <details className="rounded-[22px] border border-line bg-white/85 p-4">
         <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
-          Estimation par type
+          Gains par type
         </summary>
         <div className="pt-4">
           <PayoutBreakdownTable items={data.payoutBreakdown} />

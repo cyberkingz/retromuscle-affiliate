@@ -88,10 +88,10 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
               subtotal: item.subtotal
             })),
             assumptions: [
-              `Scenario: tu livres 100% du quota (${pkg.quotaVideos} videos)`,
-              `Mix de base: ${MIX_LABELS[baselineMix.name]} (${VIDEO_TYPES.map((t) => VIDEO_TYPE_LABELS[t]).join(", ")})`,
-              "Seuls les contenus valides declenchent le paiement",
-              "Les credits mensuels sont inclus dans l'estimation"
+              `Si tu livres tes ${pkg.quotaVideos} videos du mois`,
+              `Style: ${MIX_LABELS[baselineMix.name]} (${VIDEO_TYPES.map((t) => VIDEO_TYPE_LABELS[t]).join(", ")})`,
+              "Seules les videos validees comptent",
+              "Le bonus fixe mensuel est inclus dans l'estimation"
             ]
           };
         })
@@ -99,10 +99,10 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
 
   return {
     hero: {
-      kicker: "Programme Affilie RetroMuscle",
+      kicker: "Programme Createur RetroMuscle",
       title: "Transforme ton contenu en revenu mensuel.",
       subtitle:
-        "Un cadre clair, des missions chaque mois, et un paiement mensuel declenche quand tes contenus sont valides.",
+        "On te donne un brief, tu filmes, on te paie. Tous les mois.",
       primaryCta: { label: "Je veux rejoindre le programme", href: "/apply" },
       visuals: {
         logoUrl: BRAND_ASSETS.logo,
@@ -138,30 +138,30 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       },
       {
         title: "2. Tu produis",
-        description: "Missions du mois, brief clair, upload simple. Tu sais exactement quoi livrer."
+        description: "Brief du mois, consignes claires, upload simple. Tu sais exactement quoi filmer."
       },
       {
         title: "3. Tu es paye",
-        description: "Une fois valide, ton paiement mensuel est prepare. Pas de relances, pas de flou."
+        description: "Tes videos sont validees, ton paiement est envoye. Pas de relances, pas de flou."
       }
     ],
     earnings: {
       title: "Combien tu peux gagner",
-      subtitle: "Exemples d'estimation si tu livres 100% du quota (contenus valides).",
+      subtitle: "Estimation si tu livres toutes tes videos du mois.",
       scenarios: earningsScenarios
     },
     qualifier: {
       title: "Pour qui (et pas pour qui)",
-      subtitle: "On prefere une petite communaute engagee qu'un gros volume sans regularite.",
+      subtitle: "On prefere des createurs reguliers a des gros comptes inactifs.",
       forWho: [
-        "Tu peux livrer chaque mois (meme 10 videos) avec un planning simple",
+        "Tu peux filmer chaque mois, meme 10 videos, avec un planning simple",
         "Tu aimes filmer: training, OOTD, before/after, vibe retro gym",
         "Tu veux un cadre clair: brief, validation, paiement mensuel"
       ],
       notForWho: [
-        "Tu ne peux pas tenir un rythme mensuel (delais trop aleatoires)",
-        "Tu n'acceptes pas les ajustements (revisions) quand un livrable est hors brief",
-        "Tu veux un paiement sans validation de qualite / specs"
+        "Tu ne peux pas tenir un rythme mensuel regulier",
+        "Tu n'acceptes pas les retours quand une video ne correspond pas au brief",
+        "Tu veux etre paye sans validation de qualite"
       ]
     },
     socialProof: {
@@ -181,7 +181,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       {
         question: "Quand suis-je paye ?",
         answer:
-          "Paiement mensuel: une fois les contenus du cycle valides, le paiement est prepare (delais bancaires possibles)."
+          "Chaque mois: une fois tes videos validees, ton paiement est prepare (delais bancaires possibles)."
       },
       {
         question: "Et si une video est rejetee ?",
@@ -193,8 +193,8 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       }
     ],
     action: {
-      title: "Prends ta place dans le programme affilie RetroMuscle.",
-      subtitle: "Candidature rapide, revue humaine, puis missions remunerees tous les mois.",
+      title: "Rejoins le programme createur RetroMuscle.",
+      subtitle: "Inscription rapide, revue humaine, puis des missions payees tous les mois.",
       cta: {
         label: "S'inscrire maintenant",
         href: "/apply"

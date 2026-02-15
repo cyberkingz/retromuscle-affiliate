@@ -12,7 +12,8 @@ import { usePathname } from "next/navigation";
 
 const adminLinks: Array<{ href: Route; label: string }> = [
   { href: "/admin", label: "Operations" },
-  { href: "/admin/applications" as Route, label: "Candidatures" }
+  { href: "/admin/applications" as Route, label: "Candidatures" },
+  { href: "/admin/config" as Route, label: "Offres" }
 ];
 
 export function AdminHeader() {
@@ -29,7 +30,7 @@ export function AdminHeader() {
               href={link.href}
               className={cn(
                 "text-sm uppercase tracking-[0.08em] transition-colors",
-                pathname === link.href ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                (link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href)) ? "text-foreground" : "text-foreground/70 hover:text-foreground"
               )}
             >
               {link.label}
@@ -77,7 +78,7 @@ export function AdminHeader() {
               href={link.href}
               className={cn(
                 "inline-flex rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.08em]",
-                pathname === link.href
+                (link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href))
                   ? "border-foreground bg-frost text-foreground"
                   : "border-line bg-white/70 text-foreground/75"
               )}

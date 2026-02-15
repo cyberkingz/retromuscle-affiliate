@@ -25,7 +25,7 @@ export function QuotasGrid({ items }: QuotasGridProps) {
               </p>
             </div>
             <ProgressBar percent={item.completionPercent} />
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Reste: {item.remaining}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Reste: {item.remaining} a filmer</p>
           </CardSection>
         ))}
       </div>

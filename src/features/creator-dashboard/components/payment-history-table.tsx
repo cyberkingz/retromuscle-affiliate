@@ -25,12 +25,12 @@ interface PaymentHistoryTableProps {
 
 export function PaymentHistoryTable({ history }: PaymentHistoryTableProps) {
   return (
-    <DataTableCard title="Historique & paiements" subtitle="Suivi des validations et paiements precedents.">
+    <DataTableCard title="Historique & paiements" subtitle="Tes paiements mois par mois.">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Mois</TableHead>
-            <TableHead>Livrees</TableHead>
+            <TableHead>Videos</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Montant</TableHead>
             <TableHead>Paiement</TableHead>

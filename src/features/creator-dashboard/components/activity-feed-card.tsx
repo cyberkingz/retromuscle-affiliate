@@ -44,12 +44,12 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
         <div>
           <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Activite recente</p>
           <p className="mt-2 text-sm text-foreground/75">
-            Uploads, validations, rejets et paiements.
+            Tes uploads, validations et paiements.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-foreground/60">
           <Clock className="h-4 w-4" />
-          Dernieres 12 actions
+          12 derniers evenements
         </div>
       </div>
 

@@ -11,7 +11,7 @@ export function FlowSection({ items }: FlowSectionProps) {
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
           Comment ca marche
         </h2>
-        <p className="mt-2 text-foreground/70">Un flow clair du premier contact au paiement.</p>
+        <p className="mt-2 text-foreground/70">De ton inscription a ton premier paiement, en 3 etapes.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

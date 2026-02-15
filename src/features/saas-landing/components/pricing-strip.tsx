@@ -16,7 +16,7 @@ export function PricingStrip({ plans }: PricingStripProps) {
           Packs de missions
         </h2>
         <p className="mx-auto max-w-2xl text-foreground/70">
-          Un quota clair, des credits inclus, et des missions qui arrivent chaque mois. Tu choisis ton rythme.
+          Choisis ton volume mensuel. Plus tu produis, plus tu gagnes.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export function PricingStrip({ plans }: PricingStripProps) {
 
               <CardContent className="flex-1 text-center space-y-4">
                 <div className="rounded-2xl border border-line bg-white/70 px-4 py-3 text-sm text-foreground/75">
-                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Credits inclus</p>
+                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Bonus fixe mensuel</p>
                   <p className="mt-1 font-medium">{formatCurrency(plan.credits)}</p>
                 </div>
                 <p className="text-xs text-foreground/60">

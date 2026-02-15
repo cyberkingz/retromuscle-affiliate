@@ -21,12 +21,12 @@ interface PayoutBreakdownTableProps {
 
 export function PayoutBreakdownTable({ items }: PayoutBreakdownTableProps) {
   return (
-    <DataTableCard title="Remuneration estimee par type" subtitle="Simulation mensuelle par format de video.">
+    <DataTableCard title="Tes gains par type de video" subtitle="Estimation mensuelle par format.">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Type</TableHead>
-            <TableHead>Livre</TableHead>
+            <TableHead>Validees</TableHead>
             <TableHead>Tarif</TableHead>
             <TableHead>Sous-total</TableHead>
           </TableRow>

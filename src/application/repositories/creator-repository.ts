@@ -59,6 +59,22 @@ export interface CreatorRepository {
   listPackageDefinitions(): Promise<PackageDefinition[]>;
   listMixDefinitions(): Promise<MixDefinition[]>;
 
+  // Admin config management
+  updatePackageDefinition(input: {
+    tier: PackageTier;
+    quotaVideos: number;
+    monthlyCredits: number;
+  }): Promise<PackageDefinition>;
+  updateMixDefinition(input: {
+    name: MixDefinition["name"];
+    distribution: MixDefinition["distribution"];
+    positioning: string;
+  }): Promise<MixDefinition>;
+  updateVideoRate(input: {
+    videoType: VideoRate["videoType"];
+    ratePerVideo: number;
+  }): Promise<VideoRate>;
+
   // Creator payout details (creator-facing + admin views)
   getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null>;
   upsertPayoutProfile(input: {
