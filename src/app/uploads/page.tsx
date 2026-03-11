@@ -1,6 +1,6 @@
 import { getCreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { PageShell } from "@/components/layout/page-shell";
-import { getAuthSessionFromCookies, protectPageWithReturn } from "@/features/auth/server/route-guards";
+import { getAuthSessionFromCookies, protectPage } from "@/features/auth/server/route-guards";
 import { findCreatorIdForUser } from "@/features/auth/server/resolve-auth-session";
 import { CreatorUploadsPage } from "@/features/creator-uploads/creator-uploads-page";
 import { parseMonthParam } from "@/lib/validation";
@@ -20,7 +20,7 @@ interface UploadsRouteProps {
 }
 
 export default async function UploadsRoute({ searchParams }: UploadsRouteProps) {
-  await protectPageWithReturn("/dashboard", "/uploads");
+  await protectPage("/dashboard");
   const authSession = await getAuthSessionFromCookies();
   const params = searchParams ? await searchParams : undefined;
 
@@ -32,11 +32,13 @@ export default async function UploadsRoute({ searchParams }: UploadsRouteProps) 
   }
 
   const creatorId =
-    authSession?.role === "admin"
-      ? undefined
-      : (await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ?? undefined;
+    (await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ?? undefined;
 
   if (!creatorId) {
+    // Admin without a creator profile should go to admin dashboard, not onboarding.
+    if (authSession?.role === "admin") {
+      redirect("/admin");
+    }
     redirect("/onboarding");
   }
 

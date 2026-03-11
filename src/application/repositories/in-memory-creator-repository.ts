@@ -106,6 +106,15 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     throw new Error("Video review is not available in offline mode");
   }
 
+  async reviewVideoAndUpdateTracking(_input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }> {
+    throw new Error("Atomic video review is not available in offline mode");
+  }
+
   async updateTrackingDelivered(_input: {
     monthlyTrackingId: string;
     delivered: MonthlyTracking["delivered"];
@@ -157,6 +166,10 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async getPayoutProfileByCreatorId(_creatorId: string): Promise<CreatorPayoutProfile | null> {
     return null;
+  }
+
+  async listPayoutProfiles(): Promise<CreatorPayoutProfile[]> {
+    return [];
   }
 
   async upsertPayoutProfile(_input: {

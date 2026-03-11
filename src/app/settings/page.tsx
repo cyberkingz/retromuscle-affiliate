@@ -1,6 +1,6 @@
 import { getCreatorSettingsData } from "@/application/use-cases/get-creator-settings-data";
 import { PageShell } from "@/components/layout/page-shell";
-import { getAuthSessionFromCookies, protectPageWithReturn } from "@/features/auth/server/route-guards";
+import { getAuthSessionFromCookies, protectPage } from "@/features/auth/server/route-guards";
 import { findCreatorIdForUser } from "@/features/auth/server/resolve-auth-session";
 import { CreatorSettingsPage } from "@/features/creator-settings/creator-settings-page";
 import { redirect } from "next/navigation";
@@ -13,7 +13,7 @@ export const metadata = createPageMetadata({
 });
 
 export default async function SettingsRoute() {
-  await protectPageWithReturn("/dashboard", "/settings");
+  await protectPage("/dashboard");
   const authSession = await getAuthSessionFromCookies();
 
   const creatorId =

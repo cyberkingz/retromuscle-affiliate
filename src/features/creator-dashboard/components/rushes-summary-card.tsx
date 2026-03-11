@@ -78,8 +78,11 @@ export function RushesSummaryCard({
       throw new Error("Fichier trop lourd. Maximum 2GB.");
     }
 
-    const mime = file.type || "";
-    if (!(mime === "video/mp4" || mime === "video/quicktime")) {
+    const mime = file.type.trim().toLowerCase();
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const validMime = mime === "video/mp4" || mime === "video/quicktime" || mime === "video/mov";
+    const validExtension = extension === "mp4" || extension === "mov";
+    if (!validMime && !validExtension) {
       throw new Error("Format invalide. Formats acceptes: MP4, MOV.");
     }
 
@@ -200,8 +203,8 @@ export function RushesSummaryCard({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="video/mp4,video/quicktime"
-        className="hidden"
+        accept="video/mp4,video/quicktime,.mp4,.mov"
+        className="sr-only"
         onChange={(event) => {
           const files = event.target.files;
           event.target.value = "";
@@ -243,6 +246,7 @@ export function RushesSummaryCard({
         }}
         role="button"
         tabIndex={0}
+        aria-label="Zone de glisser-deposer rushes"
         onKeyDown={(event) => {
           if ((event.key === "Enter" || event.key === " ") && canUpload) {
             event.preventDefault();

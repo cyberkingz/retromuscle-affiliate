@@ -82,6 +82,21 @@ export function DataTable<TData>({
                     <TableHead
                       key={header.id}
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                      onKeyDown={canSort ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          header.column.getToggleSortingHandler()?.(e);
+                        }
+                      } : undefined}
+                      tabIndex={canSort ? 0 : undefined}
+                      role={canSort ? "button" : undefined}
+                      aria-sort={
+                        canSort
+                          ? direction === "asc" ? "ascending"
+                            : direction === "desc" ? "descending"
+                            : "none"
+                          : undefined
+                      }
                       className={cn(
                         canSort ? "cursor-pointer select-none" : undefined,
                         "whitespace-nowrap"
@@ -120,7 +135,7 @@ export function DataTable<TData>({
 
       {table.getPageCount() > 1 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 px-2">
-          <p className="text-xs text-foreground/60">
+          <p className="text-xs text-foreground/60" aria-live="polite" role="status">
             Page {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
           </p>
           <div className="flex items-center gap-2">
@@ -162,6 +177,14 @@ function DataTableRow<TData>({
     <TableRow
       className={cn(isSelected ? "bg-frost/70 hover:bg-frost/70" : undefined)}
       onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+      onKeyDown={onRowClick ? (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onRowClick(row.original);
+        }
+      } : undefined}
+      tabIndex={onRowClick ? 0 : undefined}
+      role={onRowClick ? "link" : undefined}
       style={onRowClick ? { cursor: "pointer" } : undefined}
     >
       {row.getVisibleCells().map((cell) => (

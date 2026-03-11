@@ -70,7 +70,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
       <div className="border-b border-line bg-background/95 backdrop-blur">
         <div className="container-wide flex h-16 items-center justify-between md:h-20 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4">
           <div className="hidden md:flex items-center gap-5">
-            <nav className="flex items-center gap-5">
+            <nav aria-label="Navigation principale" className="flex items-center gap-5">
               {links.map((link) => {
                 const isCurrent =
                   currentPath === link.href || (link.href === "/apply" && currentPath === "/onboarding");
@@ -143,7 +143,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
               aria-controls="mobile-site-nav"
               onClick={() => setMobileOpen((value) => !value)}
             >
-              <span className="sr-only">Toggle menu</span>
+              <span className="sr-only">{mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}</span>
               {mobileOpen ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +190,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
           )}
         >
           <div className="overflow-hidden">
-            <nav className="container-wide space-y-1 py-4">
+            <nav aria-label="Menu mobile" className="container-wide space-y-1 py-4">
               {links.map((link) => {
                 const isCurrent =
                   currentPath === link.href || (link.href === "/apply" && currentPath === "/onboarding");

@@ -61,7 +61,15 @@ export async function reviewCreatorApplication(
     throw new Error("Application not found");
   }
 
+  // Guard against mutating terminal-state applications
+  if (application.status === "approved" || application.status === "rejected") {
+    throw new Error(`Application is already ${application.status}`);
+  }
+
   if (input.decision === "rejected") {
+    if (application.status === "draft") {
+      throw new Error("Cannot reject a draft application");
+    }
     const reviewed = await repository.reviewCreatorApplication({
       userId: input.userId,
       status: "rejected",

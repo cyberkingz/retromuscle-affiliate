@@ -3,6 +3,8 @@ import { CardSection } from "@/components/layout/card-section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { createPageMetadata } from "@/app/_lib/metadata";
 
+export const revalidate = 86400;
+
 export const metadata = createPageMetadata({
   title: "Confidentialite RetroMuscle",
   description: "Comment RetroMuscle collecte et utilise tes donnees sur la plateforme.",

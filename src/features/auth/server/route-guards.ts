@@ -61,17 +61,3 @@ export async function protectPage(expectedTarget: RedirectTarget) {
   }
 }
 
-export async function protectPageWithReturn(expectedTarget: RedirectTarget, returnTo: string) {
-  if (!isSupabaseConfigured()) {
-    return;
-  }
-
-  const target = await getRedirectTargetFromCookies();
-  if (!target) {
-    redirect("/login");
-  }
-
-  if (target !== expectedTarget) {
-    redirect(target);
-  }
-}

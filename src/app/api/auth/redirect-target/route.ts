@@ -5,7 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = rateLimit({ ctx, request, key: "auth:redirect-target", limit: 120, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "auth:redirect-target", limit: 120, windowMs: 60_000 });
   if (limited) {
     return limited;
   }

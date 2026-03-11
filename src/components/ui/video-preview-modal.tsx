@@ -173,6 +173,7 @@ export function VideoPreviewModal({
                 src={signedUrl}
                 controls
                 autoPlay
+                muted
                 playsInline
                 onCanPlay={() => setVideoReady(true)}
                 className={cn(

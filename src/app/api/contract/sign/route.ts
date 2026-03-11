@@ -4,7 +4,7 @@ import { isIP } from "node:net";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({ ctx, request, key: "contract:sign", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "contract:sign", limit: 30, windowMs: 60_000 });
   if (limited) {
     return limited;
   }
@@ -78,12 +78,7 @@ export async function POST(request: Request) {
   try {
     rawBody = await readJsonBodyWithLimit(request, { maxBytes: 6 * 1024 });
   } catch (error) {
-    const isTooLarge = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE";
-    const response = apiError(ctx, {
-      status: isTooLarge ? 413 : 400,
-      code: isTooLarge ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
-      message: isTooLarge ? "Payload trop volumineux." : "Payload invalide."
-    });
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

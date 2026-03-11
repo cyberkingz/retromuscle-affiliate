@@ -64,8 +64,10 @@ export async function resolveAuthSessionFromAccessToken(
   const email = user.email?.toLowerCase();
   // SECURITY: Only trust app_metadata.role (set by admin/service-role).
   // Never fall back to user_metadata.role — users can self-set it via supabase.auth.updateUser().
+  // ADMIN_EMAILS is NOT a standalone admin path — it is only used during sign-up
+  // (via seed:admin script) to set app_metadata.role = "admin".
   const metadataRole = normalizeRole(user.app_metadata?.role);
-  const isAdmin = metadataRole === "admin" || (email ? resolveAdminEmails().includes(email) : false);
+  const isAdmin = metadataRole === "admin";
 
   if (isAdmin) {
     return {

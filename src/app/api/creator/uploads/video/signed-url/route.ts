@@ -1,10 +1,8 @@
-import { NextResponse } from "next/server";
-
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
@@ -54,7 +52,7 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({
+  const limited = await rateLimit({
     ctx,
     request,
     key: "creator:uploads:video:signed-url",
@@ -74,24 +72,39 @@ export async function POST(request: Request) {
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 12 * 1024 }));
   } catch (error) {
-    const response = apiError(ctx, {
-      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
-      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
-      message:
-        error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
-          ? "Payload trop volumineux."
-          : error instanceof Error && error.message === "INVALID_JSON"
-            ? "Payload invalide."
-            : error instanceof Error
-              ? error.message
-              : "Invalid payload"
-    });
+    const response = handleBodyParseError(ctx, error);
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
+
+  // Verify tracking ownership: monthlyTrackingId must belong to this user's creator
+  const supabase = createSupabaseServerClient();
+  const { data: tracking } = await supabase
+    .from("monthly_trackings")
+    .select("id,creator_id")
+    .eq("id", payload.monthlyTrackingId)
+    .maybeSingle();
+
+  if (!tracking) {
+    const response = apiError(ctx, { status: 404, code: "NOT_FOUND", message: "Suivi mensuel introuvable" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
+
+  const { data: creator } = await supabase
+    .from("creators")
+    .select("id")
+    .eq("id", tracking.creator_id)
+    .eq("user_id", auth.session.userId)
+    .maybeSingle();
+
+  if (!creator) {
+    const response = apiError(ctx, { status: 403, code: "FORBIDDEN", message: "Acces refuse a ce suivi mensuel" });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
   const key = `${auth.session.userId}/${payload.monthlyTrackingId}/${payload.videoType}/${Date.now()}-${payload.filename}`;
-  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase.storage.from("videos").createSignedUploadUrl(key, { upsert: false });
 
   if (error || !data?.signedUrl || !data.token) {

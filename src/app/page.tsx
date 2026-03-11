@@ -4,8 +4,8 @@ import { SaasLandingPage } from "@/features/saas-landing/saas-landing-page";
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "RetroMuscle Programme Createur",
-  description: "Filme du contenu fitness, recois un paiement chaque mois. Brief clair, validation rapide, revenu regulier.",
+  title: "RetroMuscle Programme Créateur",
+  description: "Filme du contenu fitness, reçois un paiement chaque mois. Brief clair, validation rapide, revenu régulier.",
   path: ""
 });
 

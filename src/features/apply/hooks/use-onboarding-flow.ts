@@ -19,6 +19,7 @@ import {
 // Supabase draft persistence helpers
 // ---------------------------------------------------------------------------
 const SAVE_DEBOUNCE_MS = 1_200;
+const SAVE_MAX_BACKOFF_MS = 30_000;
 
 async function fetchDraft(): Promise<{ form: ApplicationFormState; step: number } | null> {
   try {
@@ -234,21 +235,25 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   // saving back INITIAL_FORM before we've loaded the actual draft.
   const draftLoadedRef = useRef(false);
 
-  // Debounced Supabase draft save whenever form or step changes.
+  // Debounced Supabase draft save with exponential backoff on failure.
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveBackoffRef = useRef(SAVE_DEBOUNCE_MS);
   const saveDraft = useCallback((nextForm: ApplicationFormState, nextStep: number) => {
     if (!draftLoadedRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       void saveDraftToServer(nextForm, nextStep).then((ok) => {
         if (ok) {
+          saveBackoffRef.current = SAVE_DEBOUNCE_MS;
           setDraftSaved(true);
           if (draftSavedTimerRef.current) clearTimeout(draftSavedTimerRef.current);
           draftSavedTimerRef.current = setTimeout(() => setDraftSaved(false), 1500);
+        } else {
+          saveBackoffRef.current = Math.min(saveBackoffRef.current * 2, SAVE_MAX_BACKOFF_MS);
         }
       });
-    }, SAVE_DEBOUNCE_MS);
+    }, saveBackoffRef.current);
   }, []);
 
   useEffect(() => {

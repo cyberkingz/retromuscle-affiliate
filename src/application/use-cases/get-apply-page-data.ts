@@ -1,5 +1,27 @@
-import type { ApplyMarketingData } from "@/features/apply/types";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
+
+export interface ApplyMarketingData {
+  heroImageUrl?: string;
+  attention: {
+    badge: string;
+    headline: string;
+    supportingText: string;
+  };
+  interestPoints: string[];
+  socialProof: {
+    stats: Array<{ label: string; value: string }>;
+    creators: Array<{ name: string; niche: string; quote: string }>;
+    trustedBy: string[];
+  };
+  desire: {
+    title: string;
+    bullets: string[];
+  };
+  action: {
+    urgencyText: string;
+    reassurance: string;
+  };
+}
 
 export interface ApplyPageData {
   marketing: ApplyMarketingData;

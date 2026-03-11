@@ -11,6 +11,9 @@ function assertValidDistribution(mix: MixDefinition): void {
 }
 
 export function calculateQuotas(quotaTotal: number, mix: MixDefinition): VideoTypeCount {
+  if (!Number.isInteger(quotaTotal) || quotaTotal < 0) {
+    throw new Error(`quotaTotal must be a non-negative integer, got ${quotaTotal}`);
+  }
   assertValidDistribution(mix);
 
   const raw = VIDEO_TYPES.map((videoType) => ({

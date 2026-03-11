@@ -23,7 +23,7 @@ export function AdminHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-background/95 backdrop-blur">
       <div className="container-wide flex h-16 items-center justify-between md:h-20 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4">
-        <nav className="hidden md:flex items-center gap-5">
+        <nav aria-label="Navigation administration" className="hidden md:flex items-center gap-5">
           {adminLinks.map((link) => (
             <Link
               key={link.href}
@@ -71,7 +71,7 @@ export function AdminHeader() {
       </div>
 
       <div className="border-t border-line/60 md:hidden">
-        <nav className="container-wide flex gap-2 py-2">
+        <nav aria-label="Navigation administration mobile" className="container-wide flex gap-2 py-2">
           {adminLinks.map((link) => (
             <Link
               key={link.href}

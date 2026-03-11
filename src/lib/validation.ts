@@ -70,10 +70,6 @@ export function normalizeHttpUrl(value: string): string {
     return trimmed;
   }
 
-  if (trimmed.startsWith("www.")) {
-    return `https://${trimmed}`;
-  }
-
   return `https://${trimmed}`;
 }
 

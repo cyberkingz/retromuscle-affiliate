@@ -1,7 +1,7 @@
-import type { VideoRate, VideoTypeCount } from "@/domain/types";
+import type { VideoRate, VideoType, VideoTypeCount } from "@/domain/types";
 
 export interface PayoutBreakdownItem {
-  key: string;
+  key: VideoType;
   delivered: number;
   rate: number;
   subtotal: number;
@@ -18,8 +18,12 @@ export function calculatePayout(
   rates: VideoRate[],
   monthlyCredits: number
 ): PayoutResult {
-  const items = rates.map((rate) => {
-    const delivered = deliveredByType[rate.videoType] ?? 0;
+  if (monthlyCredits < 0) {
+    throw new Error("monthlyCredits must be non-negative");
+  }
+
+  const items: PayoutBreakdownItem[] = rates.map((rate) => {
+    const delivered = Math.max(0, deliveredByType[rate.videoType] ?? 0);
     return {
       key: rate.videoType,
       delivered,

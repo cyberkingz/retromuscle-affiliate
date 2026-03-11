@@ -13,13 +13,13 @@ export function WizardStepper({ step, stepPercent, steps, onSelect }: WizardStep
   return (
     <div className="space-y-3">
       <ProgressBar percent={stepPercent} label={`Etape ${step + 1}/${steps.length}`} className="px-1" />
-      <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] md:grid md:grid-cols-3 md:overflow-visible">
+      <ol aria-label="Etapes d'inscription" className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] md:grid md:grid-cols-3 md:overflow-visible list-none">
         {steps.map((item, index) => {
           const active = index === step;
 
           return (
+            <li key={item.title} aria-current={active ? "step" : undefined}>
             <SelectableCardButton
-              key={item.title}
               onClick={() => onSelect(index)}
               selected={active}
               className={cn(
@@ -43,9 +43,10 @@ export function WizardStepper({ step, stepPercent, steps, onSelect }: WizardStep
                 {item.description}
               </p>
             </SelectableCardButton>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </div>
   );
 }

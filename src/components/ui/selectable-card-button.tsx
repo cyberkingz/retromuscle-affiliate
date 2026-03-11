@@ -14,6 +14,7 @@ export function SelectableCardButton({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       className={cn(
         "rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60",
         selected

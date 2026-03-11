@@ -1,7 +1,7 @@
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 
@@ -44,8 +44,8 @@ export async function PUT(request: Request) {
   let body: { formData: unknown; step: unknown };
   try {
     body = await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 });
-  } catch {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid payload" });
+  } catch (error) {
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -78,16 +78,26 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const ctx = createApiContext(request);
+  if (!isAllowedOrigin(request)) {
+    return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
+  }
+
   const auth = await requireApiRole(request, "affiliate", { ctx });
   if (!auth.ok) {
     return auth.response;
   }
 
   const client = createSupabaseServerClient();
-  await client
+  const { error } = await client
     .from("onboarding_drafts")
     .delete()
     .eq("user_id", auth.session.userId);
+
+  if (error) {
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to delete draft" });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
 
   const response = apiJson(ctx, { ok: true }, { status: 200 });
   if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);

@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import type { ApplyMarketingData } from "@/features/apply/types";
+import type { ApplyMarketingData } from "@/application/use-cases/get-apply-page-data";
 
 interface ApplyMarketingColumnProps {
   data: ApplyMarketingData;

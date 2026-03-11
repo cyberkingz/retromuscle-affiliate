@@ -9,7 +9,7 @@ import { ApplyMarketingColumn } from "@/features/apply/components/apply-marketin
 import { AuthCredentialsPanel } from "@/features/apply/components/auth-credentials-panel";
 import { FlashMessages } from "@/features/apply/components/flash-messages";
 import { useSignupFlow } from "@/features/apply/hooks/use-signup-flow";
-import type { ApplyMarketingData } from "@/features/apply/types";
+import type { ApplyMarketingData } from "@/application/use-cases/get-apply-page-data";
 import { useAuthRedirect } from "@/features/auth/client/use-auth-redirect";
 
 interface SignupPageProps {

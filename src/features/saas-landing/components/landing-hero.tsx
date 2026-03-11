@@ -56,7 +56,7 @@ export function LandingHero({
           <div className="grid gap-3 pt-2 sm:grid-cols-3">
             <div className="glass-panel rounded-2xl px-4 py-3">
               <p className="font-display text-3xl uppercase leading-none text-secondary">48h</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Reponse a ton profil</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Réponse à ton profil</p>
             </div>
             <div className="glass-panel rounded-2xl px-4 py-3">
               <p className="font-display text-3xl uppercase leading-none text-secondary">Mensuel</p>
@@ -71,7 +71,7 @@ export function LandingHero({
           <div className="flex flex-wrap items-center gap-4 text-sm text-foreground/75">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Missions regulieres</span>
+              <span>Missions régulières</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
@@ -85,7 +85,7 @@ export function LandingHero({
             <div className="relative h-[280px] sm:h-[340px]">
               <Image
                 src={visuals.primaryImageUrl}
-                alt="RetroMuscle creators"
+                alt="Créateurs RetroMuscle"
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 560px"
@@ -102,7 +102,7 @@ export function LandingHero({
                 <div className="relative h-32 overflow-hidden rounded-2xl border border-line">
                   <Image
                     src={visuals.secondaryImageUrl}
-                    alt="RetroMuscle lookbook"
+                    alt="Lookbook RetroMuscle"
                     fill
                     className="object-cover"
                     sizes="220px"
@@ -112,7 +112,7 @@ export function LandingHero({
                   <p className="text-xs uppercase tracking-[0.1em] text-foreground/55">Missions du mois</p>
                   <div className="mt-2 flex items-end justify-between">
                     <p className="font-display text-5xl uppercase leading-none text-secondary">32/40</p>
-                    <p className="text-sm text-foreground/70">missions finalisees</p>
+                    <p className="text-sm text-foreground/70">missions finalisées</p>
                   </div>
                 </div>
               </div>
@@ -122,7 +122,7 @@ export function LandingHero({
                   <div key={imageUrl} className="relative h-20 overflow-hidden rounded-xl border border-line">
                     <Image
                       src={imageUrl}
-                      alt={`RetroMuscle product ${index + 1}`}
+                      alt={`Produit RetroMuscle ${index + 1}`}
                       fill
                       className="object-cover"
                       sizes="180px"
@@ -132,8 +132,8 @@ export function LandingHero({
               </div>
 
               <div className="rounded-2xl border-2 border-foreground bg-primary px-4 py-3 text-sm text-foreground shadow-xl">
-                <p className="font-semibold uppercase tracking-[0.08em]">Revenus plus reguliers</p>
-                <p className="text-foreground/80">grace a un volume de missions constant</p>
+                <p className="font-semibold uppercase tracking-[0.08em]">Revenus plus réguliers</p>
+                <p className="text-foreground/80">grâce à un volume de missions constant</p>
               </div>
             </div>
           </div>

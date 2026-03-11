@@ -3,10 +3,14 @@ import { getRepository } from "@/application/dependencies";
 export async function markMonthlyTrackingPaid(input: { monthlyTrackingId: string; paidAt?: string | null }) {
   const repository = getRepository();
 
-  // Guard: fetch tracking to get creatorId
   const tracking = await repository.getMonthlyTrackingById(input.monthlyTrackingId);
   if (!tracking) {
     throw new Error("Impossible: suivi mensuel introuvable.");
+  }
+
+  // Idempotency guard: if already paid, return the existing tracking unchanged.
+  if (tracking.paymentStatus === "paye") {
+    return tracking;
   }
 
   // Guard: verify creator has a valid payout profile

@@ -55,7 +55,7 @@ export const viewport: Viewport = {
   themeColor: "#061136"
 };
 
-const STRUCTURED_DATA = {
+const STRUCTURED_DATA_JSON = JSON.stringify({
   "@context": "https://schema.org",
   "@graph": [
     {
@@ -74,7 +74,7 @@ const STRUCTURED_DATA = {
       }
     }
   ]
-};
+});
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           type="application/ld+json"
           nonce={nonce}
           suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA_JSON }}
         />
         <Providers>{children}</Providers>
         <Analytics />

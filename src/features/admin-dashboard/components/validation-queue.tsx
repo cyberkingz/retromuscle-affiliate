@@ -146,7 +146,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             type="checkbox"
             className="h-4 w-4 accent-secondary"
             checked={table.getIsAllPageRowsSelected()}
-            aria-label="Select all"
+            aria-label="Selectionner tout"
             onChange={(event) => table.toggleAllPageRowsSelected(event.target.checked)}
           />
         ),
@@ -155,7 +155,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             type="checkbox"
             className="h-4 w-4 accent-secondary"
             checked={row.getIsSelected()}
-            aria-label="Select row"
+            aria-label="Selectionner cette ligne"
             onChange={(event) => row.toggleSelected(event.target.checked)}
             onClick={(event) => event.stopPropagation()}
           />

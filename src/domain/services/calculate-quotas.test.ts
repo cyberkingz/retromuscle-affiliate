@@ -171,4 +171,26 @@ describe("calculateQuotas", () => {
 
     expect(() => calculateQuotas(10, mix)).toThrow(/Invalid mix distribution/i);
   });
+
+  it("throws on negative quotaTotal", () => {
+    const mix = makeValidMix({
+      OOTD: 0.2,
+      TRAINING: 0.2,
+      BEFORE_AFTER: 0.2,
+      SPORTS_80S: 0.2,
+      CINEMATIC: 0.2
+    });
+    expect(() => calculateQuotas(-1, mix)).toThrow("quotaTotal must be a non-negative integer");
+  });
+
+  it("throws on non-integer quotaTotal", () => {
+    const mix = makeValidMix({
+      OOTD: 0.2,
+      TRAINING: 0.2,
+      BEFORE_AFTER: 0.2,
+      SPORTS_80S: 0.2,
+      CINEMATIC: 0.2
+    });
+    expect(() => calculateQuotas(5.5, mix)).toThrow("quotaTotal must be a non-negative integer");
+  });
 });

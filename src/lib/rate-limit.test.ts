@@ -35,8 +35,8 @@ describe("rateLimit", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns null when within the limit", () => {
-    const result = rateLimit({
+  it("returns null when within the limit", async () => {
+    const result = await rateLimit({
       request: makeRequest("1.2.3.4"),
       ctx: makeCtx(),
       key: "test",
@@ -46,9 +46,9 @@ describe("rateLimit", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null for multiple requests within limit", () => {
+  it("returns null for multiple requests within limit", async () => {
     for (let i = 0; i < 3; i++) {
-      const result = rateLimit({
+      const result = await rateLimit({
         request: makeRequest("1.2.3.4"),
         ctx: makeCtx(),
         key: "test-multi",
@@ -59,11 +59,10 @@ describe("rateLimit", () => {
     }
   });
 
-  it("returns 429 response when limit is exceeded", () => {
+  it("returns 429 response when limit is exceeded", async () => {
     const limit = 2;
-    // Exhaust the limit
     for (let i = 0; i < limit; i++) {
-      rateLimit({
+      await rateLimit({
         request: makeRequest("5.6.7.8"),
         ctx: makeCtx(),
         key: "test-exceed",
@@ -72,8 +71,7 @@ describe("rateLimit", () => {
       });
     }
 
-    // This should exceed the limit
-    const result = rateLimit({
+    const result = await rateLimit({
       request: makeRequest("5.6.7.8"),
       ctx: makeCtx(),
       key: "test-exceed",
@@ -85,9 +83,9 @@ describe("rateLimit", () => {
     expect(result!.status).toBe(429);
   });
 
-  it("includes Retry-After and rate limit headers on 429", () => {
+  it("includes Retry-After and rate limit headers on 429", async () => {
     const limit = 1;
-    rateLimit({
+    await rateLimit({
       request: makeRequest("9.0.1.2"),
       ctx: makeCtx(),
       key: "test-headers",
@@ -95,7 +93,7 @@ describe("rateLimit", () => {
       windowMs: 60_000
     });
 
-    const result = rateLimit({
+    const result = await rateLimit({
       request: makeRequest("9.0.1.2"),
       ctx: makeCtx(),
       key: "test-headers",
@@ -110,11 +108,10 @@ describe("rateLimit", () => {
     expect(result!.headers.get("X-RateLimit-Reset")).toBeTruthy();
   });
 
-  it("scopes buckets by userId when provided", () => {
+  it("scopes buckets by userId when provided", async () => {
     const limit = 1;
 
-    // User A uses their slot
-    rateLimit({
+    await rateLimit({
       request: makeRequest("1.1.1.1"),
       ctx: makeCtx(),
       key: "test-user",
@@ -123,8 +120,7 @@ describe("rateLimit", () => {
       userId: "user-a"
     });
 
-    // User B should have a separate bucket
-    const resultB = rateLimit({
+    const resultB = await rateLimit({
       request: makeRequest("1.1.1.1"),
       ctx: makeCtx(),
       key: "test-user",
@@ -136,12 +132,11 @@ describe("rateLimit", () => {
     expect(resultB).toBeNull();
   });
 
-  it("resets the bucket after the window expires", () => {
+  it("resets the bucket after the window expires", async () => {
     const limit = 1;
     const windowMs = 100;
 
-    // Use the real Date.now for the first call
-    rateLimit({
+    await rateLimit({
       request: makeRequest("2.2.2.2"),
       ctx: makeCtx(),
       key: "test-reset",
@@ -149,11 +144,10 @@ describe("rateLimit", () => {
       windowMs
     });
 
-    // Simulate time passing beyond the window
     const originalNow = Date.now;
     vi.spyOn(Date, "now").mockReturnValue(originalNow() + windowMs + 50);
 
-    const result = rateLimit({
+    const result = await rateLimit({
       request: makeRequest("2.2.2.2"),
       ctx: makeCtx(),
       key: "test-reset",
@@ -164,13 +158,13 @@ describe("rateLimit", () => {
     expect(result).toBeNull();
   });
 
-  it("uses x-real-ip when x-forwarded-for is absent", () => {
+  it("uses x-real-ip when x-forwarded-for is absent", async () => {
     const request = new Request("https://example.com/api/test", {
       method: "POST",
       headers: { "x-real-ip": "3.3.3.3" }
     });
 
-    const result = rateLimit({
+    const result = await rateLimit({
       request,
       ctx: makeCtx(),
       key: "test-realip",
@@ -180,8 +174,7 @@ describe("rateLimit", () => {
 
     expect(result).toBeNull();
 
-    // Same IP should now be rate limited
-    const result2 = rateLimit({
+    const result2 = await rateLimit({
       request,
       ctx: makeCtx(),
       key: "test-realip",
@@ -193,10 +186,10 @@ describe("rateLimit", () => {
     expect(result2!.status).toBe(429);
   });
 
-  it("uses 'unknown' as IP when no IP headers are present", () => {
+  it("uses 'unknown' as IP when no IP headers are present", async () => {
     const request = new Request("https://example.com/api/test", { method: "POST" });
 
-    const result = rateLimit({
+    const result = await rateLimit({
       request,
       ctx: makeCtx(),
       key: "test-unknown",

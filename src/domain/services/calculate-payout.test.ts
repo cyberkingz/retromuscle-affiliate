@@ -118,4 +118,79 @@ describe("calculatePayout", () => {
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(10);
   });
+
+  it("throws when monthlyCredits is negative", () => {
+    expect(() => calculatePayout(ZERO_DELIVERED, ALL_RATES, -1)).toThrow(
+      "monthlyCredits must be non-negative"
+    );
+  });
+
+  it("clamps negative delivered counts to zero", () => {
+    const delivered: VideoTypeCount = {
+      OOTD: -5,
+      TRAINING: 0,
+      BEFORE_AFTER: 0,
+      SPORTS_80S: 0,
+      CINEMATIC: 0
+    };
+    const result = calculatePayout(delivered, ALL_RATES, 0);
+    const ootdItem = result.items.find((item) => item.key === "OOTD");
+    expect(ootdItem?.delivered).toBe(0);
+    expect(ootdItem?.subtotal).toBe(0);
+    expect(result.total).toBe(0);
+  });
+
+  it("handles a subset of rates (not all video types)", () => {
+    const partialRates: VideoRate[] = [
+      { videoType: "OOTD", ratePerVideo: 100, isPlaceholder: false },
+      { videoType: "CINEMATIC", ratePerVideo: 180, isPlaceholder: false }
+    ];
+    const delivered: VideoTypeCount = {
+      OOTD: 3,
+      TRAINING: 5,
+      BEFORE_AFTER: 2,
+      SPORTS_80S: 1,
+      CINEMATIC: 1
+    };
+    const result = calculatePayout(delivered, partialRates, 0);
+    // Only OOTD and CINEMATIC appear in items
+    expect(result.items).toHaveLength(2);
+    expect(result.total).toBe(3 * 100 + 1 * 180);
+  });
+
+  it("handles rates with zero ratePerVideo", () => {
+    const zeroRates: VideoRate[] = ALL_RATES.map((r) => ({
+      ...r,
+      ratePerVideo: 0
+    }));
+    const delivered: VideoTypeCount = {
+      OOTD: 10,
+      TRAINING: 10,
+      BEFORE_AFTER: 10,
+      SPORTS_80S: 10,
+      CINEMATIC: 10
+    };
+    const result = calculatePayout(delivered, zeroRates, 25);
+    expect(result.total).toBe(25);
+    expect(result.items.every((item) => item.subtotal === 0)).toBe(true);
+  });
+
+  it("handles very large delivery numbers without overflow", () => {
+    const delivered: VideoTypeCount = {
+      OOTD: 1_000_000,
+      TRAINING: 0,
+      BEFORE_AFTER: 0,
+      SPORTS_80S: 0,
+      CINEMATIC: 0
+    };
+    const result = calculatePayout(delivered, ALL_RATES, 0);
+    expect(result.total).toBe(1_000_000 * 100);
+  });
+
+  it("computes correct total with fractional monthlyCredits", () => {
+    const delivered: VideoTypeCount = { ...ZERO_DELIVERED, OOTD: 1 };
+    const result = calculatePayout(delivered, ALL_RATES, 12.5);
+    expect(result.total).toBe(100 + 12.5);
+    expect(result.monthlyCredits).toBe(12.5);
+  });
 });

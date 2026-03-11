@@ -170,19 +170,18 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       };
     }),
     payments: await (async () => {
-      const uniqueCreatorIds = [...new Set(monthlyRows.map((row) => row.creatorId))];
-      const profiles = await Promise.all(
-        uniqueCreatorIds.map((id) => repository.getPayoutProfileByCreatorId(id))
-      );
+      // Single query instead of N+1 per creator
+      const allProfiles = await repository.listPayoutProfiles();
+      const profileByCreatorId = new Map(allProfiles.map((p) => [p.creatorId, p]));
       const validProfileCreatorIds = new Set(
-        uniqueCreatorIds.filter((id, i) => {
-          const p = profiles[i];
-          if (!p) return false;
-          if (p.method === "iban" && !p.iban) return false;
-          if (p.method === "paypal" && !p.paypalEmail) return false;
-          if (p.method === "stripe" && !p.stripeAccount) return false;
-          return true;
-        })
+        allProfiles
+          .filter((p) => {
+            if (p.method === "iban" && !p.iban) return false;
+            if (p.method === "paypal" && !p.paypalEmail) return false;
+            if (p.method === "stripe" && !p.stripeAccount) return false;
+            return true;
+          })
+          .map((p) => p.creatorId)
       );
       return monthlyRows.map((row) => ({
         monthlyTrackingId: row.monthlyTrackingId,

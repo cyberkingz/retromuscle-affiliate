@@ -1,6 +1,6 @@
 import { getCreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { PageShell } from "@/components/layout/page-shell";
-import { getAuthSessionFromCookies, protectPageWithReturn } from "@/features/auth/server/route-guards";
+import { getAuthSessionFromCookies, protectPage } from "@/features/auth/server/route-guards";
 import { findCreatorIdForUser } from "@/features/auth/server/resolve-auth-session";
 import { CreatorPayoutsPage } from "@/features/creator-payouts/creator-payouts-page";
 import { parseMonthParam } from "@/lib/validation";
@@ -20,7 +20,7 @@ interface PayoutsRouteProps {
 }
 
 export default async function PayoutsRoute({ searchParams }: PayoutsRouteProps) {
-  await protectPageWithReturn("/dashboard", "/payouts");
+  await protectPage("/dashboard");
   const authSession = await getAuthSessionFromCookies();
   const params = searchParams ? await searchParams : undefined;
 

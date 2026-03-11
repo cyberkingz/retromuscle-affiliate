@@ -95,25 +95,21 @@ export async function getCreatorDashboardData(input: {
   month?: string;
 }): Promise<CreatorDashboardData> {
   const repository = getRepository();
-  const [creators, rates, packages] = await Promise.all([
-    repository.listCreators(),
-    repository.listRates(),
-    repository.listPackageDefinitions()
-  ]);
 
-  const targetCreatorId = input.creatorId ?? creators[0]?.id;
-  if (!targetCreatorId) {
-    throw new Error("No creator found");
+  if (!input.creatorId) {
+    throw new Error("creatorId is required");
   }
 
-  const [creator, trackings, payoutProfile] = await Promise.all([
-    repository.getCreatorById(targetCreatorId),
-    repository.listCreatorTrackings(targetCreatorId),
-    repository.getPayoutProfileByCreatorId(targetCreatorId)
+  const [creator, rates, packages, trackings, payoutProfile] = await Promise.all([
+    repository.getCreatorById(input.creatorId),
+    repository.listRates(),
+    repository.listPackageDefinitions(),
+    repository.listCreatorTrackings(input.creatorId),
+    repository.getPayoutProfileByCreatorId(input.creatorId)
   ]);
 
   if (!creator) {
-    throw new Error(`Creator ${targetCreatorId} not found`);
+    throw new Error(`Creator ${input.creatorId} not found`);
   }
 
   const targetMonth = resolveMonth(
@@ -275,7 +271,7 @@ export async function getCreatorDashboardData(input: {
     quotasByType: quotaByType,
     payoutBreakdown: payout.items.map((item) => ({
       key: item.key,
-      label: VIDEO_TYPE_LABELS[item.key as keyof typeof VIDEO_TYPE_LABELS],
+      label: VIDEO_TYPE_LABELS[item.key],
       delivered: item.delivered,
       rate: item.rate,
       subtotal: item.subtotal

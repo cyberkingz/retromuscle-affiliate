@@ -2,7 +2,7 @@ import { markMonthlyTrackingPaid } from "@/application/use-cases/mark-monthly-tr
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000 });
   if (limited) {
     return limited;
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   // Per-user rate limit (stricter, scoped to authenticated admin)
-  const userLimited = rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000, userId: auth.session.userId });
+  const userLimited = await rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000, userId: auth.session.userId });
   if (userLimited) {
     return userLimited;
   }
@@ -53,18 +53,7 @@ export async function POST(request: Request) {
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 6 * 1024 }));
   } catch (error) {
-    const response = apiError(ctx, {
-      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
-      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
-      message:
-        error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
-          ? "Payload trop volumineux."
-          : error instanceof Error && error.message === "INVALID_JSON"
-            ? "Payload invalide."
-            : error instanceof Error
-              ? error.message
-              : "Invalid payload"
-    });
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

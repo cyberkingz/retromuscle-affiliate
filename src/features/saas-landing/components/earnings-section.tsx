@@ -1,25 +1,29 @@
-import { formatCurrency } from "@/lib/currency";
-import { CardSection } from "@/components/layout/card-section";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/currency";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { EarningsScenario } from "@/application/use-cases/get-saas-landing-data";
 
 interface EarningsSectionProps {
   title: string;
   subtitle: string;
-  scenarios: Array<{
-    tier: number;
-    videos: number;
-    credits: number;
-    mixLabel: string;
-    estimatedAmount: number;
-    breakdown: Array<{ label: string; delivered: number; rate: number; subtotal: number }>;
-    assumptions: string[];
-  }>;
+  scenarios: EarningsScenario[];
+  packages: Array<{ tier: number; videos: number; credits: number }>;
+  cta: { label: string; href: "/apply" };
+  hint: string;
 }
 
-export function EarningsSection({ title, subtitle, scenarios }: EarningsSectionProps) {
+export function EarningsSection({
+  title,
+  subtitle,
+  scenarios,
+  packages,
+  cta,
+  hint
+}: EarningsSectionProps) {
   return (
-    <section className="space-y-10 animate-fade-up [animation-delay:220ms]">
+    <section className="animate-fade-up">
       <div className="text-center space-y-4">
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
           {title}
@@ -27,44 +31,75 @@ export function EarningsSection({ title, subtitle, scenarios }: EarningsSectionP
         <p className="mx-auto max-w-2xl text-foreground/70">{subtitle}</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {scenarios.map((scenario) => (
-          <CardSection key={scenario.tier} className="flex flex-col">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Pack {scenario.tier}</p>
-            <p className="mt-2 font-display text-5xl uppercase leading-none text-secondary">
-              {formatCurrency(scenario.estimatedAmount)}
-            </p>
-            <p className="mt-2 text-sm text-foreground/75">
-              Avec {scenario.videos} videos/mois (style {scenario.mixLabel}).
-            </p>
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {scenarios.map((scenario, index) => {
+          const pkg = packages[index];
+          const featured = index === 1;
 
-            <div className="mt-4 grid gap-2 rounded-2xl border border-line bg-frost/60 p-4 text-sm text-foreground/75">
-              {scenario.breakdown.slice(0, 3).map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-3">
-                  <span className="truncate">{row.label}</span>
-                  <span className="font-medium">{row.delivered}x</span>
+          return (
+            <Card
+              key={scenario.tier}
+              className={`relative flex flex-col border-line ${
+                featured
+                  ? "border-foreground bg-frost shadow-xl md:scale-[1.02]"
+                  : "bg-white hover:border-foreground/40"
+              }`}
+            >
+              {featured ? (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge variant="default">Populaire</Badge>
                 </div>
-              ))}
-              <p className="text-xs text-foreground/55">
-                Bonus fixe inclus: {formatCurrency(scenario.credits)}
-              </p>
-            </div>
+              ) : null}
 
-            <div className="mt-4 space-y-1 text-xs text-foreground/60">
-              {scenario.assumptions.slice(0, 3).map((line) => (
-                <p key={line}>• {line}</p>
-              ))}
-            </div>
-          </CardSection>
-        ))}
+              <CardContent className="flex flex-1 flex-col p-5">
+                <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
+                  Pack {scenario.tier}
+                </p>
+
+                {/* Video count */}
+                <div className="mt-2 flex items-baseline gap-1.5">
+                  <span className="font-display text-4xl uppercase text-secondary">
+                    {pkg?.videos ?? scenario.videos}
+                  </span>
+                  <span className="text-sm text-foreground/60">vidéos/mois</span>
+                </div>
+
+                {/* Estimated earnings */}
+                <div className="mt-4 rounded-xl border border-line bg-frost/60 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">
+                    Estimation mensuelle
+                  </p>
+                  <p className="mt-1 font-display text-3xl uppercase leading-none text-secondary">
+                    {formatCurrency(scenario.estimatedAmount)}
+                  </p>
+                </div>
+
+                {/* Breakdown */}
+                <div className="mt-3 flex-1 space-y-1.5 text-xs text-foreground/65">
+                  {scenario.breakdown.slice(0, 3).map((row) => (
+                    <div key={row.label} className="flex justify-between">
+                      <span className="truncate">{row.label}</span>
+                      <span className="font-medium">{row.delivered}×</span>
+                    </div>
+                  ))}
+                  {pkg ? (
+                    <p className="pt-1 text-foreground/50">
+                      {"Bonus fixe\u00a0: "}{formatCurrency(pkg.credits)}
+                    </p>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="flex justify-center">
+      <div className="mt-8 flex flex-col items-center gap-3 text-center">
         <Button asChild size="lg" className="h-14 px-8">
-          <Link href="/apply">Je postule au programme</Link>
+          <Link href={cta.href}>{cta.label}</Link>
         </Button>
+        <p className="text-sm text-foreground/60">{hint}</p>
       </div>
     </section>
   );
 }
-

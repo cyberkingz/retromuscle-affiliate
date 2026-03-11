@@ -2,7 +2,7 @@ import { parsePayload } from "@/app/api/applications/_lib";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const client = createSupabaseServerClient();
   const { data, error } = await client
     .from("creator_applications")
-    .select("*")
+    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at")
     .eq("user_id", auth.session.userId)
     .maybeSingle();
 
@@ -46,22 +46,28 @@ export async function POST(request: Request) {
   const authEmail = auth.session.email;
   const client = createSupabaseServerClient();
 
+  // Prevent overwriting terminal-state applications
+  const { data: existing } = await client
+    .from("creator_applications")
+    .select("status")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing && (existing.status === "approved" || existing.status === "rejected")) {
+    const response = apiError(ctx, {
+      status: 409,
+      code: "BAD_REQUEST",
+      message: `La candidature est deja ${existing.status === "approved" ? "approuvee" : "refusee"}.`
+    });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
+
   let payload;
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 64 * 1024 }), { authEmail });
   } catch (error) {
-    const status = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400;
-    const code = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST";
-    const message =
-      error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
-        ? "Payload trop volumineux."
-        : error instanceof Error && error.message === "INVALID_JSON"
-          ? "Payload invalide."
-          : error instanceof Error
-            ? error.message
-            : "Invalid payload";
-
-    const response = apiError(ctx, { status, code, message });
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -89,7 +95,7 @@ export async function POST(request: Request) {
   const { data, error } = await client
     .from("creator_applications")
     .upsert(row, { onConflict: "user_id" })
-    .select("*")
+    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at")
     .single();
 
   if (error) {

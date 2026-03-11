@@ -2,7 +2,7 @@ import { getCreatorPayoutProfile } from "@/application/use-cases/get-creator-pay
 import { saveCreatorPayoutProfile } from "@/application/use-cases/save-creator-payout-profile";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
@@ -34,7 +34,7 @@ function parseMethod(value: unknown): PayoutMethod {
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = rateLimit({ ctx, request, key: "creator:payout-profile:get", limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "creator:payout-profile:get", limit: 60, windowMs: 60_000 });
   if (limited) {
     return limited;
   }
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({ ctx, request, key: "creator:payout-profile:save", limit: 20, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "creator:payout-profile:save", limit: 20, windowMs: 60_000 });
   if (limited) {
     return limited;
   }
@@ -92,11 +92,7 @@ export async function POST(request: Request) {
   try {
     rawBody = await readJsonBodyWithLimit(request, { maxBytes: 12 * 1024 });
   } catch (error) {
-    const response = apiError(ctx, {
-      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
-      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
-      message: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "Payload trop volumineux." : "Payload invalide."
-    });
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

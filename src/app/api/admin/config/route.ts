@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({ ctx, request, key: "admin:config", limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "admin:config", limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
   const auth = await requireApiRole(request, "admin", { ctx });

@@ -5,6 +5,7 @@ import {
   apiJson,
   createApiContext,
   finalizeResponse,
+  handleBodyParseError,
   withRequestId,
   type ApiContext
 } from "@/lib/api-response";
@@ -153,5 +154,33 @@ describe("apiError", () => {
 
     expect(response.status).toBe(429);
     expect(response.headers.get("Retry-After")).toBe("60");
+  });
+});
+
+describe("handleBodyParseError", () => {
+  it("returns 413 for PAYLOAD_TOO_LARGE errors", async () => {
+    const ctx = makeCtx();
+    const response = handleBodyParseError(ctx, new Error("PAYLOAD_TOO_LARGE"));
+    expect(response.status).toBe(413);
+    const body = await response.json();
+    expect(body.code).toBe("PAYLOAD_TOO_LARGE");
+    expect(body.message).toBe("Payload trop volumineux.");
+  });
+
+  it("returns 400 for other errors", async () => {
+    const ctx = makeCtx();
+    const response = handleBodyParseError(ctx, new Error("INVALID_JSON"));
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe("BAD_REQUEST");
+    expect(body.message).toBe("Payload invalide.");
+  });
+
+  it("returns 400 for non-Error values", async () => {
+    const ctx = makeCtx();
+    const response = handleBodyParseError(ctx, "string error");
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe("BAD_REQUEST");
   });
 });

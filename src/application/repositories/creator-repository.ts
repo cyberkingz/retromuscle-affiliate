@@ -49,6 +49,13 @@ export interface CreatorRepository {
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<VideoAsset>;
+  /** Atomically review a video and recalculate tracking delivered counts. */
+  reviewVideoAndUpdateTracking(input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }>;
   updateTrackingDelivered(input: {
     monthlyTrackingId: string;
     delivered: MonthlyTracking["delivered"];
@@ -77,6 +84,8 @@ export interface CreatorRepository {
 
   // Creator payout details (creator-facing + admin views)
   getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null>;
+  /** Fetch all payout profiles in a single query (avoids N+1). */
+  listPayoutProfiles(): Promise<CreatorPayoutProfile[]>;
   upsertPayoutProfile(input: {
     creatorId: string;
     method: CreatorPayoutProfile["method"];

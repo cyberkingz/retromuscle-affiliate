@@ -14,7 +14,7 @@ function parseFileUrlParam(value: string | null): string {
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = rateLimit({ ctx, request, key: "rushes:preview", limit: 240, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "rushes:preview", limit: 240, windowMs: 60_000 });
   if (limited) {
     return limited;
   }

@@ -6,21 +6,14 @@ function normalizeRole(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-function resolveAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS ?? "";
-  return raw
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 export async function resolveAuthRoutingForUser(input: {
   supabase: SupabaseClient;
   user: User;
 }): Promise<{ role: AuthRole; target: RedirectTarget }> {
-  const email = input.user.email?.toLowerCase();
-  const metadataRole = normalizeRole(input.user.app_metadata?.role ?? input.user.user_metadata?.role);
-  const isAdmin = metadataRole === "admin" || (email ? resolveAdminEmails().includes(email) : false);
+  // SECURITY: Only trust app_metadata.role (set by admin/service-role).
+  // Never fall back to user_metadata.role — users can self-set it.
+  const metadataRole = normalizeRole(input.user.app_metadata?.role);
+  const isAdmin = metadataRole === "admin";
 
   if (isAdmin) {
     return { role: "admin", target: "/admin" };

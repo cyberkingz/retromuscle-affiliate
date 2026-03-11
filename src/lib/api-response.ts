@@ -85,6 +85,15 @@ export function apiJson<T>(
   return response;
 }
 
+export function handleBodyParseError(ctx: ApiContext, error: unknown): NextResponse {
+  const isTooLarge = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE";
+  return apiError(ctx, {
+    status: isTooLarge ? 413 : 400,
+    code: isTooLarge ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
+    message: isTooLarge ? "Payload trop volumineux." : "Payload invalide."
+  });
+}
+
 export function apiError(
   ctx: ApiContext,
   input: {

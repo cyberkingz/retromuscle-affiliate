@@ -7,6 +7,17 @@ export async function recordRushUpload(input: {
   fileUrl: string;
   fileSizeMb: number;
 }) {
+  // Input validation (H-05)
+  if (!input.fileName || typeof input.fileName !== "string" || input.fileName.length > 255) {
+    throw new Error("fileName is required and must be at most 255 characters");
+  }
+  if (!input.fileUrl || typeof input.fileUrl !== "string") {
+    throw new Error("fileUrl is required");
+  }
+  if (typeof input.fileSizeMb !== "number" || input.fileSizeMb <= 0 || input.fileSizeMb > 2048) {
+    throw new Error("fileSizeMb must be between 1 and 2048");
+  }
+
   const repository = getRepository();
 
   const creator = await repository.getCreatorByUserId(input.userId);

@@ -1,11 +1,9 @@
-import { NextResponse } from "next/server";
-
 import { recordVideoUpload } from "@/application/use-cases/record-video-upload";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
@@ -73,7 +71,7 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = rateLimit({ ctx, request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
+  const limited = await rateLimit({ ctx, request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
   if (limited) {
     return limited;
   }
@@ -87,18 +85,7 @@ export async function POST(request: Request) {
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 }));
   } catch (error) {
-    const response = apiError(ctx, {
-      status: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
-      code: error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
-      message:
-        error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
-          ? "Payload trop volumineux."
-          : error instanceof Error && error.message === "INVALID_JSON"
-            ? "Payload invalide."
-            : error instanceof Error
-              ? error.message
-              : "Invalid payload"
-    });
+    const response = handleBodyParseError(ctx, error);
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

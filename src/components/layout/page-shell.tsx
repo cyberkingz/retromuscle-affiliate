@@ -28,6 +28,12 @@ export function PageShell({ children, currentPath }: PageShellProps) {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Aller au contenu principal
+      </a>
       <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -right-24 top-24 h-64 w-64 rounded-full bg-primary/25 blur-3xl" />
@@ -39,6 +45,7 @@ export function PageShell({ children, currentPath }: PageShellProps) {
       <SiteHeader currentPath={currentPath} />
 
       <main
+        id="main-content"
         className={cn(
           "container-wide flex-1 overflow-x-hidden",
           isAuthPage

@@ -1,8 +1,3 @@
-// WARNING: This rate limiter uses in-memory storage. On serverless platforms (Vercel),
-// each invocation gets a fresh Map, making rate limiting ineffective.
-// For production: replace with Upstash Redis (@upstash/ratelimit) or Vercel KV.
-// See: https://upstash.com/docs/redis/sdks/ratelimit-ts/overview
-
 import { NextResponse } from "next/server";
 
 import { apiError, type ApiContext } from "@/lib/api-response";
@@ -23,40 +18,18 @@ export interface RateLimitHit {
  * Pluggable storage backend for the rate limiter.
  *
  * The default implementation uses an in-memory `Map` attached to `globalThis`.
- * To switch to a durable store (e.g. Upstash Redis), implement this interface
- * and pass the instance to `rateLimit()` via the `storage` option.
+ * On serverless platforms (Vercel) this resets on each cold start.
  *
- * ```ts
- * // Example: Upstash Redis adapter (pseudo-code)
- * import { Ratelimit } from "@upstash/ratelimit";
- * import { Redis } from "@upstash/redis";
- *
- * class UpstashRateLimitStorage implements RateLimitStorage {
- *   private ratelimit = new Ratelimit({
- *     redis: Redis.fromEnv(),
- *     limiter: Ratelimit.slidingWindow(10, "60 s"),
- *   });
- *
- *   async hit(key: string, windowMs: number): Promise<RateLimitHit> {
- *     const { remaining, reset } = await this.ratelimit.limit(key);
- *     return { count: 10 - remaining, resetAt: reset };
- *   }
- * }
- * ```
+ * For durable rate limiting, set `UPSTASH_REDIS_REST_URL` and
+ * `UPSTASH_REDIS_REST_TOKEN` env vars — the limiter will automatically
+ * use Upstash Redis when available.
  */
 export interface RateLimitStorage {
-  /**
-   * Record a single request hit for the given key.
-   *
-   * @param key      - Unique bucket identifier (e.g. `"upload:/ip"` or `"upload:/userId"`).
-   * @param windowMs - Duration of the rate-limit window in milliseconds.
-   * @returns The current hit count and window reset timestamp.
-   */
-  hit(key: string, windowMs: number): RateLimitHit | Promise<RateLimitHit>;
+  hit(key: string, windowMs: number, limit: number): RateLimitHit | Promise<RateLimitHit>;
 }
 
 // ---------------------------------------------------------------------------
-// In-memory storage (default)
+// In-memory storage (fallback for dev / when no Redis configured)
 // ---------------------------------------------------------------------------
 
 interface BucketState {
@@ -68,8 +41,6 @@ class InMemoryRateLimitStorage implements RateLimitStorage {
   private store: Map<string, BucketState>;
 
   constructor() {
-    // Attach to globalThis so the map survives across imports in long-lived
-    // runtimes (e.g. `next dev`). On serverless this is still per-invocation.
     const anyGlobal = globalThis as typeof globalThis & {
       __rmRateLimit?: Map<string, BucketState>;
     };
@@ -94,8 +65,70 @@ class InMemoryRateLimitStorage implements RateLimitStorage {
   }
 }
 
-/** Singleton default storage instance. */
-const defaultStorage = new InMemoryRateLimitStorage();
+// ---------------------------------------------------------------------------
+// Upstash Redis storage (production-ready, serverless-safe)
+// ---------------------------------------------------------------------------
+
+class UpstashRateLimitStorage implements RateLimitStorage {
+  private url: string;
+  private token: string;
+
+  constructor(url: string, token: string) {
+    this.url = url;
+    this.token = token;
+  }
+
+  async hit(key: string, windowMs: number, limit: number): Promise<RateLimitHit> {
+    const now = Date.now();
+    const windowKey = `rl:${key}:${Math.floor(now / windowMs)}`;
+    const resetAt = (Math.floor(now / windowMs) + 1) * windowMs;
+
+    try {
+      // Use INCR + EXPIRE in a pipeline for atomic counter with TTL
+      const response = await fetch(`${this.url}/pipeline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify([
+          ["INCR", windowKey],
+          ["PEXPIRE", windowKey, String(windowMs)]
+        ])
+      });
+
+      if (!response.ok) {
+        // Fallback: allow request if Redis is unreachable (fail-open)
+        return { count: 0, resetAt };
+      }
+
+      const results = (await response.json()) as Array<{ result: number }>;
+      const count = results[0]?.result ?? 0;
+
+      return { count, resetAt };
+    } catch {
+      // Fail-open: if Redis is down, don't block legitimate requests
+      return { count: 0, resetAt };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Storage selection (auto-detect Upstash or fallback to in-memory)
+// ---------------------------------------------------------------------------
+
+function resolveStorage(): RateLimitStorage {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    return new UpstashRateLimitStorage(url, token);
+  }
+
+  return new InMemoryRateLimitStorage();
+}
+
+const defaultStorage = resolveStorage();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -109,7 +142,7 @@ interface RateLimitOptions {
   windowMs: number;
   /** When provided, the rate limit bucket is scoped to this user (appended to key). */
   userId?: string;
-  /** Custom storage backend. Defaults to the built-in in-memory store. */
+  /** Custom storage backend. Defaults to auto-detected store. */
   storage?: RateLimitStorage;
 }
 
@@ -119,7 +152,11 @@ function getClientIp(request: Request): string {
   return forwarded || realIp || "unknown";
 }
 
-export function rateLimit(options: RateLimitOptions): NextResponse | null {
+/**
+ * Rate limit a request. Returns a 429 NextResponse if limit is exceeded, or null if allowed.
+ * Now supports async storage backends (Upstash Redis).
+ */
+export async function rateLimit(options: RateLimitOptions): Promise<NextResponse | null> {
   const ip = getClientIp(options.request);
   const now = Date.now();
   const storage = options.storage ?? defaultStorage;
@@ -127,18 +164,7 @@ export function rateLimit(options: RateLimitOptions): NextResponse | null {
     ? `${options.key}:${options.userId}`
     : `${options.key}:${ip}`;
 
-  const result = storage.hit(bucketKey, options.windowMs);
-
-  // Support both sync and async storage — but the current callers are sync.
-  // If storage.hit returns a Promise, this will need an async wrapper.
-  if (result instanceof Promise) {
-    // TODO: Convert rateLimit to async when using an async storage backend.
-    throw new Error(
-      "rateLimit() does not support async storage yet. " +
-        "Wrap the call in an async helper or convert rateLimit to async."
-    );
-  }
-
+  const result = await storage.hit(bucketKey, options.windowMs, options.limit);
   const { count, resetAt } = result;
   const remaining = Math.max(0, options.limit - count);
   const retryAfterSeconds = Math.max(1, Math.ceil((resetAt - now) / 1000));

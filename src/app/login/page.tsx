@@ -7,7 +7,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 export const metadata = createPageMetadata({
   title: "Connexion Programme Affilie RetroMuscle",
   description: "Connecte-toi pour acceder a ton espace creator et suivre tes missions.",
-  path: "/login"
+  path: "/login",
+  noIndex: true
 });
 
 export default async function LoginRoute() {

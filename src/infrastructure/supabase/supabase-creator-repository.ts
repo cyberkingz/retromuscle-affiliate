@@ -348,14 +348,29 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
   };
 }
 
+// Explicit column selections to avoid select("*") over-fetching (H-03).
+const CREATOR_COLS = "id,user_id,handle,display_name,email,whatsapp,country,address,followers,social_links,package_tier,default_mix,status,start_date,contract_signed_at,notes" as const;
+const TRACKING_COLS = "id,month,creator_id,package_tier,quota_total,mix_name,quotas,delivered,deadline,payment_status,paid_at" as const;
+const VIDEO_COLS = "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
+const RUSH_COLS = "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
+const PACKAGE_COLS = "tier,quota_videos,monthly_credits" as const;
+const MIX_COLS = "name,distribution,positioning" as const;
+const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
+const APPLICATION_COLS = "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
+const PAYOUT_COLS = "creator_id,method,account_holder_name,iban,paypal_email,stripe_account,created_at,updated_at" as const;
+
+/** Safety limit for unbounded list queries to prevent OOM at scale (H-04). */
+const LIST_LIMIT = 1000;
+
 export class SupabaseCreatorRepository implements CreatorRepository {
   constructor(private readonly client: SupabaseClient) {}
 
   async listCreators(): Promise<Creator[]> {
     const { data, error } = await this.client
       .from("creators")
-      .select("*")
-      .order("created_at", { ascending: true });
+      .select(CREATOR_COLS)
+      .order("created_at", { ascending: true })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list creators: ${error.message}`);
@@ -367,7 +382,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getCreatorById(creatorId: string): Promise<Creator | null> {
     const { data, error } = await this.client
       .from("creators")
-      .select("*")
+      .select(CREATOR_COLS)
       .eq("id", creatorId)
       .maybeSingle();
 
@@ -379,7 +394,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   }
 
   async listMonthlyTrackings(month?: string): Promise<MonthlyTracking[]> {
-    let query = this.client.from("monthly_tracking").select("*").order("month", { ascending: false });
+    let query = this.client.from("monthly_tracking").select(TRACKING_COLS).order("month", { ascending: false }).limit(LIST_LIMIT);
 
     if (month) {
       query = query.eq("month", month);
@@ -397,7 +412,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getMonthlyTracking(creatorId: string, month: string): Promise<MonthlyTracking | null> {
     const { data, error } = await this.client
       .from("monthly_tracking")
-      .select("*")
+      .select(TRACKING_COLS)
       .eq("creator_id", creatorId)
       .eq("month", month)
       .maybeSingle();
@@ -412,7 +427,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getMonthlyTrackingById(monthlyTrackingId: string): Promise<MonthlyTracking | null> {
     const { data, error } = await this.client
       .from("monthly_tracking")
-      .select("*")
+      .select(TRACKING_COLS)
       .eq("id", monthlyTrackingId)
       .maybeSingle();
 
@@ -426,9 +441,10 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]> {
     const { data, error } = await this.client
       .from("monthly_tracking")
-      .select("*")
+      .select(TRACKING_COLS)
       .eq("creator_id", creatorId)
-      .order("month", { ascending: false });
+      .order("month", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list creator trackings for ${creatorId}: ${error.message}`);
@@ -440,9 +456,10 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]> {
     const { data, error } = await this.client
       .from("videos")
-      .select("*")
+      .select(VIDEO_COLS)
       .eq("status", status)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list videos by status ${status}: ${error.message}`);
@@ -454,9 +471,10 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listVideosByTracking(monthlyTrackingId: string): Promise<VideoAsset[]> {
     const { data, error } = await this.client
       .from("videos")
-      .select("*")
+      .select(VIDEO_COLS)
       .eq("monthly_tracking_id", monthlyTrackingId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list videos by tracking ${monthlyTrackingId}: ${error.message}`);
@@ -468,9 +486,10 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]> {
     const { data, error } = await this.client
       .from("rushes")
-      .select("*")
+      .select(RUSH_COLS)
       .eq("monthly_tracking_id", monthlyTrackingId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list rushes by tracking ${monthlyTrackingId}: ${error.message}`);
@@ -495,7 +514,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         file_size_mb: input.fileSizeMb,
         file_url: input.fileUrl ?? null
       })
-      .select("*")
+      .select(RUSH_COLS)
       .single();
 
     if (error) {
@@ -527,7 +546,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         file_size_mb: input.fileSizeMb,
         status: input.status ?? "pending_review"
       })
-      .select("*")
+      .select(VIDEO_COLS)
       .single();
 
     if (error) {
@@ -552,7 +571,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         reviewed_by: input.reviewedBy
       })
       .eq("id", input.videoId)
-      .select("*")
+      .select(VIDEO_COLS)
       .maybeSingle();
 
     if (error || !data) {
@@ -560,6 +579,30 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return mapVideo(data as VideoRow);
+  }
+
+  async reviewVideoAndUpdateTracking(input: {
+    videoId: string;
+    status: Extract<VideoStatus, "approved" | "rejected">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }> {
+    const { data, error } = await this.client.rpc("review_video_and_update_tracking", {
+      p_video_id: input.videoId,
+      p_status: input.status,
+      p_rejection_reason: input.status === "rejected" ? input.rejectionReason ?? null : null,
+      p_reviewed_by: input.reviewedBy
+    });
+
+    if (error) {
+      throw new Error(`Failed to review video atomically ${input.videoId}: ${error.message}`);
+    }
+
+    const result = data as { video: VideoRow; tracking: MonthlyTrackingRow };
+    return {
+      video: mapVideo(result.video),
+      tracking: mapMonthlyTracking(result.tracking)
+    };
   }
 
   async updateTrackingDelivered(input: {
@@ -572,7 +615,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         delivered: input.delivered
       })
       .eq("id", input.monthlyTrackingId)
-      .select("*")
+      .select(TRACKING_COLS)
       .maybeSingle();
 
     if (error || !data) {
@@ -595,7 +638,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         paid_at: paidAt
       })
       .eq("id", input.monthlyTrackingId)
-      .select("*")
+      .select(TRACKING_COLS)
       .maybeSingle();
 
     if (error || !data) {
@@ -610,7 +653,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null> {
     const { data, error } = await this.client
       .from("creator_payout_profiles")
-      .select("*")
+      .select(PAYOUT_COLS)
       .eq("creator_id", creatorId)
       .maybeSingle();
 
@@ -619,6 +662,19 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return data ? mapPayoutProfile(data as CreatorPayoutProfileRow) : null;
+  }
+
+  async listPayoutProfiles(): Promise<CreatorPayoutProfile[]> {
+    const { data, error } = await this.client
+      .from("creator_payout_profiles")
+      .select(PAYOUT_COLS)
+      .limit(LIST_LIMIT);
+
+    if (error) {
+      throw new Error(`Failed to list payout profiles: ${error.message}`);
+    }
+
+    return (data as CreatorPayoutProfileRow[]).map(mapPayoutProfile);
   }
 
   async upsertPayoutProfile(input: {
@@ -642,7 +698,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         },
         { onConflict: "creator_id" }
       )
-      .select("*")
+      .select(PAYOUT_COLS)
       .single();
 
     if (error) {
@@ -657,7 +713,8 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .from("creator_contract_signatures")
       .select("id,creator_id,user_id,contract_version,contract_checksum,signer_name,acceptance,ip,user_agent,signed_at,created_at")
       .eq("creator_id", creatorId)
-      .order("signed_at", { ascending: false });
+      .order("signed_at", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (error) {
       throw new Error(`Failed to list contract signatures for ${creatorId}: ${error.message}`);
@@ -669,7 +726,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listRates(): Promise<VideoRate[]> {
     const { data, error } = await this.client
       .from("video_rates")
-      .select("*")
+      .select(RATE_COLS)
       .order("video_type", { ascending: true });
 
     if (error) {
@@ -686,7 +743,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listPackageDefinitions(): Promise<PackageDefinition[]> {
     const { data, error } = await this.client
       .from("package_definitions")
-      .select("*")
+      .select(PACKAGE_COLS)
       .order("tier", { ascending: true });
 
     if (error) {
@@ -703,7 +760,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listMixDefinitions(): Promise<MixDefinition[]> {
     const { data, error } = await this.client
       .from("mix_definitions")
-      .select("*")
+      .select(MIX_COLS)
       .order("name", { ascending: true });
 
     if (error) {
@@ -729,7 +786,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         monthly_credits: input.monthlyCredits
       })
       .eq("tier", input.tier)
-      .select()
+      .select(PACKAGE_COLS)
       .single();
 
     if (error) {
@@ -756,7 +813,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         positioning: input.positioning
       })
       .eq("name", input.name)
-      .select()
+      .select(MIX_COLS)
       .single();
 
     if (error) {
@@ -782,7 +839,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         is_placeholder: false
       })
       .eq("video_type", input.videoType)
-      .select()
+      .select(RATE_COLS)
       .single();
 
     if (error) {
@@ -800,9 +857,10 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listCreatorApplications(status?: ApplicationStatus): Promise<CreatorApplication[]> {
     let query = this.client
       .from("creator_applications")
-      .select("*")
+      .select(APPLICATION_COLS)
       .order("submitted_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (status) {
       query = query.eq("status", status);
@@ -819,7 +877,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getCreatorApplicationByUserId(userId: string): Promise<CreatorApplication | null> {
     const { data, error } = await this.client
       .from("creator_applications")
-      .select("*")
+      .select(APPLICATION_COLS)
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -843,7 +901,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         review_notes: input.reviewNotes ?? null
       })
       .eq("user_id", input.userId)
-      .select("*")
+      .select(APPLICATION_COLS)
       .maybeSingle();
 
     if (error || !data) {
@@ -856,7 +914,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async getCreatorByUserId(userId: string): Promise<Creator | null> {
     const { data, error } = await this.client
       .from("creators")
-      .select("*")
+      .select(CREATOR_COLS)
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -896,7 +954,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
 
     const { data: existingByUserId, error: byUserIdError } = await this.client
       .from("creators")
-      .select("*")
+      .select(CREATOR_COLS)
       .eq("user_id", input.application.userId)
       .maybeSingle();
 
@@ -921,7 +979,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
           status: creatorPayload.status
         })
         .eq("id", (existingByUserId as CreatorRow).id)
-        .select("*")
+        .select(CREATOR_COLS)
         .maybeSingle();
 
       if (updateError || !updated) {
@@ -933,7 +991,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
 
     const { data: existingByEmail, error: byEmailError } = await this.client
       .from("creators")
-      .select("*")
+      .select(CREATOR_COLS)
       .eq("email", normalizedEmail)
       .maybeSingle();
 
@@ -948,7 +1006,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
           ...creatorPayload
         })
         .eq("id", (existingByEmail as CreatorRow).id)
-        .select("*")
+        .select(CREATOR_COLS)
         .maybeSingle();
 
       if (updateError || !updated) {
@@ -961,7 +1019,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     const { data, error } = await this.client
       .from("creators")
       .insert(creatorPayload)
-      .select("*")
+      .select(CREATOR_COLS)
       .single();
 
     if (error) {
@@ -997,7 +1055,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         },
         { onConflict: "month,creator_id" }
       )
-      .select("*")
+      .select(TRACKING_COLS)
       .single();
 
     if (error) {
