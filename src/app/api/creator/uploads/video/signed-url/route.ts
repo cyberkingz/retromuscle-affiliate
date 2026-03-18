@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   // Verify tracking ownership: monthlyTrackingId must belong to this user's creator
   const supabase = createSupabaseServerClient();
   const { data: tracking } = await supabase
-    .from("monthly_trackings")
+    .from("monthly_tracking")
     .select("id,creator_id")
     .eq("id", payload.monthlyTrackingId)
     .maybeSingle();
