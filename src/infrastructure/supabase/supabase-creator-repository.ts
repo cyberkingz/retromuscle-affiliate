@@ -3,18 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
 import {
   type ApplicationStatus,
-  MIX_NAMES,
   VIDEO_TYPES,
   type Creator,
   type CreatorApplication,
   type CreatorContractSignature,
   type CreatorPayoutProfile,
   type CreatorStatus,
-  type MixDefinition,
-  type MixName,
   type MonthlyTracking,
-  type PackageDefinition,
-  type PackageTier,
   type PaymentStatus,
   type RushAsset,
   type VideoAsset,
@@ -33,10 +28,9 @@ interface CreatorRow {
   whatsapp: string;
   country: string;
   address: string;
-  followers: number;
+  followers_tiktok: number;
+  followers_instagram: number;
   social_links: Record<string, unknown> | null;
-  package_tier: number;
-  default_mix: string;
   status: string;
   start_date: string;
   contract_signed_at: string | null;
@@ -47,12 +41,7 @@ interface MonthlyTrackingRow {
   id: string;
   month: string;
   creator_id: string;
-  package_tier: number;
-  quota_total: number;
-  mix_name: string;
-  quotas: Record<string, unknown>;
   delivered: Record<string, unknown>;
-  deadline: string;
   payment_status: string;
   paid_at: string | null;
 }
@@ -83,18 +72,6 @@ interface RushRow {
   created_at: string;
 }
 
-interface PackageDefinitionRow {
-  tier: number;
-  quota_videos: number;
-  monthly_credits: number | string;
-}
-
-interface MixDefinitionRow {
-  name: string;
-  distribution: Record<string, unknown>;
-  positioning: string | null;
-}
-
 interface VideoRateRow {
   video_type: string;
   rate_per_video: number | string;
@@ -113,10 +90,8 @@ interface CreatorApplicationRow {
   address: string;
   social_tiktok: string | null;
   social_instagram: string | null;
-  followers: number;
-  portfolio_url: string | null;
-  package_tier: number;
-  mix_name: string;
+  followers_tiktok: number;
+  followers_instagram: number;
   submitted_at: string | null;
   reviewed_at: string | null;
   review_notes: string | null;
@@ -155,14 +130,6 @@ function toVideoType(value: string): VideoType {
     throw new Error(`Unknown video type from database: ${value}`);
   }
   return normalized as VideoType;
-}
-
-function toMixName(value: string): MixName {
-  const normalized = value.toUpperCase();
-  if (!MIX_NAMES.includes(normalized as MixName)) {
-    throw new Error(`Unknown mix name from database: ${value}`);
-  }
-  return normalized as MixName;
 }
 
 function toCreatorStatus(value: string): CreatorStatus {
@@ -227,13 +194,12 @@ function mapCreator(row: CreatorRow): Creator {
     whatsapp: row.whatsapp,
     country: row.country,
     address: row.address,
-    followers: row.followers,
+    followersTiktok: row.followers_tiktok,
+    followersInstagram: row.followers_instagram,
     socialLinks: {
       tiktok: typeof socialLinks.tiktok === "string" ? socialLinks.tiktok : undefined,
       instagram: typeof socialLinks.instagram === "string" ? socialLinks.instagram : undefined
     },
-    packageTier: row.package_tier as 10 | 20 | 30 | 40,
-    defaultMix: toMixName(row.default_mix),
     status: toCreatorStatus(row.status),
     startDate: row.start_date,
     contractSignedAt: row.contract_signed_at ?? undefined,
@@ -246,12 +212,7 @@ function mapMonthlyTracking(row: MonthlyTrackingRow): MonthlyTracking {
     id: row.id,
     month: row.month,
     creatorId: row.creator_id,
-    packageTier: row.package_tier as 10 | 20 | 30 | 40,
-    quotaTotal: row.quota_total,
-    mixName: toMixName(row.mix_name),
-    quotas: toVideoTypeCount(row.quotas),
     delivered: toVideoTypeCount(row.delivered),
-    deadline: row.deadline,
     paymentStatus: toPaymentStatus(row.payment_status),
     paidAt: row.paid_at ?? undefined
   };
@@ -300,10 +261,8 @@ function mapCreatorApplication(row: CreatorApplicationRow): CreatorApplication {
     address: row.address,
     socialTiktok: row.social_tiktok ?? undefined,
     socialInstagram: row.social_instagram ?? undefined,
-    followers: row.followers,
-    portfolioUrl: row.portfolio_url ?? undefined,
-    packageTier: row.package_tier as PackageTier,
-    mixName: toMixName(row.mix_name),
+    followersTiktok: row.followers_tiktok,
+    followersInstagram: row.followers_instagram,
     submittedAt: row.submitted_at ?? undefined,
     reviewedAt: row.reviewed_at ?? undefined,
     reviewNotes: row.review_notes ?? undefined,
@@ -349,14 +308,12 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
 }
 
 // Explicit column selections to avoid select("*") over-fetching (H-03).
-const CREATOR_COLS = "id,user_id,handle,display_name,email,whatsapp,country,address,followers,social_links,package_tier,default_mix,status,start_date,contract_signed_at,notes" as const;
-const TRACKING_COLS = "id,month,creator_id,package_tier,quota_total,mix_name,quotas,delivered,deadline,payment_status,paid_at" as const;
+const CREATOR_COLS = "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes" as const;
+const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at" as const;
 const VIDEO_COLS = "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
 const RUSH_COLS = "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
-const PACKAGE_COLS = "tier,quota_videos,monthly_credits" as const;
-const MIX_COLS = "name,distribution,positioning" as const;
 const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
-const APPLICATION_COLS = "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
+const APPLICATION_COLS = "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
 const PAYOUT_COLS = "creator_id,method,account_holder_name,iban,paypal_email,stripe_account,created_at,updated_at" as const;
 
 /** Safety limit for unbounded list queries to prevent OOM at scale (H-04). */
@@ -740,94 +697,6 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }));
   }
 
-  async listPackageDefinitions(): Promise<PackageDefinition[]> {
-    const { data, error } = await this.client
-      .from("package_definitions")
-      .select(PACKAGE_COLS)
-      .order("tier", { ascending: true });
-
-    if (error) {
-      throw new Error(`Failed to list package definitions: ${error.message}`);
-    }
-
-    return (data as PackageDefinitionRow[]).map((row) => ({
-      tier: row.tier as 10 | 20 | 30 | 40,
-      quotaVideos: row.quota_videos,
-      monthlyCredits: Number(row.monthly_credits)
-    }));
-  }
-
-  async listMixDefinitions(): Promise<MixDefinition[]> {
-    const { data, error } = await this.client
-      .from("mix_definitions")
-      .select(MIX_COLS)
-      .order("name", { ascending: true });
-
-    if (error) {
-      throw new Error(`Failed to list mix definitions: ${error.message}`);
-    }
-
-    return (data as MixDefinitionRow[]).map((row) => ({
-      name: toMixName(row.name),
-      distribution: toVideoTypeCount(row.distribution),
-      positioning: row.positioning ?? ""
-    }));
-  }
-
-  async updatePackageDefinition(input: {
-    tier: PackageTier;
-    quotaVideos: number;
-    monthlyCredits: number;
-  }): Promise<PackageDefinition> {
-    const { data, error } = await this.client
-      .from("package_definitions")
-      .update({
-        quota_videos: input.quotaVideos,
-        monthly_credits: input.monthlyCredits
-      })
-      .eq("tier", input.tier)
-      .select(PACKAGE_COLS)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update package definition tier ${input.tier}: ${error.message}`);
-    }
-
-    const row = data as PackageDefinitionRow;
-    return {
-      tier: row.tier as PackageTier,
-      quotaVideos: row.quota_videos,
-      monthlyCredits: Number(row.monthly_credits)
-    };
-  }
-
-  async updateMixDefinition(input: {
-    name: MixName;
-    distribution: Record<VideoType, number>;
-    positioning: string;
-  }): Promise<MixDefinition> {
-    const { data, error } = await this.client
-      .from("mix_definitions")
-      .update({
-        distribution: input.distribution,
-        positioning: input.positioning
-      })
-      .eq("name", input.name)
-      .select(MIX_COLS)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update mix definition ${input.name}: ${error.message}`);
-    }
-
-    const row = data as MixDefinitionRow;
-    return {
-      name: toMixName(row.name),
-      distribution: toVideoTypeCount(row.distribution),
-      positioning: row.positioning ?? ""
-    };
-  }
-
   async updateVideoRate(input: {
     videoType: VideoType;
     ratePerVideo: number;
@@ -940,14 +809,12 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       whatsapp: input.application.whatsapp,
       country: input.application.country,
       address: input.application.address,
-      followers: input.application.followers,
+      followers_tiktok: input.application.followersTiktok,
+      followers_instagram: input.application.followersInstagram,
       social_links: {
         ...(input.application.socialTiktok ? { tiktok: input.application.socialTiktok } : {}),
-        ...(input.application.socialInstagram ? { instagram: input.application.socialInstagram } : {}),
-        ...(input.application.portfolioUrl ? { portfolio: input.application.portfolioUrl } : {})
+        ...(input.application.socialInstagram ? { instagram: input.application.socialInstagram } : {})
       },
-      package_tier: input.application.packageTier,
-      default_mix: input.application.mixName,
       status: input.status,
       start_date: input.startDate
     };
@@ -972,10 +839,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
           whatsapp: creatorPayload.whatsapp,
           country: creatorPayload.country,
           address: creatorPayload.address,
-          followers: creatorPayload.followers,
+          followers_tiktok: creatorPayload.followers_tiktok,
+          followers_instagram: creatorPayload.followers_instagram,
           social_links: creatorPayload.social_links,
-          package_tier: creatorPayload.package_tier,
-          default_mix: creatorPayload.default_mix,
           status: creatorPayload.status
         })
         .eq("id", (existingByUserId as CreatorRow).id)
@@ -1032,12 +898,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async createMonthlyTracking(input: {
     creatorId: string;
     month: string;
-    packageTier: PackageTier;
-    quotaTotal: number;
-    mixName: CreatorApplication["mixName"];
-    quotas: MonthlyTracking["quotas"];
     delivered: MonthlyTracking["delivered"];
-    deadline: string;
   }): Promise<MonthlyTracking> {
     const { data, error } = await this.client
       .from("monthly_tracking")
@@ -1045,12 +906,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         {
           month: input.month,
           creator_id: input.creatorId,
-          package_tier: input.packageTier,
-          quota_total: input.quotaTotal,
-          mix_name: input.mixName,
-          quotas: input.quotas,
           delivered: input.delivered,
-          deadline: input.deadline,
           payment_status: "en_cours"
         },
         { onConflict: "month,creator_id" }

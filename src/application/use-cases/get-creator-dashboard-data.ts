@@ -1,10 +1,13 @@
 import { getRepository } from "@/application/dependencies";
-import { MIX_LABELS, PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
+import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
 import { VIDEO_TYPES, type VideoType } from "@/domain/types";
-import { clampPercent } from "@/lib/progress";
-import { resolveMonth } from "@/application/use-cases/shared";
+import {
+  createZeroDeliveredCount,
+  resolveCurrentMonth,
+  resolveMonth
+} from "@/application/use-cases/shared";
 
 export interface CreatorDashboardData {
   creator: {
@@ -15,28 +18,14 @@ export interface CreatorDashboardData {
     status: string;
   };
   month: string;
-  plan: {
-    packageTier: number;
-    mixName: string;
-    mixLabel: string;
-    monthlyCredits: number;
-    deadline: string;
-  };
   progress: {
     deliveredTotal: number;
-    quotaTotal: number;
-    completionPercent: number;
-    remainingTotal: number;
-    remainingDetails: string;
     estimatedPayout: number;
   };
-  quotasByType: Array<{
+  deliveredByType: Array<{
     key: string;
     label: string;
-    required: number;
     delivered: number;
-    remaining: number;
-    completionPercent: number;
   }>;
   payoutBreakdown: Array<{
     key: string;
@@ -47,6 +36,11 @@ export interface CreatorDashboardData {
   }>;
   upload: {
     monthlyTrackingId: string;
+    ratesByType: Array<{
+      videoType: VideoType;
+      label: string;
+      ratePerVideo: number;
+    }>;
     specs: string[];
     tips: Record<string, string[]>;
     pendingReviewCount: number;
@@ -82,7 +76,6 @@ export interface CreatorDashboardData {
   paymentHistory: Array<{
     month: string;
     deliveredTotal: number;
-    quotaTotal: number;
     paymentStatus: string;
     amount: number;
     paidAt?: string;
@@ -100,10 +93,9 @@ export async function getCreatorDashboardData(input: {
     throw new Error("creatorId is required");
   }
 
-  const [creator, rates, packages, trackings, payoutProfile] = await Promise.all([
+  const [creator, rates, trackings, payoutProfile] = await Promise.all([
     repository.getCreatorById(input.creatorId),
     repository.listRates(),
-    repository.listPackageDefinitions(),
     repository.listCreatorTrackings(input.creatorId),
     repository.getPayoutProfileByCreatorId(input.creatorId)
   ]);
@@ -117,38 +109,27 @@ export async function getCreatorDashboardData(input: {
     trackings.map((tracking) => tracking.month)
   );
 
-  const currentTracking =
-    trackings.find((tracking) => tracking.month === targetMonth) ?? trackings[0] ?? null;
+  let allTrackings = [...trackings];
+  let currentTracking = allTrackings.find((tracking) => tracking.month === targetMonth) ?? null;
 
   if (!currentTracking) {
-    throw new Error(`No monthly tracking found for creator ${creator.id}`);
+    const fallbackMonth = targetMonth || resolveCurrentMonth();
+    currentTracking = await repository.createMonthlyTracking({
+      creatorId: creator.id,
+      month: fallbackMonth,
+      delivered: createZeroDeliveredCount()
+    });
+    allTrackings = [currentTracking, ...allTrackings];
   }
 
-  const packageMap = new Map(packages.map((item) => [item.tier, item]));
-  const packageDefinition = packageMap.get(currentTracking.packageTier);
-  if (!packageDefinition) {
-    throw new Error(`Missing package definition ${currentTracking.packageTier}`);
-  }
+  const summary = summarizeTracking(currentTracking.delivered);
+  const payout = calculatePayout(currentTracking.delivered, rates);
 
-  const summary = summarizeTracking(currentTracking.quotas, currentTracking.delivered);
-  const payout = calculatePayout(
-    currentTracking.delivered,
-    rates,
-    packageDefinition.monthlyCredits
-  );
-
-  const quotaByType = VIDEO_TYPES.map((videoType) => {
-    const required = currentTracking.quotas[videoType];
-    const delivered = currentTracking.delivered[videoType];
-    return {
-      key: videoType,
-      label: VIDEO_TYPE_LABELS[videoType],
-      required,
-      delivered,
-      remaining: Math.max(required - delivered, 0),
-      completionPercent: clampPercent(delivered, required)
-    };
-  });
+  const deliveredByType = VIDEO_TYPES.map((videoType) => ({
+    key: videoType,
+    label: VIDEO_TYPE_LABELS[videoType],
+    delivered: currentTracking.delivered[videoType]
+  }));
 
   const [uploadedVideos, rushes] = await Promise.all([
     repository.listVideosByTracking(currentTracking.id),
@@ -225,19 +206,13 @@ export async function getCreatorDashboardData(input: {
     .sort((a, b) => b!.timestamp.localeCompare(a!.timestamp))
     .slice(0, 12) as CreatorDashboardData["activity"];
 
-  const paymentHistory = trackings.map((tracking) => {
-    const pkg = packageMap.get(tracking.packageTier);
-    if (!pkg) {
-      throw new Error(`Missing package for tracking ${tracking.id}`);
-    }
-
-    const trackingSummary = summarizeTracking(tracking.quotas, tracking.delivered);
-    const trackingPayout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
+  const paymentHistory = allTrackings.map((tracking) => {
+    const trackingSummary = summarizeTracking(tracking.delivered);
+    const trackingPayout = calculatePayout(tracking.delivered, rates);
 
     return {
       month: tracking.month,
       deliveredTotal: trackingSummary.deliveredTotal,
-      quotaTotal: tracking.quotaTotal,
       paymentStatus: PAYMENT_STATUS_LABELS[tracking.paymentStatus],
       amount: trackingPayout.total,
       paidAt: tracking.paidAt
@@ -253,22 +228,11 @@ export async function getCreatorDashboardData(input: {
       status: creator.status
     },
     month: currentTracking.month,
-    plan: {
-      packageTier: currentTracking.packageTier,
-      mixName: currentTracking.mixName,
-      mixLabel: MIX_LABELS[currentTracking.mixName],
-      monthlyCredits: packageDefinition.monthlyCredits,
-      deadline: currentTracking.deadline
-    },
     progress: {
       deliveredTotal: summary.deliveredTotal,
-      quotaTotal: currentTracking.quotaTotal,
-      completionPercent: clampPercent(summary.deliveredTotal, currentTracking.quotaTotal),
-      remainingTotal: summary.remainingTotal,
-      remainingDetails: summary.remainingDetails,
       estimatedPayout: payout.total
     },
-    quotasByType: quotaByType,
+    deliveredByType,
     payoutBreakdown: payout.items.map((item) => ({
       key: item.key,
       label: VIDEO_TYPE_LABELS[item.key],
@@ -278,18 +242,23 @@ export async function getCreatorDashboardData(input: {
     })),
     upload: {
       monthlyTrackingId: currentTracking.id,
+      ratesByType: VIDEO_TYPES.map((videoType) => ({
+        videoType,
+        label: VIDEO_TYPE_LABELS[videoType],
+        ratePerVideo: rates.find((rate) => rate.videoType === videoType)?.ratePerVideo ?? 0
+      })),
       specs: [
-        "Formats: MP4, MOV",
-        "Resolution: 1080x1920 (9:16) ou 1080x1080 (1:1)",
-        "Duree: 15 a 60 secondes",
-        "Taille max: 500MB"
+        "Formats preferes: MP4, MOV (autres formats videos acceptes)",
+        "Resolution recommandee: 1080x1920 (9:16) ou 1080x1080 (1:1)",
+        "Duree recommandee: 15 a 60 secondes",
+        "Taille recommandee: <= 500MB"
       ],
       tips: {
-        OOTD: ["Plan stable miroir ou face cam", "Hook dans les 2 premieres secondes"],
-        TRAINING: ["Mouvement principal dans la premiere moitie", "Sous-titres lisibles"],
-        BEFORE_AFTER: ["Etat initial clair", "Narration progression en 3 actes"],
-        SPORTS_80S: ["Styling retro muscle", "Background gym old-school"],
-        CINEMATIC: ["Direction artistique soignee", "Color grading propre", "Montage dynamique"]
+        OOTD: ["Plan stable miroir ou face cam", "Lumi\u00e8re naturelle de pr\u00e9f\u00e9rence"],
+        TRAINING: ["Angle qui montre le mouvement complet", "Son ambiant OK, on g\u00e8re le montage"],
+        BEFORE_AFTER: ["\u00c9tat initial clair et bien \u00e9clair\u00e9", "Transition nette entre avant et apr\u00e8s"],
+        SPORTS_80S: ["Styling r\u00e9tro muscle", "Background gym old-school"],
+        CINEMATIC: ["Cadrage soign\u00e9, lumi\u00e8re travaill\u00e9e", "Ambiance forte, on s\u2019occupe du reste"]
       },
       pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review").length,
       rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,

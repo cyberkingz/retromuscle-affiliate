@@ -24,8 +24,8 @@ function getContractHighlights() {
       body: "Les contenus valides peuvent etre utilises en organique et en publicite (ads)."
     },
     {
-      title: "Mensuel",
-      body: "Un cycle mensuel avec quota, review et paiement apres validation."
+      title: "Paiement",
+      body: "Chaque video validee est payee au tarif fixe de son type. Virement mensuel."
     },
     {
       title: "Revisions",

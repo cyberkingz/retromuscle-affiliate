@@ -1,14 +1,10 @@
 import { CardSection } from "@/components/layout/card-section";
-import { ProgressBar } from "@/components/ui/progress-bar";
 
 interface QuotasGridProps {
   items: Array<{
     key: string;
     label: string;
-    required: number;
     delivered: number;
-    remaining: number;
-    completionPercent: number;
   }>;
 }
 
@@ -20,12 +16,13 @@ export function QuotasGrid({ items }: QuotasGridProps) {
           <CardSection key={item.key} padding="sm" className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="font-semibold">{item.label}</p>
-              <p className="text-xs text-foreground/60">
-                {item.delivered}/{item.required}
+              <p className="font-display text-2xl uppercase leading-none text-secondary">
+                {item.delivered}
               </p>
             </div>
-            <ProgressBar percent={item.completionPercent} />
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Reste: {item.remaining} a filmer</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
+              {item.delivered === 0 ? "Aucune video livree" : `${item.delivered} video${item.delivered > 1 ? "s" : ""} livree${item.delivered > 1 ? "s" : ""}`}
+            </p>
           </CardSection>
         ))}
       </div>

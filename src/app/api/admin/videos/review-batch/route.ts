@@ -20,6 +20,22 @@ interface ReviewBatchResult {
   error?: string;
 }
 
+function sanitizeBatchError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Review impossible";
+  }
+
+  const raw = error.message.toLowerCase();
+  if (raw.includes("not found")) {
+    return "Video introuvable";
+  }
+  if (raw.includes("invalid status")) {
+    return "Statut de review invalide";
+  }
+
+  return "Review impossible";
+}
+
 function parsePayload(body: unknown): ReviewBatchPayload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid payload");
@@ -119,7 +135,7 @@ export async function POST(request: Request) {
       results.push({
         videoId,
         ok: false,
-        error: caught instanceof Error ? caught.message : "Unknown error"
+        error: sanitizeBatchError(caught)
       });
     }
   }

@@ -200,8 +200,8 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
-                      isCurrent ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
+                      "block px-3 py-3 text-sm uppercase tracking-[0.08em]",
+                      isCurrent ? "font-semibold text-foreground" : "text-foreground/50 hover:text-foreground"
                     )}
                   >
                     {link.label}
@@ -215,7 +215,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     <Link
                       href={accountTarget}
                       onClick={() => setMobileOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                      className="block px-3 py-3 text-sm uppercase tracking-[0.08em] text-foreground/50 hover:text-foreground"
                     >
                       {accountLabel}
                     </Link>
@@ -226,7 +226,7 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                       setMobileOpen(false);
                       void auth.signOut();
                     }}
-                    className="block w-full rounded-lg px-3 py-3 text-left text-sm uppercase tracking-[0.08em] text-foreground/75 hover:bg-frost/60"
+                    className="block w-full px-3 py-3 text-left text-sm uppercase tracking-[0.08em] text-foreground/50 hover:text-foreground"
                   >
                     Deconnexion
                   </button>
@@ -237,8 +237,8 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href="/login"
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
-                      currentPath === "/login" ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
+                      "block px-3 py-3 text-sm uppercase tracking-[0.08em]",
+                      currentPath === "/login" ? "font-semibold text-foreground" : "text-foreground/50 hover:text-foreground"
                     )}
                   >
                     Connexion
@@ -247,8 +247,8 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
                     href="/apply"
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block rounded-lg px-3 py-3 text-sm uppercase tracking-[0.08em]",
-                      currentPath === "/apply" ? "bg-frost text-foreground" : "text-foreground/75 hover:bg-frost/60"
+                      "block px-3 py-3 text-sm uppercase tracking-[0.08em]",
+                      currentPath === "/apply" ? "font-semibold text-foreground" : "text-foreground/50 hover:text-foreground"
                     )}
                   >
                     S&apos;inscrire

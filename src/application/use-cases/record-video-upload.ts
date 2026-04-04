@@ -1,4 +1,5 @@
 import { getRepository } from "@/application/dependencies";
+import { resolveUploadTrackingForUser } from "@/application/use-cases/resolve-upload-tracking";
 import { VIDEO_TYPES, type VideoAsset, type VideoType } from "@/domain/types";
 
 export async function recordVideoUpload(input: {
@@ -28,24 +29,14 @@ export async function recordVideoUpload(input: {
   }
 
   const repository = getRepository();
-
-  const creator = await repository.getCreatorByUserId(input.userId);
-  if (!creator) {
-    throw new Error("Creator not found");
-  }
-
-  const tracking = await repository.getMonthlyTrackingById(input.monthlyTrackingId);
-  if (!tracking) {
-    throw new Error("Monthly tracking not found");
-  }
-
-  if (tracking.creatorId !== creator.id) {
-    throw new Error("Forbidden");
-  }
+  const context = await resolveUploadTrackingForUser({
+    userId: input.userId,
+    monthlyTrackingId: input.monthlyTrackingId
+  });
 
   return repository.createVideoAsset({
-    monthlyTrackingId: tracking.id,
-    creatorId: creator.id,
+    monthlyTrackingId: context.monthlyTrackingId,
+    creatorId: context.creatorId,
     videoType: input.videoType,
     fileUrl: input.fileUrl,
     durationSeconds: input.durationSeconds,
@@ -54,4 +45,3 @@ export async function recordVideoUpload(input: {
     status: "pending_review"
   });
 }
-

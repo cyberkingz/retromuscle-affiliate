@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const client = createSupabaseServerClient();
   const { data, error } = await client
     .from("creator_applications")
-    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at")
+    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at")
     .eq("user_id", auth.session.userId)
     .maybeSingle();
 
@@ -84,10 +84,8 @@ export async function POST(request: Request) {
     address: payload.address,
     social_tiktok: payload.socialTiktok ?? null,
     social_instagram: payload.socialInstagram ?? null,
-    followers: payload.followers,
-    portfolio_url: null,
-    package_tier: payload.packageTier,
-    mix_name: payload.mixName,
+    followers_tiktok: payload.followersTiktok,
+    followers_instagram: payload.followersInstagram,
     status: payload.submit ? "pending_review" : "draft",
     submitted_at: payload.submit ? nowIso : null
   };
@@ -95,7 +93,7 @@ export async function POST(request: Request) {
   const { data, error } = await client
     .from("creator_applications")
     .upsert(row, { onConflict: "user_id" })
-    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers,portfolio_url,package_tier,mix_name,submitted_at,reviewed_at,review_notes,created_at,updated_at")
+    .select("id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at")
     .single();
 
   if (error) {

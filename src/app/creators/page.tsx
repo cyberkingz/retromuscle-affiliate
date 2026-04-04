@@ -4,8 +4,8 @@ import { LandingPage } from "@/features/landing/landing-page";
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "Revenus & Packs RetroMuscle",
-  description: "Decouvre les packs, les rates par type et les mixes de contenu pour estimer tes revenus.",
+  title: "Tarifs par type RetroMuscle",
+  description: "Consulte les tarifs par type de video et estime tes gains selon ton volume de videos validees.",
   path: "/creators"
 });
 

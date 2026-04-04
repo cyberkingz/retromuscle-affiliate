@@ -61,7 +61,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
           throw new Error(payload?.message ?? "Impossible de mettre a jour le statut.");
         }
 
-        window.location.reload();
+        router.refresh();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour le statut.");
       } finally {
@@ -75,7 +75,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
     () => [
       {
         id: "creator",
-        header: "Createur",
+        header: "Créateur",
         accessorFn: (row) => row.creatorHandle,
         cell: ({ row }) => (
           <div className="min-w-[170px]">
@@ -90,13 +90,13 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
       },
       {
         accessorKey: "deliveredSummary",
-        header: "Livrees"
+        header: "Livrées"
       },
       {
         id: "amount",
         header: "Montant",
         accessorFn: (row) => row.amount,
-        cell: ({ row }) => <span className="font-medium">{formatCurrency(row.original.amount)}</span>
+        cell: ({ row }) => <span className="font-medium tabular-nums">{formatCurrency(row.original.amount)}</span>
       },
       {
         id: "status",
@@ -120,46 +120,52 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
               {isPaid ? (
                 <span className="inline-flex items-center gap-2 text-xs font-medium text-mint">
                   <CheckCircle2 className="h-4 w-4" />
-                  Paye
+                  Payé
                 </span>
               ) : noProfile ? (
-                <span className="text-xs font-medium text-destructive">
+                <Link
+                  href={`/admin/creators/${row.original.creatorId}`}
+                  className="text-xs font-medium text-destructive underline underline-offset-2 whitespace-nowrap hover:text-destructive/80"
+                >
                   Profil paiement manquant
-                </span>
+                </Link>
               ) : isConfirming ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm min-w-[280px]">
-                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer ?</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => void markPaid(row.original.monthlyTrackingId)}
-                    disabled={!auth.user || busy}
-                  >
-                    {busy ? "..." : "Confirmer"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="whitespace-nowrap"
-                    onClick={() => setConfirmingId(null)}
-                    disabled={busy}
-                  >
-                    Annuler
-                  </Button>
+                <div className="flex flex-col gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
+                  <span className="text-xs text-foreground/70 whitespace-nowrap">Action irreversible. Confirmer ?</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => void markPaid(row.original.monthlyTrackingId)}
+                      disabled={!auth.user || busy}
+                    >
+                      {busy ? "..." : "Confirmer"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="whitespace-nowrap"
+                      onClick={() => setConfirmingId(null)}
+                      disabled={busy}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Button
                   type="button"
                   size="sm"
+                  className="whitespace-nowrap"
                   onClick={() => {
                     setError(null);
                     setConfirmingId(row.original.monthlyTrackingId);
                   }}
                   disabled={!auth.user || busy}
                 >
-                  Marquer paye
+                  Marquer payé
                 </Button>
               )}
             </div>
@@ -186,7 +192,7 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
   return (
     <DataTableCard
       title="Gestion paiements"
-      subtitle="Montants et statuts du cycle en cours."
+      subtitle="Montants et statuts du mois en cours."
       action={action}
     >
       <div className="px-5 pb-4">
@@ -201,62 +207,66 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         data={rows}
         columns={columns}
         pageSize={8}
-        emptyMessage="Aucun paiement pour ce cycle."
+        emptyMessage="Aucun paiement pour ce mois."
         getRowId={(row) => row.monthlyTrackingId}
         renderMobileRow={(row) => (
-          <div className="rounded-2xl border border-line bg-white/95 p-4 space-y-3">
+          <div className="rounded-2xl border border-line bg-white/95 p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold">{row.creatorHandle}</p>
-                <p className="text-xs text-foreground/60">{row.email}</p>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-sm">{row.creatorHandle}</p>
+                <p className="truncate text-xs text-foreground/50">{row.email}</p>
               </div>
               <StatusBadge label={row.paymentStatus} tone={paymentStatusTone(row.paymentStatus)} />
             </div>
-            <div className="flex items-center justify-between text-sm text-foreground/75">
-              <span>Livrees</span>
-              <span className="font-medium">{row.deliveredSummary}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-foreground/75">
-              <span>Montant</span>
-              <span className="font-semibold">{formatCurrency(row.amount)}</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-foreground/65">
+              <span>{row.deliveredSummary}</span>
+              <span className="font-semibold tabular-nums text-sm text-foreground">{formatCurrency(row.amount)}</span>
             </div>
             {row.paymentStatusKey !== "paye" ? (
               !row.hasPayoutProfile ? (
-                <span className="text-xs font-medium text-destructive">
+                <Link
+                  href={`/admin/creators/${row.creatorId}`}
+                  className="inline-block text-xs font-medium text-destructive underline underline-offset-2"
+                >
                   Profil paiement manquant
-                </span>
+                </Link>
               ) : confirmingId === row.monthlyTrackingId ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
-                  <span className="text-xs text-foreground/70">Action irreversible. Confirmer le paiement ?</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => void markPaid(row.monthlyTrackingId)}
-                    disabled={!auth.user || submittingId === row.monthlyTrackingId}
-                  >
-                    {submittingId === row.monthlyTrackingId ? "..." : "Confirmer"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirmingId(null)}
-                    disabled={submittingId === row.monthlyTrackingId}
-                  >
-                    Annuler
-                  </Button>
+                <div className="space-y-2 rounded-xl border border-line bg-frost/70 px-3 py-2">
+                  <p className="text-xs text-foreground/70">Confirmer le paiement de {formatCurrency(row.amount)}&nbsp;?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => void markPaid(row.monthlyTrackingId)}
+                      disabled={!auth.user || submittingId === row.monthlyTrackingId}
+                    >
+                      {submittingId === row.monthlyTrackingId ? "..." : "Confirmer"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setConfirmingId(null)}
+                      disabled={submittingId === row.monthlyTrackingId}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Button
                   type="button"
                   size="sm"
+                  className="w-full"
                   onClick={() => {
                     setError(null);
                     setConfirmingId(row.monthlyTrackingId);
                   }}
                   disabled={!auth.user || submittingId === row.monthlyTrackingId}
                 >
-                  Marquer paye
+                  Marquer payé
                 </Button>
               )
             ) : null}

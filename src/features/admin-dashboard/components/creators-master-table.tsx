@@ -15,8 +15,6 @@ interface CreatorsMasterTableProps {
     handle: string;
     email: string;
     country: string;
-    packageTier: number;
-    mixLabel: string;
     status: string;
   }>;
 }
@@ -40,13 +38,6 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
       { accessorKey: "email", header: "Email" },
       { accessorKey: "country", header: "Pays" },
       {
-        id: "pack",
-        header: "Package",
-        accessorFn: (row) => row.packageTier,
-        cell: ({ row }) => <span>Pack {row.original.packageTier}</span>
-      },
-      { accessorKey: "mixLabel", header: "Mix" },
-      {
         id: "status",
         header: "Statut",
         accessorFn: (row) => row.status,
@@ -59,7 +50,7 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
   );
 
   return (
-    <DataTableCard title="Creators master" subtitle="Base createurs et statut de collaboration.">
+    <DataTableCard title="Répertoire créateurs" subtitle="Base créateurs et statut de collaboration.">
       <div className="p-5">
         <DataTable
           data={rows}
@@ -80,12 +71,8 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
               </div>
               <div className="text-xs text-foreground/60">{row.email}</div>
               <div className="flex items-center justify-between text-sm text-foreground/75">
-                <span>Pack</span>
-                <span className="font-medium">{row.packageTier}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-foreground/75">
-                <span>Mix</span>
-                <span className="font-medium">{row.mixLabel}</span>
+                <span>Pays</span>
+                <span className="font-medium">{row.country}</span>
               </div>
             </div>
           )}
@@ -94,4 +81,3 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
     </DataTableCard>
   );
 }
-

@@ -20,12 +20,7 @@ function createTracking(overrides: Partial<MonthlyTracking> = {}): MonthlyTracki
     id: TRACKING_ID,
     month: "2026-02",
     creatorId: CREATOR_ID,
-    packageTier: 20,
-    quotaTotal: 10,
-    mixName: "EQUILIBRE",
-    quotas: { OOTD: 4, TRAINING: 3, BEFORE_AFTER: 2, SPORTS_80S: 0, CINEMATIC: 1 },
     delivered: { OOTD: 4, TRAINING: 3, BEFORE_AFTER: 2, SPORTS_80S: 0, CINEMATIC: 1 },
-    deadline: "2026-02-28",
     paymentStatus: "en_cours",
     ...overrides
   };
@@ -65,10 +60,6 @@ function makeMockRepository(overrides: Partial<CreatorRepository> = {}): Creator
     reviewVideoAndUpdateTracking: vi.fn(),
     updateTrackingDelivered: vi.fn(),
     listRates: vi.fn(),
-    listPackageDefinitions: vi.fn(),
-    listMixDefinitions: vi.fn(),
-    updatePackageDefinition: vi.fn(),
-    updateMixDefinition: vi.fn(),
     updateVideoRate: vi.fn(),
     listPayoutProfiles: vi.fn(),
     upsertPayoutProfile: vi.fn(),

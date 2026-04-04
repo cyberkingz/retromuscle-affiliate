@@ -55,7 +55,7 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-line bg-frost/70 px-4 py-6 text-sm text-foreground/70">
-          Aucune activite pour ce cycle.
+          Aucune activite pour ce mois.
         </div>
       ) : (
         <div className="space-y-2">

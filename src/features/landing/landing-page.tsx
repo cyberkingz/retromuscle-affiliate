@@ -3,8 +3,6 @@ import type { LandingPageData } from "@/application/use-cases/get-landing-page-d
 import { FaqList } from "@/features/landing/components/faq-list";
 import { GoalsStrip } from "@/features/landing/components/goals-strip";
 import { HeroSection } from "@/features/landing/components/hero-section";
-import { MixesGrid } from "@/features/landing/components/mixes-grid";
-import { PackagesGrid } from "@/features/landing/components/packages-grid";
 import { RatesTable } from "@/features/landing/components/rates-table";
 import { TestimonialsGrid } from "@/features/landing/components/testimonials-grid";
 
@@ -21,13 +19,11 @@ export function LandingPage({ data }: LandingPageProps) {
 
       <section className="space-y-5">
         <SectionHeading
-          eyebrow="Revenus"
-          title="Packages, gains et styles de contenu"
-          subtitle="Choisis ton rythme de missions et le style qui te ressemble pour construire un revenu regulier."
+          eyebrow="Ce que chaque vid&eacute;o te rapporte"
+          title="Un tarif fixe. Pas de surprise."
+          subtitle="Chaque vid&eacute;o que tu uploades est &eacute;valu&eacute;e par notre &eacute;quipe sous 48&nbsp;h. Si elle est valid&eacute;e, le paiement tombe au tarif fixe du type que tu as choisi."
         />
-        <PackagesGrid packages={data.packages} />
         <RatesTable rates={data.videoRates} />
-        <MixesGrid mixes={data.mixes} />
       </section>
 
       <TestimonialsGrid items={data.testimonials} />

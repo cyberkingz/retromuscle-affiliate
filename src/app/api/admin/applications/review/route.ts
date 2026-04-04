@@ -1,4 +1,7 @@
-import { reviewCreatorApplication } from "@/application/use-cases/review-creator-application";
+import {
+  reviewCreatorApplication,
+  ReviewCreatorApplicationError
+} from "@/application/use-cases/review-creator-application";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -100,6 +103,38 @@ export async function POST(request: Request) {
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
+    if (error instanceof ReviewCreatorApplicationError) {
+      const mapped = (() => {
+        switch (error.code) {
+          case "APPLICATION_NOT_FOUND":
+            return { status: 404 as const, code: "NOT_FOUND" as const };
+          case "APPLICATION_ALREADY_REVIEWED":
+            return { status: 409 as const, code: "BAD_REQUEST" as const };
+          case "INVALID_APPLICATION_STATE":
+            return { status: 400 as const, code: "BAD_REQUEST" as const };
+          case "HANDLE_CONFLICT":
+          case "EMAIL_CONFLICT":
+            return { status: 409 as const, code: "BAD_REQUEST" as const };
+          default:
+            return { status: 400 as const, code: "BAD_REQUEST" as const };
+        }
+      })();
+
+      const response = apiError(ctx, {
+        status: mapped.status,
+        code: mapped.code,
+        message: error.message
+      });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
+    }
+
+    // eslint-disable-next-line no-console
+    console.error("[admin/applications/review] unexpected error", {
+      requestId: ctx.requestId,
+      error
+    });
+
     const response = apiError(ctx, {
       status: 500,
       code: "INTERNAL",

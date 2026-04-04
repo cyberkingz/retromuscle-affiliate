@@ -1,6 +1,6 @@
 export default function AdminCreatorDetailLoading() {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-10 space-y-6">
       {/* Heading skeleton */}
       <div className="space-y-2">
         <div className="h-4 w-16 animate-pulse rounded-lg bg-white/60" />

@@ -1,5 +1,3 @@
-import { PACKAGE_DEFINITIONS } from "@/domain/constants/packages";
-import { MIX_DEFINITIONS } from "@/domain/constants/mixes";
 import {
   creators,
   monthlyTrackings,
@@ -13,15 +11,11 @@ import type {
   CreatorApplication,
   CreatorContractSignature,
   CreatorPayoutProfile,
-  MixDefinition,
   MonthlyTracking,
-  PackageDefinition,
-  PackageTier,
   RushAsset,
   VideoAsset,
   VideoRate,
-  VideoStatus,
-  VideoType
+  VideoStatus
 } from "@/domain/types";
 
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
@@ -133,30 +127,6 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     return references.rates;
   }
 
-  async listPackageDefinitions(): Promise<PackageDefinition[]> {
-    return Object.values(PACKAGE_DEFINITIONS).sort((a, b) => a.tier - b.tier);
-  }
-
-  async listMixDefinitions(): Promise<MixDefinition[]> {
-    return Object.values(MIX_DEFINITIONS);
-  }
-
-  async updatePackageDefinition(_input: {
-    tier: PackageTier;
-    quotaVideos: number;
-    monthlyCredits: number;
-  }): Promise<PackageDefinition> {
-    throw new Error("Config updates are not available in offline mode");
-  }
-
-  async updateMixDefinition(_input: {
-    name: MixDefinition["name"];
-    distribution: MixDefinition["distribution"];
-    positioning: string;
-  }): Promise<MixDefinition> {
-    throw new Error("Config updates are not available in offline mode");
-  }
-
   async updateVideoRate(_input: {
     videoType: VideoRate["videoType"];
     ratePerVideo: number;
@@ -220,12 +190,7 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   async createMonthlyTracking(_input: {
     creatorId: string;
     month: string;
-    packageTier: PackageTier;
-    quotaTotal: number;
-    mixName: CreatorApplication["mixName"];
-    quotas: MonthlyTracking["quotas"];
     delivered: MonthlyTracking["delivered"];
-    deadline: string;
   }): Promise<MonthlyTracking> {
     throw new Error("Tracking provisioning is not available in offline mode");
   }

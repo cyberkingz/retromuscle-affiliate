@@ -1,6 +1,5 @@
 export interface OnboardingOptions {
-  packages: Array<{ tier: number; quotaVideos: number; monthlyCredits: number }>;
-  mixes: Array<{ name: string; positioning: string }>;
+  steps: Array<{ title: string; fields: string[] }>;
 }
 
 export interface ApplicationRecord {
@@ -13,10 +12,8 @@ export interface ApplicationRecord {
   address: string;
   social_tiktok?: string | null;
   social_instagram?: string | null;
-  followers: number;
-  portfolio_url?: string | null;
-  package_tier: number;
-  mix_name: string;
+  followers_tiktok: number;
+  followers_instagram: number;
   submitted_at?: string | null;
   review_notes?: string | null;
 }
@@ -28,9 +25,8 @@ export interface ApplicationFormState {
   address: string;
   socialTiktok: string;
   socialInstagram: string;
-  followers: string;
-  packageTier: number;
-  mixName: string;
+  followersTiktok: string;
+  followersInstagram: string;
 }
 
 export type ApplicationFieldUpdater = <K extends keyof ApplicationFormState>(

@@ -56,26 +56,30 @@ export function LandingHero({
           <div className="grid gap-3 pt-2 sm:grid-cols-3">
             <div className="glass-panel rounded-2xl px-4 py-3">
               <p className="font-display text-3xl uppercase leading-none text-secondary">48h</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Réponse à ton profil</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">R&eacute;ponse &agrave; ton profil</p>
             </div>
             <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">Mensuel</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Missions + paiement</p>
+              <p className="font-display text-3xl uppercase leading-none text-secondary">95-180&nbsp;&euro;</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Par vid&eacute;o valid&eacute;e</p>
             </div>
             <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">Brief</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Specs claires</p>
+              <p className="font-display text-3xl uppercase leading-none text-secondary">Z&eacute;ro</p>
+              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Quota minimum</p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-foreground/75">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Missions régulières</span>
+              <span>Aucun plafond de gains</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Paiement mensuel clair</span>
+              <span>Virement mensuel garanti</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-mint" />
+              <span>Pas besoin d&apos;un gros compte</span>
             </div>
           </div>
         </div>
@@ -93,7 +97,7 @@ export function LandingHero({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-secondary/50 via-transparent to-transparent" />
               <div className="absolute left-4 top-4 rounded-full border border-white/30 bg-white/20 px-3 py-1 text-[11px] uppercase tracking-[0.1em] text-white backdrop-blur">
-                Ambiance RetroMuscle
+                Programme cr&eacute;ateur
               </div>
             </div>
 
@@ -109,10 +113,10 @@ export function LandingHero({
                   />
                 </div>
                 <div className="rounded-2xl border border-line bg-frost px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-foreground/55">Missions du mois</p>
+                  <p className="text-xs uppercase tracking-[0.1em] text-foreground/55">Ce mois-ci</p>
                   <div className="mt-2 flex items-end justify-between">
-                    <p className="font-display text-5xl uppercase leading-none text-secondary">32/40</p>
-                    <p className="text-sm text-foreground/70">missions finalisées</p>
+                    <p className="font-display text-5xl uppercase leading-none text-secondary">2 450&euro;</p>
+                    <p className="text-sm text-foreground/70">14 vid&eacute;os valid&eacute;es</p>
                   </div>
                 </div>
               </div>
@@ -132,8 +136,8 @@ export function LandingHero({
               </div>
 
               <div className="rounded-2xl border-2 border-foreground bg-primary px-4 py-3 text-sm text-foreground shadow-xl">
-                <p className="font-semibold uppercase tracking-[0.08em]">Revenus plus réguliers</p>
-                <p className="text-foreground/80">grâce à un volume de missions constant</p>
+                <p className="font-semibold uppercase tracking-[0.08em]">Aucun plafond</p>
+                <p className="text-foreground/80">Plus tu produis, plus tu gagnes.</p>
               </div>
             </div>
           </div>

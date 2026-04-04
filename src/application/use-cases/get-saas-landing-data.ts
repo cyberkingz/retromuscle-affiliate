@@ -1,12 +1,11 @@
 import { getRepository } from "@/application/dependencies";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
-import { MIX_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
+import { VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
-import { calculateQuotas } from "@/domain/services/calculate-quotas";
 import { VIDEO_TYPES } from "@/domain/types";
 
 /* ------------------------------------------------------------------ */
-/*  Image/Text block — reusable alternating layout data                */
+/*  Image/Text block -- reusable alternating layout data               */
 /* ------------------------------------------------------------------ */
 export interface ImageTextBlock {
   tag: string;
@@ -38,12 +37,17 @@ export interface FlowData {
 /*  Earnings scenario (dynamic from DB)                                */
 /* ------------------------------------------------------------------ */
 export interface EarningsScenario {
-  tier: number;
-  videos: number;
-  credits: number;
-  mixLabel: string;
+  label: string;
+  videosPerMonth: number;
   estimatedAmount: number;
   breakdown: Array<{ label: string; delivered: number; rate: number; subtotal: number }>;
+}
+
+export interface RateSheetRow {
+  key: string;
+  label: string;
+  ratePerVideo: number;
+  isPlaceholder: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,9 +93,13 @@ export interface SaasLandingData {
     title: string;
     subtitle: string;
     scenarios: EarningsScenario[];
-    packages: Array<{ tier: number; videos: number; credits: number }>;
     cta: { label: string; href: "/apply" };
     hint: string;
+  };
+  rates: {
+    title: string;
+    subtitle: string;
+    rows: RateSheetRow[];
   };
   qualifier: QualifierData;
   faqs: FaqItem[];
@@ -107,47 +115,54 @@ export interface SaasLandingData {
 /* ------------------------------------------------------------------ */
 export async function getSaasLandingData(): Promise<SaasLandingData> {
   const repository = getRepository();
-  const [packages, mixes, rates] = await Promise.all([
-    repository.listPackageDefinitions(),
-    repository.listMixDefinitions(),
-    repository.listRates()
-  ]);
+  const rates = await repository.listRates();
+  const rateRows: RateSheetRow[] = VIDEO_TYPES.map((videoType) => {
+    const rate = rates.find((item) => item.videoType === videoType);
+    return {
+      key: videoType,
+      label: VIDEO_TYPE_LABELS[videoType],
+      ratePerVideo: rate?.ratePerVideo ?? 0,
+      isPlaceholder: Boolean(rate?.isPlaceholder)
+    };
+  });
 
-  const baselineMix =
-    mixes.find((mix) => mix.name === "EQUILIBRE") ??
-    mixes.find((mix) => mix.name === "VOLUME") ??
-    mixes[0];
+  // Illustrative creator profiles showing realistic monthly earnings.
+  const scenarioVolumes = [
+    { label: "Cr\u00e9ateur occasionnel", videosPerMonth: 5 },
+    { label: "Cr\u00e9ateur r\u00e9gulier", videosPerMonth: 15 },
+    { label: "Cr\u00e9ateur actif", videosPerMonth: 30 }
+  ];
 
-  const sortedPackages = packages.slice().sort((a, b) => a.tier - b.tier);
+  const earningsScenarios: EarningsScenario[] = scenarioVolumes.map((scenario) => {
+    // Distribute evenly across video types for the example.
+    const perType = Math.floor(scenario.videosPerMonth / VIDEO_TYPES.length);
+    const remainder = scenario.videosPerMonth % VIDEO_TYPES.length;
+    const delivered = Object.fromEntries(
+      VIDEO_TYPES.map((vt, i) => [vt, perType + (i < remainder ? 1 : 0)])
+    ) as Record<(typeof VIDEO_TYPES)[number], number>;
 
-  const earningsScenarios: EarningsScenario[] = baselineMix
-    ? sortedPackages.map((pkg) => {
-        const quotas = calculateQuotas(pkg.quotaVideos, baselineMix);
-        const payout = calculatePayout(quotas, rates, pkg.monthlyCredits);
-        return {
-          tier: pkg.tier,
-          videos: pkg.quotaVideos,
-          credits: pkg.monthlyCredits,
-          mixLabel: MIX_LABELS[baselineMix.name],
-          estimatedAmount: payout.total,
-          breakdown: payout.items.map((item) => ({
-            label: VIDEO_TYPE_LABELS[item.key as keyof typeof VIDEO_TYPE_LABELS],
-            delivered: item.delivered,
-            rate: item.rate,
-            subtotal: item.subtotal
-          }))
-        };
-      })
-    : [];
+    const payout = calculatePayout(delivered, rates);
+    return {
+      label: scenario.label,
+      videosPerMonth: scenario.videosPerMonth,
+      estimatedAmount: payout.total,
+      breakdown: payout.items.map((item) => ({
+        label: VIDEO_TYPE_LABELS[item.key as keyof typeof VIDEO_TYPE_LABELS],
+        delivered: item.delivered,
+        rate: item.rate,
+        subtotal: item.subtotal
+      }))
+    };
+  });
 
   return {
-    /* ---- ATTENTION ------------------------------------------------- */
+    /* ---- A — ATTENTION\u00a0: Stopper le scroll, se sentir vu ------------ */
     hero: {
-      kicker: "Programme Créateurs RetroMuscle",
-      title: "Transforme tes vidéos fitness en revenus récurrents.",
+      kicker: "Programme Cr\u00e9ateurs RetroMuscle",
+      title: "Tu filmes d\u00e9j\u00e0. Maintenant tu es pay\u00e9 pour \u00e7a.",
       subtitle:
-        "Pas une collab one-shot. Pas un partenariat flou. Un programme structuré\u00a0: tu filmes, on valide, tu encaisses.",
-      primaryCta: { label: "Rejoindre le programme", href: "/apply" },
+        "Envoie tes rushes fitness, choisis le type, touche entre 95 et 180\u00a0\u20ac par vid\u00e9o valid\u00e9e. Pas besoin de monter, on g\u00e8re. Aucune contrainte, tu produis \u00e0 ton rythme.",
+      primaryCta: { label: "Je veux \u00eatre pay\u00e9", href: "/apply" },
       visuals: {
         logoUrl: BRAND_ASSETS.logo,
         primaryImageUrl: BRAND_ASSETS.heroLifestyle,
@@ -156,117 +171,122 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       }
     },
 
-    /* ---- INTEREST -------------------------------------------------- */
+    /* ---- I — INTEREST\u00a0: Montrer la simplicit\u00e9 ---------------------- */
     flow: {
-      title: "Simple. Direct. Rémunéré.",
-      subtitle: "Trois étapes entre toi et ton premier virement RetroMuscle.",
+      title: "Simple. Direct. R\u00e9mun\u00e9r\u00e9.",
+      subtitle: "Trois \u00e9tapes entre toi et ton premier virement.",
       steps: [
         {
           step: 1,
           title: "Tu candidates",
-          description: "Remplis le formulaire en 3 minutes. On regarde ton profil, ton énergie — pas ton nombre d'abonnés."
+          description: "Remplis le formulaire en 2 minutes. On regarde ton profil et ton \u00e9nergie, pas ton nombre d\u2019abonn\u00e9s. R\u00e9ponse sous 48\u00a0h."
         },
         {
           step: 2,
-          title: "Tu produis",
-          description: "Chaque mois, tu reçois ton brief RetroMuscle. Tu filmes. Tu envoies. On valide sous 72h."
+          title: "Tu filmes et tu upload",
+          description: "Tu filmes tes rushes, pas besoin de monter. Tu upload le raw footage sur la plateforme et tu choisis le type. On s\u2019occupe du montage, on valide sous 48\u00a0h."
         },
         {
           step: 3,
           title: "Tu encaisses",
-          description: "Chaque vidéo validée est payée. Virement mensuel sur IBAN, PayPal ou Stripe. Sans attendre 90 jours."
+          description: "Chaque vid\u00e9o valid\u00e9e d\u00e9clenche un paiement au tarif fixe de son type. Virement mensuel sur IBAN, PayPal ou Stripe."
         }
       ]
     },
 
-    /* ---- INTEREST + DESIRE ----------------------------------------- */
+    /* ---- I \u2192 D\u00a0: Confiance (bloc 1) + D\u00e9sir (bloc 2) --------------- */
     imageTextBlocks: [
       {
-        tag: "La fin des collabs fantômes",
-        title: "Des marques qui paient à la livraison, ça existe. On en fait partie.",
-        body: "Tu connais le schéma\u00a0: une DM enthousiaste, un brief vague, et puis le silence. Ou le paiement qui tarde. RetroMuscle fonctionne autrement. Critères de validation clairs, paiement à date fixe. On a construit ça pour les créateurs sérieux.",
+        tag: "La fin des collabs fant\u00f4mes",
+        title: "Des marques qui paient \u00e0 la livraison, \u00e7a existe. On en fait partie.",
+        body: "Tu connais le sch\u00e9ma\u00a0: une DM enthousiaste, des promesses vagues, et puis le silence. Ou le paiement qui tarde. RetroMuscle fonctionne autrement. Tarifs affich\u00e9s, validation sous 48\u00a0h, virement chaque mois. On a construit \u00e7a pour les cr\u00e9ateurs s\u00e9rieux.",
         imageUrl: BRAND_ASSETS.heroLifestyle,
-        imageAlt: "Créateurs RetroMuscle en séance photo dans une salle de sport rétro",
+        imageAlt: "Cr\u00e9ateurs RetroMuscle dans une salle de sport r\u00e9tro",
         imagePosition: "left",
         bullets: [
-          "Critères de validation transparents avant que tu commences à filmer",
-          "Paiement déclenché à la validation — pas 45 jours après",
-          "Un interlocuteur dédié, pas une adresse email générique"
+          "Tarifs affich\u00e9s\u00a0: tu sais combien tu touches avant de filmer",
+          "Validation sous 48\u00a0h, pas d\u2019attente interminable",
+          "Virement mensuel sur IBAN, PayPal ou Stripe"
         ]
       },
       {
-        tag: "Qualité premium",
-        title: "Du coton 340g qui se voit à l'écran. Des pièces que tu as envie de porter.",
-        body: "On ne t'envoie pas un t-shirt logo à filmer une fois. Les pièces RetroMuscle sont conçues pour la salle, pour la rue, pour l'image. L'esthétique Golden Era — les couleurs, les coupes, les broderies — crée du contenu qui sort du flux.",
+        tag: "Ton contenu vaut de l\u2019argent",
+        title: "Pendant que tu postes pour rien, d\u2019autres cr\u00e9ateurs re\u00e7oivent un virement chaque mois.",
+        body: "Chez RetroMuscle, tu ne cr\u00e9es pas gratuitement en \u00e9change d\u2019un code promo. Chaque vid\u00e9o valid\u00e9e d\u00e9clenche un paiement r\u00e9el. Aucun minimum d\u2019abonn\u00e9s, aucun quota \u00e0 respecter. Juste toi, ton contenu, et un virement qui arrive.",
         imageUrl: BRAND_ASSETS.lifestyleProduct,
-        imageAlt: "Gros plan sur un sweat RetroMuscle avec broderie cousue et coton épais",
+        imageAlt: "Cr\u00e9ateur RetroMuscle consultant ses revenus",
         imagePosition: "right",
-        cta: { label: "Découvrir le programme", href: "/apply" }
+        cta: { label: "Voir les tarifs et postuler", href: "/apply" }
       }
     ],
 
-    /* ---- DESIRE ---------------------------------------------------- */
+    /* ---- D — D\u00c9SIR\u00a0: Chiffres concrets -------------------------------- */
     earnings: {
-      title: "Combien tu peux gagner chaque mois",
-      subtitle: "Ta rémunération dépend du nombre de vidéos validées et de ton pack. Les créateurs les plus actifs touchent plusieurs centaines d'euros par mois.",
+      title: "Ce que gagnent nos cr\u00e9ateurs.",
+      subtitle: "Trois profils, trois rythmes, trois niveaux de revenus. Le tien d\u00e9pend de toi.",
       scenarios: earningsScenarios,
-      packages: sortedPackages.map((pkg) => ({
-        tier: pkg.tier,
-        videos: pkg.quotaVideos,
-        credits: pkg.monthlyCredits
-      })),
-      cta: { label: "Je postule au programme", href: "/apply" },
-      hint: "Le critère, c'est la qualité de ton contenu — pas la taille de ta communauté."
+      cta: { label: "Je postule maintenant", href: "/apply" },
+      hint: "Pas besoin d\u2019un gros compte. Le crit\u00e8re, c\u2019est la qualit\u00e9 de ton contenu."
+    },
+
+    rates: {
+      title: "Tarif par type de vid\u00e9o",
+      subtitle: "Prix affich\u00e9s \u00e0 l\u2019avance. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e au tarif du type choisi au moment de l\u2019upload.",
+      rows: rateRows
     },
 
     qualifier: {
-      sectionTitle: "Ce programme n'est pas pour tout le monde.",
+      sectionTitle: "Ce programme n\u2019est pas pour tout le monde.",
       imageUrl: BRAND_ASSETS.lifestyleGym,
-      imageAlt: "Créateur RetroMuscle filmant du contenu dans une salle de sport",
-      forWhoLabel: "C'est fait pour toi si",
+      imageAlt: "Cr\u00e9ateur filmant du contenu fitness dans une salle de sport",
+      forWhoLabel: "C\u2019est fait pour toi si",
       forWho: [
-        "Tu crées du contenu fitness régulièrement — même sans gros compte",
-        "Tu cherches un revenu récurrent, pas juste un échange produit",
-        "Tu aimes l'esthétique rétro et tu veux représenter une marque avec une vraie identité"
+        "Tu cr\u00e9es du contenu fitness r\u00e9guli\u00e8rement, m\u00eame avec un petit compte",
+        "Tu veux un vrai revenu, pas un code promo \u00e0 10\u00a0%",
+        "Tu kiffes l\u2019univers r\u00e9tro et tu veux bosser avec une marque qui te ressemble"
       ],
-      notForWhoLabel: "Ce n'est pas fait pour toi si",
+      notForWhoLabel: "Ce n\u2019est pas fait pour toi si",
       notForWho: [
-        "Tu veux juste recevoir des vêtements gratuits sans produire régulièrement",
-        "Tu n'es pas prêt à respecter un brief mensuel et des délais",
-        "Tu cherches un partenariat passif — ici, on paye ceux qui bossent"
+        "Tu veux recevoir des v\u00eatements gratuits sans rien cr\u00e9er",
+        "Tu ne sais pas filmer et tu ne veux pas apprendre",
+        "Tu cherches un partenariat passif. Ici, on paie ceux qui produisent"
       ]
     },
 
-    /* ---- OVERCOME OBJECTIONS --------------------------------------- */
+    /* ---- A — ACTION\u00a0: Lever les derni\u00e8res objections ----------------- */
     faqs: [
       {
-        question: "Combien d'abonnés faut-il pour candidater\u00a0?",
-        answer: "Aucun minimum. On évalue la cohérence de ton contenu, ta régularité et ton énergie — pas ton compteur d'abonnés. Certains de nos meilleurs créateurs ont moins de 5\u00a0000 followers."
+        question: "J\u2019ai pas beaucoup d\u2019abonn\u00e9s, \u00e7a marche quand m\u00eame\u00a0?",
+        answer: "Oui. On se fiche de ton nombre d\u2019abonn\u00e9s. Ce qu\u2019on valide, c\u2019est la qualit\u00e9 de ta vid\u00e9o, pas ta notori\u00e9t\u00e9. Des cr\u00e9ateurs avec moins de 500 abonn\u00e9s sont d\u00e9j\u00e0 pay\u00e9s dans le programme."
       },
       {
-        question: "Comment se passe la validation des vidéos\u00a0?",
-        answer: "Tu soumets ta vidéo via ton espace créateur. On la vérifie sous 72h selon les critères du brief. Si elle est validée, elle est comptabilisée pour ta rémunération du mois. En cas de refus, tu reçois un retour clair pour corriger et resoumettre."
+        question: "Combien je peux gagner par mois\u00a0?",
+        answer: "Il n\u2019y a aucun plafond. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e entre 95\u00a0\u20ac et 180\u00a0\u20ac selon son type. 10 vid\u00e9os valid\u00e9es = entre 950 et 1\u00a0800\u00a0\u20ac. C\u2019est toi qui d\u00e9cides de ton rythme."
       },
       {
-        question: "Quand est-ce que je suis payé\u00a0?",
-        answer: "Les paiements sont traités une fois par mois, sur la base des vidéos validées. Tu choisis ton mode de paiement à l'inscription\u00a0: IBAN, PayPal ou Stripe. Pas de délai de 60 ou 90 jours."
+        question: "Y a-t-il un engagement ou un minimum\u00a0?",
+        answer: "Aucun. Tu upload quand tu veux, autant que tu veux, ou rien du tout pendant un mois. Pas de deadline, pas de p\u00e9nalit\u00e9. Tu produis \u00e0 ton rythme."
       },
       {
-        question: "Est-ce que je peux être refusé\u00a0?",
-        answer: "Oui. On sélectionne les créateurs dont le profil correspond à l'univers RetroMuscle. Si ta candidature n'est pas retenue, tu peux candidater à nouveau au cycle suivant."
+        question: "Comment se passe la validation\u00a0?",
+        answer: "Tu upload tes rushes bruts et tu choisis le type. Pas besoin de monter, on s\u2019en charge. Notre \u00e9quipe review sous 48\u00a0h. Si c\u2019est valid\u00e9, le paiement est programm\u00e9. En cas de refus, tu re\u00e7ois un retour clair pour corriger et re-uploader."
       },
       {
-        question: "Combien de vidéos par mois\u00a0?",
-        answer: "Ça dépend du pack que tu choisis à l'inscription (10, 20, 30 ou 40 vidéos/mois). Tu sélectionnes l'engagement qui correspond à ta capacité. Le quota est fixé au départ et n'évolue pas sans ton accord."
+        question: "Quand et comment je suis pay\u00e9\u00a0?",
+        answer: "Les virements sont effectu\u00e9s une fois par mois pour toutes les vid\u00e9os valid\u00e9es. Tu choisis ton mode de paiement\u00a0: IBAN, PayPal ou Stripe."
+      },
+      {
+        question: "\u00c7a m\u2019engage \u00e0 quoi si je rejoins\u00a0?",
+        answer: "\u00c0 rien. L\u2019inscription est gratuite. Tu cr\u00e9es quand tu as envie, tu arr\u00eates quand tu veux. La seule chose que tu risques, c\u2019est de regretter de ne pas avoir essay\u00e9 plus t\u00f4t."
       }
     ],
 
-    /* ---- ACTION ---------------------------------------------------- */
+    /* ---- A — ACTION\u00a0: Cl\u00f4ture inspirante ----------------------------- */
     action: {
-      title: "Le contenu que tu fais déjà mérite d'être payé.",
-      subtitle: "Postule en 5 minutes. On revient vers toi sous 72h. Aucun engagement avant contrat signé.",
+      title: "Ton contenu m\u00e9rite d\u2019\u00eatre pay\u00e9.",
+      subtitle: "Postule en 2 minutes. R\u00e9ponse sous 48\u00a0h. Aucun engagement.",
       cta: {
-        label: "Rejoindre le programme maintenant",
+        label: "Je rejoins le programme",
         href: "/apply"
       }
     }

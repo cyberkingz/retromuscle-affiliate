@@ -44,7 +44,7 @@ export function SiteFooter() {
             <h4 className="text-sm uppercase tracking-[0.14em] text-white/90">Ressources</h4>
             <ul className="space-y-2 text-sm text-white/75">
               <li><Link href="/" className="hover:text-white">Comment ca marche</Link></li>
-              <li><Link href="/creators" className="hover:text-white">Packs & revenus</Link></li>
+              <li><Link href="/creators" className="hover:text-white">Tarifs & revenus</Link></li>
               <li><Link href="/apply" className="hover:text-white">Guide d&apos;inscription</Link></li>
               <li><Link href="/privacy" className="hover:text-white">Confidentialite</Link></li>
               <li><Link href="/terms" className="hover:text-white">Conditions</Link></li>

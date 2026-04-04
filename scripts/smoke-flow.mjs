@@ -152,13 +152,11 @@ async function main() {
   const adminJar = new CookieJar();
   const affiliateJar = new CookieJar();
 
-  console.log("[2/12] Fetching onboarding options (packages/mixes)...");
+  console.log("[2/12] Fetching onboarding options...");
   const options = await api(new CookieJar(), baseUrl, "/api/onboarding/options");
   assertOk("onboarding options", options);
-  const pkg = options.json?.packages?.[0];
-  const mix = options.json?.mixes?.[0];
-  if (!pkg?.tier || !mix?.name) {
-    throw new Error("Missing onboarding options in response");
+  if (!Array.isArray(options.json?.steps) || options.json.steps.length < 2) {
+    throw new Error("Missing onboarding steps in response");
   }
 
   console.log("[3/12] Signing in affiliate via app API (cookie-based)...");
@@ -180,9 +178,8 @@ async function main() {
       address: "1 Rue Exemple, 75000 Paris",
       socialTiktok: "https://www.tiktok.com/@retromuscle",
       socialInstagram: "https://www.instagram.com/retromuscle",
-      followers: 1234,
-      packageTier: pkg.tier,
-      mixName: mix.name,
+      followers_tiktok: 1234,
+      followers_instagram: 567,
       submit: true
     }
   });
@@ -251,11 +248,12 @@ async function main() {
     throw new Error(`Signed upload failed (HTTP ${uploadResponse.status})`);
   }
 
+  const resolvedTrackingId = signed.json?.monthlyTrackingId ?? trackingId;
   const recorded = await api(affiliateJar, baseUrl, "/api/creator/uploads/video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     json: {
-      monthlyTrackingId: trackingId,
+      monthlyTrackingId: resolvedTrackingId,
       videoType: "CINEMATIC",
       fileUrl: signed.json.key,
       durationSeconds: 20,
@@ -297,7 +295,7 @@ async function main() {
   const markPaidNoProfile = await api(adminJar, baseUrl, "/api/admin/payments/mark-paid", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    json: { monthlyTrackingId: trackingId }
+    json: { monthlyTrackingId: resolvedTrackingId }
   });
   if (markPaidNoProfile.ok || markPaidNoProfile.status !== 400) {
     throw new Error(`Expected 400 without payout profile, got HTTP ${markPaidNoProfile.status}`);
@@ -319,7 +317,7 @@ async function main() {
   const markPaidOk = await api(adminJar, baseUrl, "/api/admin/payments/mark-paid", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    json: { monthlyTrackingId: trackingId }
+    json: { monthlyTrackingId: resolvedTrackingId }
   });
   assertOk("mark paid with profile", markPaidOk);
 

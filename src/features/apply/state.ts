@@ -8,10 +8,6 @@ export const WIZARD_STEPS: Array<{ title: string; description: string }> = [
   {
     title: "Profil createur",
     description: "Reseaux et audience"
-  },
-  {
-    title: "Package et mix",
-    description: "Volume et positionnement contenu"
   }
 ];
 
@@ -22,9 +18,8 @@ export const INITIAL_FORM: ApplicationFormState = {
   address: "",
   socialTiktok: "",
   socialInstagram: "",
-  followers: "",
-  packageTier: 20,
-  mixName: "VOLUME"
+  followersTiktok: "",
+  followersInstagram: ""
 };
 
 export function mapRecordToForm(record: ApplicationRecord): ApplicationFormState {
@@ -35,9 +30,8 @@ export function mapRecordToForm(record: ApplicationRecord): ApplicationFormState
     address: record.address ?? "",
     socialTiktok: record.social_tiktok ?? "",
     socialInstagram: record.social_instagram ?? "",
-    followers: String(record.followers ?? 0),
-    packageTier: record.package_tier ?? 20,
-    mixName: record.mix_name ?? "VOLUME"
+    followersTiktok: String(record.followers_tiktok ?? 0),
+    followersInstagram: String(record.followers_instagram ?? 0)
   };
 }
 

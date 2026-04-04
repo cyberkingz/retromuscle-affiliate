@@ -1,6 +1,6 @@
 export default function AdminLoading() {
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-10 space-y-4">
       <div className="h-24 animate-pulse rounded-[22px] border border-line bg-white/80" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, index) => (

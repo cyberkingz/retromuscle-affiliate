@@ -40,11 +40,10 @@ async function fetchDraft(): Promise<{ form: ApplicationFormState; step: number 
         address: fd.address ?? "",
         socialTiktok: fd.socialTiktok ?? "",
         socialInstagram: fd.socialInstagram ?? "",
-        followers: fd.followers ?? "",
-        packageTier: fd.packageTier ?? 20,
-        mixName: fd.mixName ?? "VOLUME"
+        followersTiktok: fd.followersTiktok ?? "",
+        followersInstagram: fd.followersInstagram ?? ""
       },
-      step: Math.max(0, Math.min(2, data.draft.step ?? 0))
+      step: Math.max(0, Math.min(1, data.draft.step ?? 0))
     };
   } catch {
     return null;
@@ -78,14 +77,10 @@ async function fetchOnboardingOptions(): Promise<OnboardingOptions> {
     throw new Error("Failed to load onboarding options");
   }
 
-  const data = (await response.json()) as {
-    packages: OnboardingOptions["packages"];
-    mixes: OnboardingOptions["mixes"];
-  };
+  const data = (await response.json()) as OnboardingOptions;
 
   return {
-    packages: data.packages,
-    mixes: data.mixes
+    steps: data.steps
   };
 }
 
@@ -175,32 +170,32 @@ function validateStep1(form: ApplicationFormState): StepValidationResult {
     return fail("socialInstagram", "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte");
   }
 
-  const followers = parseFollowers(form.followers);
-  if (followers === null) {
-    return fail("followers", "Le nombre de followers est invalide.");
+  if (tiktok) {
+    const tiktokFollowers = parseFollowers(form.followersTiktok);
+    if (tiktokFollowers === null) {
+      return fail("followersTiktok", "Le nombre d'abonnes TikTok est invalide.");
+    }
+  }
+
+  if (instagram) {
+    const instagramFollowers = parseFollowers(form.followersInstagram);
+    if (instagramFollowers === null) {
+      return fail("followersInstagram", "Le nombre d'abonnes Instagram est invalide.");
+    }
   }
 
   return { ok: true };
 }
 
-function validateStep2(form: ApplicationFormState): StepValidationResult {
-  if (!form.packageTier) return fail("packageTier", "Choisis un package valide.");
-  if (!form.mixName) return fail("mixName", "Choisis un mix valide.");
-  return { ok: true };
-}
-
 function validateWizardStep(step: number, form: ApplicationFormState): StepValidationResult {
   if (step === 0) return validateStep0(form);
-  if (step === 1) return validateStep1(form);
-  return validateStep2(form);
+  return validateStep1(form);
 }
 
 function validateBeforeSubmit(form: ApplicationFormState): StepValidationResult {
   const first = validateStep0(form);
   if (!first.ok) return first;
-  const second = validateStep1(form);
-  if (!second.ok) return second;
-  return validateStep2(form);
+  return validateStep1(form);
 }
 
 export function useOnboardingFlow(): UseOnboardingFlowResult {
@@ -292,11 +287,6 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
           return;
         }
         setOptions(data);
-        setForm((current) => ({
-          ...current,
-          packageTier: current.packageTier || data.packages[0]?.tier || 20,
-          mixName: current.mixName || data.mixes[0]?.name || "VOLUME"
-        }));
       })
       .catch((error) => {
         if (!ignore) {
@@ -347,7 +337,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   }, [auth.user]);
 
   const canEdit = application?.status !== "pending_review" && application?.status !== "approved";
-  const stepPercent = useMemo(() => ((step + 1) / 3) * 100, [step]);
+  const stepPercent = useMemo(() => ((step + 1) / 2) * 100, [step]);
 
   function updateField<K extends keyof ApplicationFormState>(
     field: K,
@@ -358,7 +348,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   }
 
   function setSafeStep(nextStep: number) {
-    setStep(Math.max(0, Math.min(2, nextStep)));
+    setStep(Math.max(0, Math.min(1, nextStep)));
   }
 
   function validateStep(currentStep: number): boolean {
@@ -412,10 +402,8 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
     submittingTimerRef.current = setTimeout(() => setSubmittingTooLong(true), 10_000);
 
     try {
-      const followers = parseFollowers(form.followers);
-      if (followers === null) {
-        throw new Error("Le nombre de followers est invalide.");
-      }
+      const followersTiktok = parseFollowers(form.followersTiktok) ?? 0;
+      const followersInstagram = parseFollowers(form.followersInstagram) ?? 0;
 
       const response = await fetch("/api/applications/me", {
         method: "POST",
@@ -429,9 +417,8 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
           address: form.address,
           socialTiktok: form.socialTiktok ? normalizeHttpUrl(form.socialTiktok) : "",
           socialInstagram: form.socialInstagram ? normalizeHttpUrl(form.socialInstagram) : "",
-          followers,
-          packageTier: Number(form.packageTier),
-          mixName: form.mixName,
+          followers_tiktok: followersTiktok,
+          followers_instagram: followersInstagram,
           submit: true
         })
       });

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   if (isSupabaseConfigured()) {
     try {
       const client = createSupabaseServerClient();
-      const { error } = await client.from("package_definitions").select("tier").limit(1);
+      const { error } = await client.from("video_rates").select("video_type").limit(1);
       checks.supabaseReachable = !error;
 
       const { data: buckets, error: bucketsError } = await client.storage.listBuckets();

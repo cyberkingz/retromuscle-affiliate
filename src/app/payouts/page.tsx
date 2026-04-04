@@ -9,7 +9,7 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Paiements RetroMuscle",
-  description: "Estimation du cycle en cours et historique mensuel.",
+  description: "Estimation du mois en cours et historique des paiements.",
   path: "/payouts"
 });
 

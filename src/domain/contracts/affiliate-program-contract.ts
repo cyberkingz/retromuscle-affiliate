@@ -1,4 +1,4 @@
-export const AFFILIATE_CONTRACT_VERSION = "2026-02-06-v2";
+export const AFFILIATE_CONTRACT_VERSION = "2026-03-25-v3";
 
 export interface ContractSection {
   id: string;
@@ -15,7 +15,7 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     title: "1. Parties et objet",
     paragraphs: [
       "Ce contrat (le \"Contrat\") encadre la collaboration entre RetroMuscle (la \"Marque\") et toi (le \"Createur\").",
-      "L'objet est de produire et livrer des contenus video et/ou photo (les \"Contenus\") pour les besoins marketing de la Marque, selon des briefs, des quotas et un cycle mensuel (le \"Cycle\").",
+      "L'objet est de produire et livrer des contenus video et/ou photo (les \"Contenus\") pour les besoins marketing de la Marque, selon des briefs et les tarifs par type de contenu communiques via la plateforme.",
       "La collaboration est non exclusive: tu restes libre de collaborer avec d'autres marques, sous reserve de respecter les obligations de confidentialite, de conformite publicitaire, et les droits accordes a la Marque dans le present Contrat.",
       "Le Createur agit en tant que prestataire independant. Rien dans le Contrat ne cree une relation de salariat, d'agence, de partenariat ou de representation."
     ]
@@ -59,9 +59,9 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     id: "payment",
     title: "5. Remuneration, paiement et taxes",
     paragraphs: [
-      "La remuneration est calculee selon les rates/forfaits communiques dans la plateforme (par type de contenu, volume, et/ou regles du Cycle).",
-      "Principe general: seuls les Livrables \"Valides\" declenchent la remuneration correspondante.",
-      "Les paiements sont prepares et effectues mensuellement, apres la fin du Cycle et la validation des Livrables. Des delais bancaires peuvent s'appliquer.",
+      "La remuneration est calculee selon les tarifs par type de contenu communiques dans la plateforme. Chaque Livrable \"Valide\" declenche le paiement au tarif correspondant a son type.",
+      "Principe general: seuls les Livrables \"Valides\" declenchent la remuneration correspondante. Il n'y a pas de quota ni d'engagement de volume minimum.",
+      "Les paiements sont prepares et effectues mensuellement, apres la validation des Livrables. Des delais bancaires peuvent s'appliquer.",
       "Tu es responsable de tes obligations fiscales et sociales (statut, declarations, TVA le cas echeant).",
       "En cas de contestation d'un montant, le Createur doit signaler le sujet dans un delai raisonnable (30 jours) apres publication du recapitulatif du Cycle."
     ]

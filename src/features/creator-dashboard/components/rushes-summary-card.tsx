@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, UploadCloud } from "lucide-react";
 
@@ -44,8 +44,13 @@ export function RushesSummaryCard({
   const [uploading, setUploading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
 
   const canUpload = Boolean(auth.user && !uploading);
+
+  useEffect(() => {
+    setResolvedTrackingId(monthlyTrackingId);
+  }, [monthlyTrackingId]);
 
   const recentRushes = useMemo(() => rushes.slice(0, 6), [rushes]);
 
@@ -93,18 +98,24 @@ export function RushesSummaryCard({
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
       body: JSON.stringify({
-        monthlyTrackingId,
+        monthlyTrackingId: resolvedTrackingId,
         filename
       })
     });
 
     const signedPayload = (await signed.json().catch(() => null)) as
-      | { key?: string; signedUrl?: string; message?: string }
+      | { key?: string; signedUrl?: string; monthlyTrackingId?: string; message?: string }
       | null;
 
     if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
       throw new Error(signedPayload?.message ?? "Impossible de preparer l'upload.");
     }
+
+    const trackingIdForUpload = signedPayload.monthlyTrackingId ?? resolvedTrackingId;
+    if (!trackingIdForUpload) {
+      throw new Error("Suivi mensuel introuvable.");
+    }
+    setResolvedTrackingId(trackingIdForUpload);
 
     const uploadForm = new FormData();
     uploadForm.append("cacheControl", "3600");
@@ -127,7 +138,7 @@ export function RushesSummaryCard({
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
       body: JSON.stringify({
-        monthlyTrackingId,
+        monthlyTrackingId: trackingIdForUpload,
         fileUrl: signedPayload.key,
         fileName: filename,
         fileSizeMb
@@ -277,7 +288,7 @@ export function RushesSummaryCard({
         <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Derniers rushes</p>
         {recentRushes.length === 0 ? (
           <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
-            Aucun rush upload pour ce cycle.
+            Aucun rush upload pour ce mois.
           </div>
         ) : (
           <div className="space-y-2">
@@ -312,4 +323,3 @@ export function RushesSummaryCard({
     </CardSection>
   );
 }
-

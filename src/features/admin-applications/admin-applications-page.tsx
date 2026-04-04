@@ -117,19 +117,16 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         }
       },
       {
-        id: "plan",
-        header: "Pack",
-        accessorFn: (row) => `${row.packageTier}-${row.mixName}`,
-        cell: ({ row }) => (
-          <span className="font-medium">
-            {row.original.packageTier} • {row.original.mixName}
-          </span>
-        )
-      },
-      {
-        accessorKey: "followers",
+        id: "followers",
         header: "Followers",
-        cell: ({ row }) => row.original.followers.toLocaleString("fr-FR")
+        accessorFn: (row) => row.followersTiktok + row.followersInstagram,
+        cell: ({ row }) => {
+          const app = row.original;
+          const parts: string[] = [];
+          if (app.followersTiktok > 0) parts.push(`TT ${app.followersTiktok.toLocaleString("fr-FR")}`);
+          if (app.followersInstagram > 0) parts.push(`IG ${app.followersInstagram.toLocaleString("fr-FR")}`);
+          return parts.length > 0 ? parts.join(" / ") : "0";
+        }
       },
       {
         accessorKey: "country",
@@ -320,9 +317,11 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                   </div>
                   <div className="grid gap-1 text-sm text-foreground/75">
                     <p>
-                      {row.packageTier} • {row.mixName}
+                      {row.followersTiktok > 0 ? `TT ${row.followersTiktok.toLocaleString("fr-FR")}` : ""}
+                      {row.followersTiktok > 0 && row.followersInstagram > 0 ? " / " : ""}
+                      {row.followersInstagram > 0 ? `IG ${row.followersInstagram.toLocaleString("fr-FR")}` : ""}
+                      {row.followersTiktok === 0 && row.followersInstagram === 0 ? "0 followers" : " followers"}
                     </p>
-                    <p>{row.followers.toLocaleString("fr-FR")} followers</p>
                     <p>
                       {row.country} • {row.submittedAt ? toShortDate(row.submittedAt) : "Brouillon"}
                     </p>
@@ -352,8 +351,12 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                   <p>Email: {selected.email}</p>
                   <p>WhatsApp: {selected.whatsapp}</p>
                   <p>Pays: {selected.country}</p>
-                  <p>Pack: {selected.packageTier} • Mix: {selected.mixName}</p>
-                  <p>Followers: {selected.followers.toLocaleString("fr-FR")}</p>
+                  {selected.followersTiktok > 0 ? (
+                    <p>TikTok: {selected.followersTiktok.toLocaleString("fr-FR")} abonnes</p>
+                  ) : null}
+                  {selected.followersInstagram > 0 ? (
+                    <p>Instagram: {selected.followersInstagram.toLocaleString("fr-FR")} abonnes</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -390,7 +393,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                 <Textarea
                   value={reviewNotes}
                   onChange={(event) => setReviewNotes(event.target.value)}
-                  placeholder="Ex: Super fit. Pour la premiere mission, prioriser OOTD + before/after."
+                  placeholder="Ex: Super fit. Profil ideal pour contenus OOTD + before/after."
                   rows={5}
                   disabled={submitting || selected.status === "approved" || selected.status === "rejected"}
                 />

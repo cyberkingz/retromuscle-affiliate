@@ -1,14 +1,11 @@
 import type { AdminDashboardData } from "@/application/use-cases/get-admin-dashboard-data";
-import { SectionHeading } from "@/components/ui/section-heading";
-import { Button } from "@/components/ui/button";
 import { AdminMetricsStrip } from "@/features/admin-dashboard/components/admin-metrics-strip";
 import { CreatorsMasterTable } from "@/features/admin-dashboard/components/creators-master-table";
 import { MonthlyTrackingTable } from "@/features/admin-dashboard/components/monthly-tracking-table";
 import { PaymentsTable } from "@/features/admin-dashboard/components/payments-table";
 import { ValidationQueue } from "@/features/admin-dashboard/components/validation-queue";
 import { monthToLabel } from "@/lib/date";
-import Link from "next/link";
-import type { Route } from "next";
+import { ChevronDown } from "lucide-react";
 
 interface AdminDashboardPageProps {
   data: AdminDashboardData;
@@ -16,46 +13,39 @@ interface AdminDashboardPageProps {
 
 export function AdminDashboardPage({ data }: AdminDashboardPageProps) {
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading
-          eyebrow="Manager"
-          title="Operations"
-          subtitle={monthToLabel(data.month)}
-        />
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="pill" variant="outline">
-            <Link href={"/admin/applications" as Route}>Candidatures</Link>
-          </Button>
-          <Button asChild size="pill" variant="outline">
-            <a href={`/api/admin/payments/export?month=${encodeURIComponent(data.month)}`} target="_blank" rel="noreferrer">
-              Export CSV
-            </a>
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-baseline gap-3">
+        <h1 className="font-display text-2xl uppercase leading-none sm:text-3xl">Opérations</h1>
+        <span className="text-sm text-foreground/50">{monthToLabel(data.month)}</span>
       </div>
 
+      {/* Metrics */}
       <AdminMetricsStrip {...data.metrics} />
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ValidationQueue rows={data.validationQueue} />
-        <PaymentsTable month={data.month} rows={data.payments} />
-      </div>
+      {/* Validation Queue — full width */}
+      <ValidationQueue rows={data.validationQueue} />
 
-      <details className="rounded-[22px] border border-line bg-white/85 p-4">
-        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
-          Createurs ({data.creatorsMaster.length})
+      {/* Payments — full width */}
+      <PaymentsTable month={data.month} rows={data.payments} />
+
+      {/* Collapsible sections — divider style, not card-like */}
+      <details className="group">
+        <summary className="flex cursor-pointer items-center justify-between border-t border-line px-1 pb-2 pt-4 text-sm font-semibold uppercase tracking-[0.12em] text-foreground/60 hover:text-foreground">
+          <span>Créateurs ({data.creatorsMaster.length})</span>
+          <ChevronDown className="h-4 w-4 text-foreground/40 transition-transform duration-200 group-open:rotate-180" />
         </summary>
-        <div className="pt-4">
+        <div className="mt-3">
           <CreatorsMasterTable rows={data.creatorsMaster} />
         </div>
       </details>
 
-      <details className="rounded-[22px] border border-line bg-white/85 p-4">
-        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
-          Tracking mensuel ({data.monthlyRows.length})
+      <details className="group">
+        <summary className="flex cursor-pointer items-center justify-between border-t border-line px-1 pb-2 pt-4 text-sm font-semibold uppercase tracking-[0.12em] text-foreground/60 hover:text-foreground">
+          <span>Tracking mensuel ({data.monthlyRows.length})</span>
+          <ChevronDown className="h-4 w-4 text-foreground/40 transition-transform duration-200 group-open:rotate-180" />
         </summary>
-        <div className="pt-4">
+        <div className="mt-3">
           <MonthlyTrackingTable rows={data.monthlyRows} />
         </div>
       </details>

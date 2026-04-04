@@ -6,7 +6,7 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Admin RetroMuscle",
-  description: "Operations: suivi des quotas, validation des contenus, gestion des paiements.",
+  description: "Operations: validation des contenus, suivi des paiements, et pilotage des createurs.",
   path: "/admin",
   noIndex: true
 });

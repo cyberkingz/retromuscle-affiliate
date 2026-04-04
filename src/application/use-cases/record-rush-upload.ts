@@ -1,4 +1,5 @@
 import { getRepository } from "@/application/dependencies";
+import { resolveUploadTrackingForUser } from "@/application/use-cases/resolve-upload-tracking";
 
 export async function recordRushUpload(input: {
   userId: string;
@@ -19,27 +20,16 @@ export async function recordRushUpload(input: {
   }
 
   const repository = getRepository();
-
-  const creator = await repository.getCreatorByUserId(input.userId);
-  if (!creator) {
-    throw new Error("Creator not found");
-  }
-
-  const tracking = await repository.getMonthlyTrackingById(input.monthlyTrackingId);
-  if (!tracking) {
-    throw new Error("Monthly tracking not found");
-  }
-
-  if (tracking.creatorId !== creator.id) {
-    throw new Error("Forbidden");
-  }
+  const context = await resolveUploadTrackingForUser({
+    userId: input.userId,
+    monthlyTrackingId: input.monthlyTrackingId
+  });
 
   return repository.createRushAsset({
-    monthlyTrackingId: tracking.id,
-    creatorId: creator.id,
+    monthlyTrackingId: context.monthlyTrackingId,
+    creatorId: context.creatorId,
     fileName: input.fileName,
     fileUrl: input.fileUrl,
     fileSizeMb: input.fileSizeMb
   });
 }
-

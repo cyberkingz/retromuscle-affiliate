@@ -30,8 +30,8 @@ export default function TermsPage() {
             <div className="space-y-2">
               <p className="font-semibold">1. Objet</p>
               <p>
-                Ces conditions decrivent le fonctionnement general de la plateforme et du programme affilie RetroMuscle
-                (missions, livrables, validation, remuneration).
+                Ces conditions decrivent le fonctionnement general de la plateforme et du programme createur RetroMuscle
+                (contenus, livrables, validation, remuneration).
               </p>
             </div>
 
@@ -46,7 +46,7 @@ export default function TermsPage() {
             <div className="space-y-2">
               <p className="font-semibold">3. Contenus</p>
               <p>
-                Les contenus envoyes doivent respecter les briefs, specs (format, duree, rendu) et les droits d&apos;image
+                Les contenus envoyes doivent respecter les specs techniques (format, duree, rendu) et les droits d&apos;image
                 et de musique. Le contrat signe detaille les droits concédés a RetroMuscle.
               </p>
             </div>

@@ -78,22 +78,12 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
         cell: ({ row }) => <span className="font-semibold capitalize">{monthToLabel(row.original.month)}</span>
       },
       {
-        id: "plan",
-        header: "Plan",
-        accessorFn: (row) => `${row.packageTier}-${row.mixLabel}`,
-        cell: ({ row }) => (
-          <span className="text-sm">
-            Pack {row.original.packageTier} • {row.original.mixLabel}
-          </span>
-        )
-      },
-      {
         id: "delivered",
         header: "Livrees",
         accessorFn: (row) => row.deliveredTotal,
         cell: ({ row }) => (
           <span className="font-medium">
-            {row.original.deliveredTotal}/{row.original.quotaTotal}
+            {row.original.deliveredTotal}
           </span>
         )
       },
@@ -360,7 +350,7 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
         </DataTableCard>
       </div>
 
-      <DataTableCard title="Trackings mensuels" subtitle="Synthese quotas / livraisons / paiements.">
+      <DataTableCard title="Trackings mensuels" subtitle="Synthese des livraisons validees et paiements.">
         <div className="p-5">
           <DataTable
             data={payouts}
@@ -374,7 +364,7 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
                   <div>
                     <p className="font-semibold capitalize">{monthToLabel(row.month)}</p>
                     <p className="text-xs text-foreground/60">
-                      Pack {row.packageTier} • {row.mixLabel}
+                      {monthToLabel(row.month)}
                     </p>
                   </div>
                   <StatusBadge label={row.paymentStatus} tone={paymentStatusTone(row.paymentStatus)} />
@@ -382,16 +372,12 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
                 <div className="flex items-center justify-between text-sm text-foreground/75">
                   <span>Livrees</span>
                   <span className="font-medium">
-                    {row.deliveredTotal}/{row.quotaTotal}
+                    {row.deliveredTotal}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-foreground/75">
                   <span>Montant</span>
                   <span className="font-semibold">{formatCurrency(row.payoutAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-foreground/60">
-                  <span>Deadline</span>
-                  <span>{toShortDate(row.deadline)}</span>
                 </div>
               </div>
             )}

@@ -4,8 +4,8 @@ import { AdminConfigPage } from "@/features/admin-config/admin-config-page";
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "Configuration des offres - Admin RetroMuscle",
-  description: "Gestion des packs, tarifs et styles de contenu du programme createur.",
+  title: "Configuration tarifs - Admin RetroMuscle",
+  description: "Gestion des tarifs par type de video du programme createur.",
   path: "/admin/config",
   noIndex: true
 });

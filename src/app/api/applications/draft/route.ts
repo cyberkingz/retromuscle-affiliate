@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
     return response;
   }
 
-  const step = typeof body.step === "number" && body.step >= 0 && body.step <= 2 ? body.step : 0;
+  const step = typeof body.step === "number" && body.step >= 0 && body.step <= 1 ? body.step : 0;
   const formData = body.formData && typeof body.formData === "object" ? body.formData : {};
 
   const client = createSupabaseServerClient();

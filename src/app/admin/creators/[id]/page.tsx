@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 
 export const metadata = createPageMetadata({
   title: "Admin Creator Detail",
-  description: "Detail createur: profil, uploads, quotas, paiements, contrat.",
+  description: "Detail createur: profil, uploads, paiements, et contrat.",
   path: "/admin/creators",
   noIndex: true
 });
@@ -38,4 +38,3 @@ export default async function AdminCreatorDetailRoute({ params, searchParams }: 
     <AdminCreatorDetailPage data={data} creatorId={id} />
   );
 }
-

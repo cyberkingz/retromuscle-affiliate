@@ -5,8 +5,8 @@ import { redirectAuthenticatedUserFromPublicAuthPages } from "@/features/auth/se
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "Connexion Programme Affilie RetroMuscle",
-  description: "Connecte-toi pour acceder a ton espace creator et suivre tes missions.",
+  title: "Connexion Programme Createur RetroMuscle",
+  description: "Connecte-toi pour acceder a ton espace createur, uploader tes videos et suivre tes gains.",
   path: "/login",
   noIndex: true
 });

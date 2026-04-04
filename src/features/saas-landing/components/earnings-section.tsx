@@ -9,7 +9,6 @@ interface EarningsSectionProps {
   title: string;
   subtitle: string;
   scenarios: EarningsScenario[];
-  packages: Array<{ tier: number; videos: number; credits: number }>;
   cta: { label: string; href: "/apply" };
   hint: string;
 }
@@ -18,7 +17,6 @@ export function EarningsSection({
   title,
   subtitle,
   scenarios,
-  packages,
   cta,
   hint
 }: EarningsSectionProps) {
@@ -31,14 +29,13 @@ export function EarningsSection({
         <p className="mx-auto max-w-2xl text-foreground/70">{subtitle}</p>
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {scenarios.map((scenario, index) => {
-          const pkg = packages[index];
           const featured = index === 1;
 
           return (
             <Card
-              key={scenario.tier}
+              key={scenario.label}
               className={`relative flex flex-col border-line ${
                 featured
                   ? "border-foreground bg-frost shadow-xl md:scale-[1.02]"
@@ -53,15 +50,15 @@ export function EarningsSection({
 
               <CardContent className="flex flex-1 flex-col p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
-                  Pack {scenario.tier}
+                  {scenario.label}
                 </p>
 
                 {/* Video count */}
                 <div className="mt-2 flex items-baseline gap-1.5">
                   <span className="font-display text-4xl uppercase text-secondary">
-                    {pkg?.videos ?? scenario.videos}
+                    {scenario.videosPerMonth}
                   </span>
-                  <span className="text-sm text-foreground/60">vidéos/mois</span>
+                  <span className="text-sm text-foreground/60">videos/mois</span>
                 </div>
 
                 {/* Estimated earnings */}
@@ -76,17 +73,14 @@ export function EarningsSection({
 
                 {/* Breakdown */}
                 <div className="mt-3 flex-1 space-y-1.5 text-xs text-foreground/65">
-                  {scenario.breakdown.slice(0, 3).map((row) => (
-                    <div key={row.label} className="flex justify-between">
+                  {scenario.breakdown.filter((row) => row.delivered > 0).map((row) => (
+                    <div key={row.label} className="flex items-center justify-between gap-2">
                       <span className="truncate">{row.label}</span>
-                      <span className="font-medium">{row.delivered}×</span>
+                      <span className="font-medium text-foreground/80">
+                        {row.delivered}&times;{formatCurrency(row.rate)} = {formatCurrency(row.subtotal)}
+                      </span>
                     </div>
                   ))}
-                  {pkg ? (
-                    <p className="pt-1 text-foreground/50">
-                      {"Bonus fixe\u00a0: "}{formatCurrency(pkg.credits)}
-                    </p>
-                  ) : null}
                 </div>
               </CardContent>
             </Card>

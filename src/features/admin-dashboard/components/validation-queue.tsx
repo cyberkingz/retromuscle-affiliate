@@ -164,7 +164,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
       },
       {
         id: "creator",
-        header: "Createur",
+        header: "Créateur",
         accessorFn: (row) => row.creatorHandle,
         cell: ({ row }) => (
           <div className="min-w-[140px]">
@@ -278,7 +278,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-line bg-frost/70 px-4 py-6 text-sm text-foreground/70">
-          Rien a valider pour le moment.
+          Rien à valider pour le moment.
         </div>
       ) : (
         <div className="space-y-3">

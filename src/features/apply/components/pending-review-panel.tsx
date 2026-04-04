@@ -21,13 +21,21 @@ export function PendingReviewPanel({ application }: PendingReviewPanelProps) {
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Pack</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">Pack {application.package_tier}</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Handle</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{application.handle}</p>
         </div>
-        <div className="rounded-2xl border border-line bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Mix</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{application.mix_name}</p>
-        </div>
+        {application.followers_tiktok > 0 ? (
+          <div className="rounded-2xl border border-line bg-white px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Abonnes TikTok</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{application.followers_tiktok.toLocaleString("fr-FR")}</p>
+          </div>
+        ) : null}
+        {application.followers_instagram > 0 ? (
+          <div className="rounded-2xl border border-line bg-white px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Abonnes Instagram</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{application.followers_instagram.toLocaleString("fr-FR")}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -38,4 +46,3 @@ export function PendingReviewPanel({ application }: PendingReviewPanelProps) {
     </Card>
   );
 }
-

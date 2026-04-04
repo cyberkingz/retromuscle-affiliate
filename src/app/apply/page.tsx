@@ -5,8 +5,8 @@ import { redirectAuthenticatedUserFromPublicAuthPages } from "@/features/auth/se
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "Inscription Programme Affilie RetroMuscle",
-  description: "Cree ton compte et candidate au programme: missions mensuelles, validation rapide, paiements reguliers.",
+  title: "Inscription Programme Createur RetroMuscle",
+  description: "Cree ton compte et candidate au programme createur. 95 a 180 EUR par video validee, sans quota ni plafond.",
   path: "/apply"
 });
 

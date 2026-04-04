@@ -87,6 +87,7 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
 
       <UploadCard
         monthlyTrackingId={data.upload.monthlyTrackingId}
+        ratesByType={data.upload.ratesByType}
         specs={data.upload.specs}
         tips={data.upload.tips}
         pendingReviewCount={data.upload.pendingReviewCount}

@@ -23,10 +23,9 @@ export async function getAdminPaymentsExportData(input?: { month?: string }): Pr
   rows: AdminPaymentsExportRow[];
 }> {
   const repository = getRepository();
-  const [creators, rates, packages] = await Promise.all([
+  const [creators, rates] = await Promise.all([
     repository.listCreators(),
-    repository.listRates(),
-    repository.listPackageDefinitions()
+    repository.listRates()
   ]);
 
   let targetMonth: string;
@@ -51,7 +50,6 @@ export async function getAdminPaymentsExportData(input?: { month?: string }): Pr
     }
   }
   const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
-  const packageByTier = new Map(packages.map((pkg) => [pkg.tier, pkg]));
 
   // Fetch all payout profiles in a single query (fixes N+1)
   const allProfiles = await repository.listPayoutProfiles();
@@ -63,12 +61,7 @@ export async function getAdminPaymentsExportData(input?: { month?: string }): Pr
       throw new Error(`Creator not found for tracking ${tracking.id}`);
     }
 
-    const pkg = packageByTier.get(tracking.packageTier);
-    if (!pkg) {
-      throw new Error(`Package not found for tracking ${tracking.id}`);
-    }
-
-    const payout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
+    const payout = calculatePayout(tracking.delivered, rates);
     const profile = profileByCreatorId.get(tracking.creatorId) ?? null;
 
     return {

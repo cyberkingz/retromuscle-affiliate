@@ -4,10 +4,7 @@ import type {
   CreatorApplication,
   CreatorContractSignature,
   CreatorPayoutProfile,
-  MixDefinition,
   MonthlyTracking,
-  PackageDefinition,
-  PackageTier,
   RushAsset,
   VideoAsset,
   VideoRate,
@@ -63,20 +60,7 @@ export interface CreatorRepository {
   markMonthlyTrackingPaid(input: { monthlyTrackingId: string; paidAt?: string | null }): Promise<MonthlyTracking>;
 
   listRates(): Promise<VideoRate[]>;
-  listPackageDefinitions(): Promise<PackageDefinition[]>;
-  listMixDefinitions(): Promise<MixDefinition[]>;
 
-  // Admin config management
-  updatePackageDefinition(input: {
-    tier: PackageTier;
-    quotaVideos: number;
-    monthlyCredits: number;
-  }): Promise<PackageDefinition>;
-  updateMixDefinition(input: {
-    name: MixDefinition["name"];
-    distribution: MixDefinition["distribution"];
-    positioning: string;
-  }): Promise<MixDefinition>;
   updateVideoRate(input: {
     videoType: VideoRate["videoType"];
     ratePerVideo: number;
@@ -118,11 +102,6 @@ export interface CreatorRepository {
   createMonthlyTracking(input: {
     creatorId: string;
     month: string; // YYYY-MM
-    packageTier: PackageTier;
-    quotaTotal: number;
-    mixName: CreatorApplication["mixName"];
-    quotas: MonthlyTracking["quotas"];
     delivered: MonthlyTracking["delivered"];
-    deadline: string; // YYYY-MM-DD
   }): Promise<MonthlyTracking>;
 }

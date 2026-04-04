@@ -47,7 +47,7 @@ function parsePayload(body: unknown): UploadVideoPayload {
   }
 
   const fileSizeMb = Math.floor(fileSizeMbRaw);
-  if (!Number.isFinite(fileSizeMb) || fileSizeMb <= 0 || fileSizeMb > 600) {
+  if (!Number.isFinite(fileSizeMb) || fileSizeMb <= 0 || fileSizeMb > 2048) {
     throw new Error("Invalid fileSizeMb");
   }
 

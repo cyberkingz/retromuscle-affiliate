@@ -1,6 +1,23 @@
 import { getRepository } from "@/application/dependencies";
-import { calculateQuotas } from "@/domain/services/calculate-quotas";
-import { VIDEO_TYPES, type CreatorApplication, type VideoTypeCount } from "@/domain/types";
+import type { Creator, CreatorApplication } from "@/domain/types";
+import { createZeroDeliveredCount, resolveCurrentMonth } from "@/application/use-cases/shared";
+
+export type ReviewCreatorApplicationErrorCode =
+  | "APPLICATION_NOT_FOUND"
+  | "APPLICATION_ALREADY_REVIEWED"
+  | "INVALID_APPLICATION_STATE"
+  | "HANDLE_CONFLICT"
+  | "EMAIL_CONFLICT";
+
+export class ReviewCreatorApplicationError extends Error {
+  constructor(
+    public readonly code: ReviewCreatorApplicationErrorCode,
+    message: string
+  ) {
+    super(message);
+    this.name = "ReviewCreatorApplicationError";
+  }
+}
 
 function resolveTodayIsoDate(): string {
   const now = new Date();
@@ -10,33 +27,15 @@ function resolveTodayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-function resolveMonthNow(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+function hasConstraintError(error: unknown, constraintName: string): boolean {
+  return error instanceof Error && error.message.includes(constraintName);
 }
 
-function resolveMonthDeadline(month: string): string {
-  const [yearRaw, monthRaw] = month.split("-");
-  const year = Number(yearRaw);
-  const monthIndex = Number(monthRaw);
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || monthIndex < 1 || monthIndex > 12) {
-    throw new Error("Invalid month value");
-  }
-
-  // Last day of month (monthIndex is 1-based; JS Date month is 0-based).
-  const lastDay = new Date(year, monthIndex, 0);
-  const day = String(lastDay.getDate()).padStart(2, "0");
-  const normalizedMonth = String(monthIndex).padStart(2, "0");
-  return `${year}-${normalizedMonth}-${day}`;
-}
-
-function resolveZeroDelivered(): VideoTypeCount {
-  return VIDEO_TYPES.reduce((acc, type) => {
-    acc[type] = 0;
-    return acc;
-  }, {} as VideoTypeCount);
+function createFallbackHandle(input: { handle: string; userId: string }): string {
+  const normalizedBase = input.handle.trim().replace(/\s+/g, "").slice(0, 24) || "@creator";
+  const suffix = input.userId.replace(/-/g, "").slice(0, 6);
+  const separator = normalizedBase.includes("-") ? "_" : "-";
+  return `${normalizedBase}${separator}${suffix}`;
 }
 
 export interface ReviewCreatorApplicationInput {
@@ -58,17 +57,23 @@ export async function reviewCreatorApplication(
   const application = await repository.getCreatorApplicationByUserId(input.userId);
 
   if (!application) {
-    throw new Error("Application not found");
+    throw new ReviewCreatorApplicationError("APPLICATION_NOT_FOUND", "Application introuvable.");
   }
 
   // Guard against mutating terminal-state applications
   if (application.status === "approved" || application.status === "rejected") {
-    throw new Error(`Application is already ${application.status}`);
+    throw new ReviewCreatorApplicationError(
+      "APPLICATION_ALREADY_REVIEWED",
+      `Cette candidature est deja ${application.status === "approved" ? "approuvee" : "refusee"}.`
+    );
   }
 
   if (input.decision === "rejected") {
     if (application.status === "draft") {
-      throw new Error("Cannot reject a draft application");
+      throw new ReviewCreatorApplicationError(
+        "INVALID_APPLICATION_STATE",
+        "Impossible de refuser une candidature en brouillon."
+      );
     }
     const reviewed = await repository.reviewCreatorApplication({
       userId: input.userId,
@@ -80,7 +85,10 @@ export async function reviewCreatorApplication(
   }
 
   if (application.status === "draft") {
-    throw new Error("Cannot approve a draft application");
+    throw new ReviewCreatorApplicationError(
+      "INVALID_APPLICATION_STATE",
+      "Impossible d'approuver une candidature en brouillon."
+    );
   }
 
   // --- Atomic approval flow ---
@@ -91,13 +99,51 @@ export async function reviewCreatorApplication(
   // If provisioning fails, the application stays in its current status and the admin can retry.
 
   const startDate = resolveTodayIsoDate();
-  const creator = await repository.upsertCreatorFromApplication({
-    application,
-    status: "actif",
-    startDate
-  });
+  let creator: Creator;
+  try {
+    creator = await repository.upsertCreatorFromApplication({
+      application,
+      status: "actif",
+      startDate
+    });
+  } catch (error) {
+    if (hasConstraintError(error, "creators_handle_key")) {
+      // Auto-resolve duplicate handles to avoid blocking approval flow.
+      // The handle remains editable later by admin/creator if needed.
+      const fallbackHandle = createFallbackHandle({
+        handle: application.handle,
+        userId: application.userId
+      });
 
-  const month = resolveMonthNow();
+      try {
+        creator = await repository.upsertCreatorFromApplication({
+          application: {
+            ...application,
+            handle: fallbackHandle
+          },
+          status: "actif",
+          startDate
+        });
+      } catch (retryError) {
+        if (hasConstraintError(retryError, "creators_handle_key")) {
+          throw new ReviewCreatorApplicationError(
+            "HANDLE_CONFLICT",
+            "Ce handle est deja utilise. Demande au createur de modifier son handle puis de re-soumettre."
+          );
+        }
+        throw retryError;
+      }
+    } else if (hasConstraintError(error, "creators_email_key")) {
+      throw new ReviewCreatorApplicationError(
+        "EMAIL_CONFLICT",
+        "Cet email est deja utilise sur un autre compte createur."
+      );
+    } else {
+      throw error;
+    }
+  }
+
+  const month = resolveCurrentMonth();
   const existingTracking = await repository.getMonthlyTracking(creator.id, month);
 
   let monthlyTrackingId: string | undefined;
@@ -105,32 +151,10 @@ export async function reviewCreatorApplication(
   if (existingTracking) {
     monthlyTrackingId = existingTracking.id;
   } else {
-    const [packages, mixes] = await Promise.all([
-      repository.listPackageDefinitions(),
-      repository.listMixDefinitions()
-    ]);
-
-    const pkg = packages.find((item) => item.tier === application.packageTier);
-    if (!pkg) {
-      throw new Error("Package definition not found");
-    }
-
-    const mix = mixes.find((item) => item.name === application.mixName);
-    if (!mix) {
-      throw new Error("Mix definition not found");
-    }
-
-    const quotaTotal = pkg.quotaVideos;
-    const quotas = calculateQuotas(quotaTotal, mix);
     const tracking = await repository.createMonthlyTracking({
       creatorId: creator.id,
       month,
-      packageTier: application.packageTier,
-      quotaTotal,
-      mixName: application.mixName,
-      quotas,
-      delivered: resolveZeroDelivered(),
-      deadline: resolveMonthDeadline(month)
+      delivered: createZeroDeliveredCount()
     });
 
     monthlyTrackingId = tracking.id;

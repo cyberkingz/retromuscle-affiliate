@@ -2,6 +2,7 @@ import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
+import { resolveUploadTrackingForUser } from "@/application/use-cases/resolve-upload-tracking";
 import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
@@ -9,7 +10,7 @@ import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
 
 interface SignedUploadPayload {
-  monthlyTrackingId: string;
+  monthlyTrackingId?: string;
   videoType: VideoAsset["videoType"];
   filename: string;
 }
@@ -32,7 +33,7 @@ function parsePayload(body: unknown): SignedUploadPayload {
   const videoTypeRaw = typeof input.videoType === "string" ? input.videoType.trim().toUpperCase() : "";
   const filename = typeof input.filename === "string" ? input.filename : "";
 
-  if (!monthlyTrackingId || !isUuid(monthlyTrackingId)) {
+  if (monthlyTrackingId && !isUuid(monthlyTrackingId)) {
     throw new Error("Invalid monthlyTrackingId");
   }
   if (!VIDEO_TYPES.includes(videoTypeRaw as VideoAsset["videoType"])) {
@@ -40,7 +41,7 @@ function parsePayload(body: unknown): SignedUploadPayload {
   }
 
   return {
-    monthlyTrackingId,
+    monthlyTrackingId: monthlyTrackingId || undefined,
     videoType: videoTypeRaw as VideoAsset["videoType"],
     filename: sanitizeFilename(filename)
   };
@@ -77,34 +78,25 @@ export async function POST(request: Request) {
     return response;
   }
 
-  // Verify tracking ownership: monthlyTrackingId must belong to this user's creator
+  let trackingId = payload.monthlyTrackingId;
+  try {
+    const context = await resolveUploadTrackingForUser({
+      userId: auth.session.userId,
+      monthlyTrackingId: payload.monthlyTrackingId
+    });
+    trackingId = context.monthlyTrackingId;
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message.toLowerCase().includes("creator")
+        ? "Createur introuvable"
+        : "Suivi mensuel introuvable";
+    const response = apiError(ctx, { status: 404, code: "NOT_FOUND", message });
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
+
   const supabase = createSupabaseServerClient();
-  const { data: tracking } = await supabase
-    .from("monthly_tracking")
-    .select("id,creator_id")
-    .eq("id", payload.monthlyTrackingId)
-    .maybeSingle();
-
-  if (!tracking) {
-    const response = apiError(ctx, { status: 404, code: "NOT_FOUND", message: "Suivi mensuel introuvable" });
-    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-    return response;
-  }
-
-  const { data: creator } = await supabase
-    .from("creators")
-    .select("id")
-    .eq("id", tracking.creator_id)
-    .eq("user_id", auth.session.userId)
-    .maybeSingle();
-
-  if (!creator) {
-    const response = apiError(ctx, { status: 403, code: "FORBIDDEN", message: "Acces refuse a ce suivi mensuel" });
-    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-    return response;
-  }
-
-  const key = `${auth.session.userId}/${payload.monthlyTrackingId}/${payload.videoType}/${Date.now()}-${payload.filename}`;
+  const key = `${auth.session.userId}/${trackingId}/${payload.videoType}/${Date.now()}-${payload.filename}`;
   const { data, error } = await supabase.storage.from("videos").createSignedUploadUrl(key, { upsert: false });
 
   if (error || !data?.signedUrl || !data.token) {
@@ -117,6 +109,7 @@ export async function POST(request: Request) {
     ctx,
     {
       key,
+      monthlyTrackingId: trackingId,
       signedUrl: data.signedUrl,
       token: data.token
     },

@@ -1,6 +1,5 @@
 import type {
   CreatorStatus,
-  MixName,
   PaymentStatus,
   VideoStatus,
   VideoType
@@ -12,13 +11,6 @@ export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
   BEFORE_AFTER: "Before/After",
   SPORTS_80S: "Sports 80s",
   CINEMATIC: "Cinematic"
-};
-
-export const MIX_LABELS: Record<MixName, string> = {
-  VOLUME: "Volume Max",
-  EQUILIBRE: "Equilibre",
-  PREMIUM_80S: "Premium Retro",
-  TRANSFO_HEAVY: "Transformations"
 };
 
 export const CREATOR_STATUS_LABELS: Record<CreatorStatus, string> = {

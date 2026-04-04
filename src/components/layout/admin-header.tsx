@@ -70,22 +70,25 @@ export function AdminHeader() {
         </div>
       </div>
 
-      <div className="border-t border-line/60 md:hidden">
+      <div className="md:hidden">
         <nav aria-label="Navigation administration mobile" className="container-wide flex gap-2 py-2">
-          {adminLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "inline-flex rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.08em]",
-                (link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href))
-                  ? "border-foreground bg-frost text-foreground"
-                  : "border-line bg-white/70 text-foreground/75"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {adminLinks.map((link) => {
+            const isActive = link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "inline-flex rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
+                  isActive
+                    ? "bg-secondary text-secondary-foreground font-semibold"
+                    : "bg-white/60 text-foreground/60 hover:bg-white/80 hover:text-foreground"
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>

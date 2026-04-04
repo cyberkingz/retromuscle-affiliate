@@ -8,7 +8,7 @@ interface FaqListProps {
 export function FaqList({ items }: FaqListProps) {
   return (
     <section className="space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">Questions frequentes</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">Ce que tu te demandes surement</h3>
       <div className="space-y-3">
         {items.map((item) => (
           <Card key={item.question} className="overflow-hidden bg-white">

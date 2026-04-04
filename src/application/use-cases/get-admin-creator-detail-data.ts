@@ -1,5 +1,5 @@
 import { getRepository } from "@/application/dependencies";
-import { MIX_LABELS, PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
+import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
 import { VIDEO_TYPES } from "@/domain/types";
@@ -14,10 +14,9 @@ export interface AdminCreatorDetailData {
     whatsapp: string;
     country: string;
     address: string;
-    followers: number;
+    followersTiktok: number;
+    followersInstagram: number;
     status: string;
-    packageTier: number;
-    defaultMix: string;
     contractSignedAt?: string;
     notes?: string;
   };
@@ -42,17 +41,11 @@ export interface AdminCreatorDetailData {
   trackings: Array<{
     id: string;
     month: string;
-    packageTier: number;
-    mixLabel: string;
     deliveredTotal: number;
-    quotaTotal: number;
-    remainingTotal: number;
-    deadline: string;
     paymentStatus: string;
     paymentStatusKey: string;
     paidAt?: string;
     payoutAmount: number;
-    quotas: Record<string, number>;
     delivered: Record<string, number>;
   }>;
   selectedMonth: string;
@@ -82,46 +75,31 @@ export interface AdminCreatorDetailData {
 
 export async function getAdminCreatorDetailData(input: { creatorId: string; month?: string }): Promise<AdminCreatorDetailData> {
   const repository = getRepository();
-  const [creator, trackings, rates, packages] = await Promise.all([
+  const [creator, trackings, rates] = await Promise.all([
     repository.getCreatorById(input.creatorId),
     repository.listCreatorTrackings(input.creatorId),
-    repository.listRates(),
-    repository.listPackageDefinitions()
+    repository.listRates()
   ]);
 
   if (!creator) {
     throw new Error("Creator not found");
   }
 
-  const packageByTier = new Map(packages.map((pkg) => [pkg.tier, pkg]));
   const signatures = await repository.listContractSignaturesByCreatorId(creator.id);
   const payoutProfile = await repository.getPayoutProfileByCreatorId(creator.id);
 
   const trackingsRows = trackings.map((tracking) => {
-    const pkg = packageByTier.get(tracking.packageTier);
-    if (!pkg) {
-      throw new Error(`Package not found for tracking ${tracking.id}`);
-    }
-
-    const summary = summarizeTracking(tracking.quotas, tracking.delivered);
-    const payout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
+    const summary = summarizeTracking(tracking.delivered);
+    const payout = calculatePayout(tracking.delivered, rates);
 
     return {
       id: tracking.id,
       month: tracking.month,
-      packageTier: tracking.packageTier,
-      mixLabel: MIX_LABELS[tracking.mixName],
       deliveredTotal: summary.deliveredTotal,
-      quotaTotal: tracking.quotaTotal,
-      remainingTotal: summary.remainingTotal,
-      deadline: tracking.deadline,
       paymentStatus: PAYMENT_STATUS_LABELS[tracking.paymentStatus],
       paymentStatusKey: tracking.paymentStatus,
       paidAt: tracking.paidAt,
       payoutAmount: payout.total,
-      quotas: Object.fromEntries(
-        VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.quotas[videoType]])
-      ),
       delivered: Object.fromEntries(
         VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.delivered[videoType]])
       )
@@ -152,10 +130,9 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
       whatsapp: creator.whatsapp,
       country: creator.country,
       address: creator.address,
-      followers: creator.followers,
+      followersTiktok: creator.followersTiktok,
+      followersInstagram: creator.followersInstagram,
       status: creator.status,
-      packageTier: creator.packageTier,
-      defaultMix: creator.defaultMix,
       contractSignedAt: creator.contractSignedAt,
       notes: creator.notes
     },
@@ -207,4 +184,3 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
       : null
   };
 }
-

@@ -1,7 +1,6 @@
 import { getRepository } from "@/application/dependencies";
 import {
   CREATOR_STATUS_LABELS,
-  MIX_LABELS,
   PAYMENT_STATUS_LABELS,
   VIDEO_TYPE_LABELS
 } from "@/domain/constants/labels";
@@ -13,8 +12,7 @@ import { resolveMonth } from "@/application/use-cases/shared";
 export interface AdminDashboardData {
   month: string;
   metrics: {
-    creatorsComplete: number;
-    creatorsPending: number;
+    creatorsActive: number;
     validationTodo: number;
     paymentsTodo: number;
     totalToPay: number;
@@ -24,22 +22,14 @@ export interface AdminDashboardData {
     handle: string;
     email: string;
     country: string;
-    packageTier: number;
-    mixName: string;
-    mixLabel: string;
     status: string;
   }>;
   monthlyRows: Array<{
     monthlyTrackingId: string;
     creatorId: string;
     handle: string;
-    packageTier: number;
-    mixLabel: string;
-    quotas: Record<string, number>;
     delivered: Record<string, number>;
     deliveredTotal: number;
-    remainingTotal: number;
-    deadline: string;
     paymentStatus: string;
     paymentStatusKey: PaymentStatus;
     payoutAmount: number;
@@ -68,10 +58,9 @@ export interface AdminDashboardData {
 
 export async function getAdminDashboardData(input?: { month?: string }): Promise<AdminDashboardData> {
   const repository = getRepository();
-  const [creators, rates, packages, pendingVideos] = await Promise.all([
+  const [creators, rates, pendingVideos] = await Promise.all([
     repository.listCreators(),
     repository.listRates(),
-    repository.listPackageDefinitions(),
     repository.listVideosByStatus("pending_review")
   ]);
 
@@ -96,48 +85,36 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       monthTrackings = allTrackings.filter((tracking) => tracking.month === targetMonth);
     }
   }
-  const packageMap = new Map(packages.map((pkg) => [pkg.tier, pkg]));
   const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
 
   const monthlyRows = monthTrackings.map((tracking) => {
     const creator = creatorById.get(tracking.creatorId);
-    const pkg = packageMap.get(tracking.packageTier);
 
-    if (!creator || !pkg) {
+    if (!creator) {
       throw new Error(`Invalid tracking row for ${tracking.id}`);
     }
 
-    const summary = summarizeTracking(tracking.quotas, tracking.delivered);
-    const payout = calculatePayout(tracking.delivered, rates, pkg.monthlyCredits);
+    const summary = summarizeTracking(tracking.delivered);
+    const payout = calculatePayout(tracking.delivered, rates);
 
     return {
       monthlyTrackingId: tracking.id,
-        creatorId: creator.id,
-        handle: creator.handle,
-        packageTier: tracking.packageTier,
-        mixLabel: MIX_LABELS[tracking.mixName],
-      quotas: Object.fromEntries(
-        VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.quotas[videoType]])
-      ),
+      creatorId: creator.id,
+      handle: creator.handle,
       delivered: Object.fromEntries(
         VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.delivered[videoType]])
       ),
       deliveredTotal: summary.deliveredTotal,
-      remainingTotal: summary.remainingTotal,
-      deadline: tracking.deadline,
       paymentStatus: PAYMENT_STATUS_LABELS[tracking.paymentStatus],
       paymentStatusKey: tracking.paymentStatus,
       payoutAmount: payout.total
     };
   });
 
-  const creatorsComplete = monthlyRows.filter((row) => row.remainingTotal === 0).length;
-  const creatorsPending = monthlyRows.filter((row) => row.remainingTotal > 0).length;
   const paymentsTodoRows = monthlyRows.filter((row) => row.paymentStatusKey !== "paye");
 
   const metrics = {
-    creatorsComplete,
-    creatorsPending,
+    creatorsActive: monthlyRows.length,
     validationTodo: pendingVideos.length,
     paymentsTodo: paymentsTodoRows.length,
     totalToPay: paymentsTodoRows.reduce((sum, row) => sum + row.payoutAmount, 0)
@@ -151,9 +128,6 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       handle: creator.handle,
       email: creator.email,
       country: creator.country,
-      packageTier: creator.packageTier,
-      mixName: creator.defaultMix,
-      mixLabel: MIX_LABELS[creator.defaultMix],
       status: CREATOR_STATUS_LABELS[creator.status]
     })),
     monthlyRows,
@@ -172,7 +146,6 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
     payments: await (async () => {
       // Single query instead of N+1 per creator
       const allProfiles = await repository.listPayoutProfiles();
-      const profileByCreatorId = new Map(allProfiles.map((p) => [p.creatorId, p]));
       const validProfileCreatorIds = new Set(
         allProfiles
           .filter((p) => {
@@ -188,7 +161,7 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
         creatorId: row.creatorId,
         email: creatorById.get(row.creatorId)?.email ?? "",
         creatorHandle: row.handle,
-        deliveredSummary: `${row.deliveredTotal}/${row.packageTier}`,
+        deliveredSummary: `${row.deliveredTotal} videos`,
         amount: row.payoutAmount,
         paymentStatus: row.paymentStatus,
         paymentStatusKey: row.paymentStatusKey,

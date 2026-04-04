@@ -16,7 +16,6 @@ interface PaymentHistoryTableProps {
   history: Array<{
     month: string;
     deliveredTotal: number;
-    quotaTotal: number;
     paymentStatus: string;
     amount: number;
     paidAt?: string;
@@ -40,9 +39,7 @@ export function PaymentHistoryTable({ history }: PaymentHistoryTableProps) {
           {history.map((item) => (
             <TableRow key={item.month}>
               <TableCell className="font-semibold capitalize">{monthToLabel(item.month)}</TableCell>
-              <TableCell>
-                {item.deliveredTotal}/{item.quotaTotal}
-              </TableCell>
+              <TableCell>{item.deliveredTotal}</TableCell>
               <TableCell>
                 <StatusBadge label={item.paymentStatus} tone={paymentStatusTone(item.paymentStatus)} />
               </TableCell>

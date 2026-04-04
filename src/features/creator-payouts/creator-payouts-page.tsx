@@ -32,7 +32,7 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
       <SectionHeading
         eyebrow="Paiements"
         title="Ton recap revenus"
-        subtitle="Estimation du cycle en cours et historique mensuel."
+        subtitle="Estimation du mois en cours et historique des paiements."
       />
 
       {/* Payout profile warning */}
@@ -80,12 +80,12 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
       <CardSection>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Cycle {monthToLabel(data.month)}</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">{monthToLabel(data.month)}</p>
             <p className="mt-2 font-display text-5xl uppercase leading-none text-secondary">
               {formatCurrency(data.progress.estimatedPayout)}
             </p>
             <p className="mt-2 text-sm text-foreground/75">
-              Estimation basee sur les livrables valides du mois (et credits mensuels inclus).
+              Estimation basee sur les videos validees du mois.
             </p>
             <div className="mt-3 flex items-center gap-3">
               <StatusBadge label={currentPaymentStatus} tone={paymentStatusTone(currentPaymentStatus)} />
@@ -98,33 +98,27 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
           </div>
 
           <div className="rounded-2xl border border-line bg-frost/60 p-4 text-sm text-foreground/75">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Deadline</p>
-            <p className="mt-2 font-medium">{toShortDate(data.plan.deadline)}</p>
-            <p className="mt-2">{data.progress.remainingDetails}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Videos livrees</p>
+            <p className="mt-2 font-display text-2xl uppercase leading-none text-foreground/80">
+              {data.progress.deliveredTotal}
+            </p>
           </div>
         </div>
       </CardSection>
 
       {/* Current month stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
           <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Videos livrees</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-foreground/80">
-            {data.progress.deliveredTotal}/{data.progress.quotaTotal}
+            {data.progress.deliveredTotal}
           </p>
         </div>
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Completion</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Gains estimes</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-mint">
-            {data.progress.completionPercent}%
+            {formatCurrency(data.progress.estimatedPayout)}
           </p>
-        </div>
-        <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Pack</p>
-          <p className="mt-1 font-display text-2xl uppercase leading-none text-foreground/80">
-            {data.plan.mixLabel}
-          </p>
-          <p className="mt-1 text-xs text-foreground/55">Tier {data.plan.packageTier}</p>
         </div>
       </div>
 

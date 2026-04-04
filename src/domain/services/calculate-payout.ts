@@ -9,19 +9,13 @@ export interface PayoutBreakdownItem {
 
 export interface PayoutResult {
   items: PayoutBreakdownItem[];
-  monthlyCredits: number;
   total: number;
 }
 
 export function calculatePayout(
   deliveredByType: VideoTypeCount,
-  rates: VideoRate[],
-  monthlyCredits: number
+  rates: VideoRate[]
 ): PayoutResult {
-  if (monthlyCredits < 0) {
-    throw new Error("monthlyCredits must be non-negative");
-  }
-
   const items: PayoutBreakdownItem[] = rates.map((rate) => {
     const delivered = Math.max(0, deliveredByType[rate.videoType] ?? 0);
     return {
@@ -32,11 +26,10 @@ export function calculatePayout(
     };
   });
 
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   return {
     items,
-    monthlyCredits,
-    total: subtotal + monthlyCredits
+    total
   };
 }

@@ -8,17 +8,6 @@ export const VIDEO_TYPES = [
 
 export type VideoType = (typeof VIDEO_TYPES)[number];
 
-export const MIX_NAMES = [
-  "VOLUME",
-  "EQUILIBRE",
-  "PREMIUM_80S",
-  "TRANSFO_HEAVY"
-] as const;
-
-export type MixName = (typeof MIX_NAMES)[number];
-
-export type PackageTier = 10 | 20 | 30 | 40;
-
 export type CreatorStatus = "candidat" | "actif" | "pause" | "inactif";
 export type PaymentStatus = "a_faire" | "en_cours" | "paye";
 export type VideoStatus = "uploaded" | "pending_review" | "approved" | "rejected";
@@ -26,18 +15,6 @@ export type ApplicationStatus = "draft" | "pending_review" | "approved" | "rejec
 export type PayoutMethod = "iban" | "paypal" | "stripe";
 
 export type VideoTypeCount = Record<VideoType, number>;
-
-export interface PackageDefinition {
-  tier: PackageTier;
-  quotaVideos: number;
-  monthlyCredits: number;
-}
-
-export interface MixDefinition {
-  name: MixName;
-  distribution: Record<VideoType, number>;
-  positioning: string;
-}
 
 export interface VideoRate {
   videoType: VideoType;
@@ -58,10 +35,9 @@ export interface Creator {
   whatsapp: string;
   country: string;
   address: string;
-  followers: number;
+  followersTiktok: number;
+  followersInstagram: number;
   socialLinks: SocialLinks;
-  packageTier: PackageTier;
-  defaultMix: MixName;
   status: CreatorStatus;
   startDate: string;
   contractSignedAt?: string;
@@ -72,12 +48,7 @@ export interface MonthlyTracking {
   id: string;
   month: string;
   creatorId: string;
-  packageTier: PackageTier;
-  quotaTotal: number;
-  mixName: MixName;
-  quotas: VideoTypeCount;
   delivered: VideoTypeCount;
-  deadline: string;
   paymentStatus: PaymentStatus;
   paidAt?: string;
 }
@@ -145,10 +116,8 @@ export interface CreatorApplication {
   address: string;
   socialTiktok?: string;
   socialInstagram?: string;
-  followers: number;
-  portfolioUrl?: string;
-  packageTier: PackageTier;
-  mixName: MixName;
+  followersTiktok: number;
+  followersInstagram: number;
   submittedAt?: string;
   reviewedAt?: string;
   reviewNotes?: string;

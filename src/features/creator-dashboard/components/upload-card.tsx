@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, UploadCloud } from "lucide-react";
 
@@ -11,9 +11,15 @@ import { VIDEO_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/label
 import { VIDEO_TYPES, type VideoAsset, type VideoType } from "@/domain/types";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/features/auth/context/auth-context";
+import { formatCurrency } from "@/lib/currency";
 
 interface UploadCardProps {
   monthlyTrackingId: string;
+  ratesByType: Array<{
+    videoType: VideoType;
+    label: string;
+    ratePerVideo: number;
+  }>;
   specs: string[];
   tips: Record<string, string[]>;
   pendingReviewCount: number;
@@ -28,10 +34,10 @@ interface UploadCardProps {
   }>;
 }
 
-const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const RECOMMENDED_MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const VIDEO_METADATA_TIMEOUT_MS = 8_000;
-const ALLOWED_VIDEO_MIME_TYPES = new Set(["video/mp4", "video/quicktime", "video/mov"]);
-const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "mov"]);
+const PREFERRED_VIDEO_MIME_TYPES = new Set(["video/mp4", "video/quicktime", "video/mov"]);
+const PREFERRED_VIDEO_EXTENSIONS = new Set(["mp4", "mov"]);
 
 function sanitizeFilename(value: string): string {
   const trimmed = value.trim();
@@ -91,19 +97,19 @@ function getFileExtension(filename: string): string {
   return value.split(".").pop() ?? "";
 }
 
-function isAllowedVideoFile(file: File): boolean {
+function isPreferredVideoFile(file: File): boolean {
   const mime = file.type.trim().toLowerCase();
   const extension = getFileExtension(file.name);
 
-  if (ALLOWED_VIDEO_MIME_TYPES.has(mime)) {
+  if (PREFERRED_VIDEO_MIME_TYPES.has(mime)) {
     return true;
   }
 
-  if (!mime && ALLOWED_VIDEO_EXTENSIONS.has(extension)) {
+  if (!mime && PREFERRED_VIDEO_EXTENSIONS.has(extension)) {
     return true;
   }
 
-  return ALLOWED_VIDEO_EXTENSIONS.has(extension);
+  return PREFERRED_VIDEO_EXTENSIONS.has(extension);
 }
 
 function resolveAllowedResolution(width: number, height: number): VideoAsset["resolution"] | null {
@@ -116,6 +122,7 @@ function resolveAllowedResolution(width: number, height: number): VideoAsset["re
 
 export function UploadCard({
   monthlyTrackingId,
+  ratesByType,
   specs,
   tips,
   pendingReviewCount,
@@ -133,13 +140,23 @@ export function UploadCard({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
 
   const canUpload = Boolean(auth.user && !uploading);
+
+  useEffect(() => {
+    setResolvedTrackingId(monthlyTrackingId);
+  }, [monthlyTrackingId]);
 
   const tipsForType = useMemo(() => {
     const value = tips[activeType];
     return Array.isArray(value) ? value : [];
   }, [tips, activeType]);
+
+  const activeRateLabel = useMemo(() => {
+    const rate = ratesByType.find((item) => item.videoType === activeType)?.ratePerVideo ?? 0;
+    return formatCurrency(rate);
+  }, [ratesByType, activeType]);
 
   async function previewVideo(fileUrl: string) {
     setErrorMessage(null);
@@ -169,23 +186,47 @@ export function UploadCard({
 
     try {
       const filename = sanitizeFilename(file.name);
-      if (file.size > MAX_VIDEO_BYTES) {
-        throw new Error("Fichier trop lourd. Maximum 500MB.");
+      const warnings: string[] = [];
+
+      if (file.size > RECOMMENDED_MAX_VIDEO_BYTES) {
+        warnings.push("Le fichier depasse 500MB (recommande). Upload accepte, mais le traitement peut etre plus lent.");
       }
 
-      if (!isAllowedVideoFile(file)) {
-        throw new Error("Format invalide. Formats acceptes: MP4, MOV.");
+      if (!isPreferredVideoFile(file)) {
+        warnings.push("Format non prefere detecte. MP4/MOV sont recommandes, mais l'upload est accepte.");
       }
 
-      const meta = await readVideoMetadata(file);
-      const resolution = resolveAllowedResolution(meta.width, meta.height);
-      if (!resolution) {
-        throw new Error(`Resolution non supportee (${meta.width}x${meta.height}).`);
+      let durationSeconds = 30;
+      let resolution: VideoAsset["resolution"] = "1080x1920";
+      try {
+        const meta = await readVideoMetadata(file);
+        const resolvedResolution = resolveAllowedResolution(meta.width, meta.height);
+        if (resolvedResolution) {
+          resolution = resolvedResolution;
+        } else {
+          warnings.push(
+            `Resolution ${meta.width}x${meta.height} hors recommandation (1080x1920 ou 1080x1080). Valeur par defaut appliquee.`
+          );
+        }
+
+        if (meta.durationSeconds >= 15 && meta.durationSeconds <= 60) {
+          durationSeconds = meta.durationSeconds;
+        } else {
+          warnings.push(
+            `Duree hors recommandation (${meta.durationSeconds}s). Cible: 15 a 60 secondes. Valeur par defaut appliquee.`
+          );
+        }
+      } catch (metadataError) {
+        warnings.push(
+          metadataError instanceof Error
+            ? `${metadataError.message} Upload continue avec valeurs par defaut (30s, 1080x1920).`
+            : "Metadata non lues. Upload continue avec valeurs par defaut (30s, 1080x1920)."
+        );
       }
-      if (meta.durationSeconds < 15 || meta.durationSeconds > 60) {
-        throw new Error(`Duree invalide (${meta.durationSeconds}s). Attendu: 15 a 60 secondes.`);
+
+      if (warnings.length > 0) {
+        setWarningMessage(warnings.join(" "));
       }
-      const durationSeconds = meta.durationSeconds;
 
       const fileSizeMb = Math.max(1, Math.ceil(file.size / (1024 * 1024)));
 
@@ -196,19 +237,25 @@ export function UploadCard({
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         body: JSON.stringify({
-          monthlyTrackingId,
+          monthlyTrackingId: resolvedTrackingId,
           videoType: activeType,
           filename
         })
       });
 
       const signedPayload = (await signed.json().catch(() => null)) as
-        | { key?: string; signedUrl?: string; message?: string }
+        | { key?: string; signedUrl?: string; monthlyTrackingId?: string; message?: string }
         | null;
 
       if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
         throw new Error(signedPayload?.message ?? "Impossible de preparer l'upload.");
       }
+
+      const trackingIdForUpload = signedPayload.monthlyTrackingId ?? resolvedTrackingId;
+      if (!trackingIdForUpload) {
+        throw new Error("Suivi mensuel introuvable.");
+      }
+      setResolvedTrackingId(trackingIdForUpload);
 
       const signedUrl = signedPayload.signedUrl;
       const uploadForm = new FormData();
@@ -243,7 +290,7 @@ export function UploadCard({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          monthlyTrackingId,
+          monthlyTrackingId: trackingIdForUpload,
           videoType: activeType,
           fileUrl: signedPayload.key,
           durationSeconds,
@@ -311,7 +358,7 @@ export function UploadCard({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">Specs requises</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">Specs conseillees</p>
           <ul className="space-y-1 text-sm text-foreground/70">
             {specs.map((spec) => (
               <li key={spec}>- {spec}</li>
@@ -328,10 +375,33 @@ export function UploadCard({
         </div>
       </div>
 
+      <div className="rounded-2xl border border-line bg-white/85 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Tarif du type selectionne</p>
+          <p className="font-display text-2xl uppercase leading-none text-secondary">{activeRateLabel}</p>
+        </div>
+        <p className="mt-1 text-xs text-foreground/60">Paiement declenche uniquement apres validation de la video.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {ratesByType.map((rate) => (
+            <span
+              key={rate.videoType}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs",
+                rate.videoType === activeType
+                  ? "border-secondary/50 bg-secondary/10 text-secondary"
+                  : "border-line bg-frost/70 text-foreground/70"
+              )}
+            >
+              {rate.label}: {formatCurrency(rate.ratePerVideo)}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <input
         ref={fileInputRef}
         type="file"
-        accept="video/mp4,video/quicktime,.mp4,.mov"
+        accept="video/*"
         className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -387,7 +457,7 @@ export function UploadCard({
           {uploading ? `Upload en cours... ${uploadProgress}%` : "Glisse-depose ta video ici"}
         </p>
         {!uploading ? (
-          <p className="mt-1 text-xs text-foreground/65">ou clique pour parcourir (MP4/MOV, max 500MB)</p>
+          <p className="mt-1 text-xs text-foreground/65">ou clique pour parcourir (tout format video, MP4/MOV recommandes)</p>
         ) : null}
         <div className="mt-4 flex justify-center">
           <Button
@@ -409,7 +479,7 @@ export function UploadCard({
         <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Derniers uploads</p>
         {recentVideos.length === 0 ? (
           <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
-            Aucun upload pour ce cycle.
+            Aucun upload pour ce mois.
           </div>
         ) : (
           <div className="space-y-2">

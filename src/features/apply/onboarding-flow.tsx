@@ -11,7 +11,6 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { FlashMessages } from "@/features/apply/components/flash-messages";
 import { PendingReviewPanel } from "@/features/apply/components/pending-review-panel";
 import { StepPersonalForm } from "@/features/apply/components/step-personal-form";
-import { StepPlanForm } from "@/features/apply/components/step-plan-form";
 import { StepProfileForm } from "@/features/apply/components/step-profile-form";
 import { WizardActions } from "@/features/apply/components/wizard-actions";
 import { WizardHeader } from "@/features/apply/components/wizard-header";
@@ -148,8 +147,8 @@ export function OnboardingFlow() {
                       { label: "Handle", value: flow.application!.handle || undefined },
                       { label: "TikTok", value: flow.application!.social_tiktok },
                       { label: "Instagram", value: flow.application!.social_instagram },
-                      { label: "Followers", value: flow.application!.followers ? String(flow.application!.followers) : undefined },
-                      { label: "Portfolio", value: flow.application!.portfolio_url },
+                      { label: "Abonnes TikTok", value: flow.application!.followers_tiktok ? String(flow.application!.followers_tiktok) : undefined },
+                      { label: "Abonnes Instagram", value: flow.application!.followers_instagram ? String(flow.application!.followers_instagram) : undefined },
                     ]
                       .filter((item) => item.value)
                       .map((item) => (
@@ -200,17 +199,6 @@ export function OnboardingFlow() {
                         disabled={!flow.canEdit}
                         onFieldChange={flow.updateField}
                         onBlurField={flow.validateField}
-                        errorField={flow.errorField}
-                        errorMessage={flow.errorMessage}
-                      />
-                    ) : null}
-
-                    {flow.step === 2 ? (
-                      <StepPlanForm
-                        form={flow.form}
-                        options={flow.options}
-                        disabled={!flow.canEdit}
-                        onFieldChange={flow.updateField}
                         errorField={flow.errorField}
                         errorMessage={flow.errorMessage}
                       />

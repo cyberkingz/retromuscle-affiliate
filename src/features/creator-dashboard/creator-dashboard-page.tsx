@@ -2,16 +2,15 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 import type { CreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
+import { CardSection } from "@/components/layout/card-section";
 import { CreatorHeader } from "@/features/creator-dashboard/components/creator-header";
 import { CreatorProgressCard } from "@/features/creator-dashboard/components/creator-progress-card";
 import { PaymentHistoryTable } from "@/features/creator-dashboard/components/payment-history-table";
 import { PayoutBreakdownTable } from "@/features/creator-dashboard/components/payout-breakdown-table";
 import { QuotasGrid } from "@/features/creator-dashboard/components/quotas-grid";
-import { RushesSummaryCard } from "@/features/creator-dashboard/components/rushes-summary-card";
-import { UploadCard } from "@/features/creator-dashboard/components/upload-card";
 import { ActivityFeedCard } from "@/features/creator-dashboard/components/activity-feed-card";
 import { formatCurrency } from "@/lib/currency";
-import { monthToLabel, toShortDate } from "@/lib/date";
+import { monthToLabel } from "@/lib/date";
 
 interface CreatorDashboardPageProps {
   data: CreatorDashboardData;
@@ -44,52 +43,58 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         country={data.creator.country}
         status={data.creator.status}
         monthLabel={monthToLabel(data.month)}
-        packageTier={data.plan.packageTier}
-        mixLabel={data.plan.mixLabel}
-        monthlyCreditsLabel={formatCurrency(data.plan.monthlyCredits)}
       />
 
       <CreatorProgressCard
         deliveredTotal={data.progress.deliveredTotal}
-        quotaTotal={data.progress.quotaTotal}
-        completionPercent={data.progress.completionPercent}
-        remainingDetails={data.progress.remainingDetails}
         estimatedPayoutLabel={formatCurrency(data.progress.estimatedPayout)}
-        deadlineLabel={toShortDate(data.plan.deadline)}
+        pendingReviewCount={data.upload.pendingReviewCount}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
-        <UploadCard
-          monthlyTrackingId={data.upload.monthlyTrackingId}
-          specs={data.upload.specs}
-          tips={data.upload.tips}
-          pendingReviewCount={data.upload.pendingReviewCount}
-          rejectedCount={data.upload.rejectedCount}
-          recentVideos={data.upload.recentVideos}
-        />
-        <RushesSummaryCard
-          monthlyTrackingId={data.upload.monthlyTrackingId}
-          totalFiles={data.rushes.totalFiles}
-          totalSizeLabel={`${(data.rushes.totalSizeMb / 1024).toFixed(1)} GB`}
-          rushes={data.rushes.recentRushes}
-        />
-      </div>
+      <CardSection className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Uploads & validation</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              Depose tes videos, suis les validations, puis re-upload si besoin.
+            </p>
+          </div>
+          <Link
+            href="/uploads"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-secondary/45 bg-secondary px-5 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-secondary/90"
+          >
+            Aller aux uploads
+          </Link>
+        </div>
 
-      <div className="text-center">
-        <Link
-          href="/uploads"
-          className="text-sm font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80"
-        >
-          Voir tous mes uploads
-        </Link>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">A valider</p>
+            <p className="mt-1 font-display text-2xl uppercase leading-none text-foreground/85">
+              {data.upload.pendingReviewCount}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Approuvees</p>
+            <p className="mt-1 font-display text-2xl uppercase leading-none text-mint">
+              {data.progress.deliveredTotal}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Rejetees</p>
+            <p className="mt-1 font-display text-2xl uppercase leading-none text-destructive">
+              {data.upload.rejectedCount}
+            </p>
+          </div>
+        </div>
+      </CardSection>
 
       <details className="rounded-[22px] border border-line bg-white/85 p-4" open>
         <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
-          Detail par type ({data.quotasByType.length})
+          Detail par type ({data.deliveredByType.length})
         </summary>
         <div className="pt-4">
-          <QuotasGrid items={data.quotasByType} />
+          <QuotasGrid items={data.deliveredByType} />
         </div>
       </details>
 

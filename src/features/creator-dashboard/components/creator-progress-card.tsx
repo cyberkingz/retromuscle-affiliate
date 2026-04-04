@@ -1,22 +1,15 @@
 import { CardSection } from "@/components/layout/card-section";
-import { ProgressBar } from "@/components/ui/progress-bar";
 
 interface CreatorProgressCardProps {
   deliveredTotal: number;
-  quotaTotal: number;
-  completionPercent: number;
-  remainingDetails: string;
   estimatedPayoutLabel: string;
-  deadlineLabel: string;
+  pendingReviewCount: number;
 }
 
 export function CreatorProgressCard({
   deliveredTotal,
-  quotaTotal,
-  completionPercent,
-  remainingDetails,
   estimatedPayoutLabel,
-  deadlineLabel
+  pendingReviewCount
 }: CreatorProgressCardProps) {
   return (
     <CardSection className="space-y-4">
@@ -24,16 +17,10 @@ export function CreatorProgressCard({
         <div>
           <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Tes videos ce mois</p>
           <p className="mt-3 font-display text-4xl uppercase leading-none text-secondary">
-            {deliveredTotal}/{quotaTotal}
+            {deliveredTotal}
           </p>
         </div>
-        <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/75">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Deadline</p>
-          <p className="mt-1 font-semibold">{deadlineLabel}</p>
-        </div>
       </div>
-
-      <ProgressBar percent={completionPercent} label="Avancement" />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3">
@@ -44,10 +31,12 @@ export function CreatorProgressCard({
           <p className="mt-2 text-xs text-foreground/60">Base sur tes videos deja validees.</p>
         </div>
         <div className="rounded-2xl border border-line bg-sand/70 px-4 py-3">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">Reste a filmer</p>
-          <p className="mt-1 text-sm text-foreground/80">{remainingDetails}</p>
+          <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/55">En attente de validation</p>
+          <p className="mt-1 font-display text-2xl uppercase leading-none text-foreground/80">
+            {pendingReviewCount}
+          </p>
           <p className="mt-2 text-xs text-foreground/60">
-            Astuce: commence par les formats les mieux payes.
+            Uploads soumis au staff RetroMuscle.
           </p>
         </div>
       </div>

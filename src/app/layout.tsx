@@ -30,11 +30,11 @@ const fontBody = Space_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "RetroMuscle Programme Affilie",
-  description: "Rejoins le programme affilie RetroMuscle et transforme ton contenu en revenu mensuel regulier.",
+  title: "RetroMuscle Programme Createur",
+  description: "Tu filmes deja du contenu fitness. Sois paye pour ca. 95 a 180 EUR par video validee, sans quota ni plafond.",
   openGraph: {
-    title: "RetroMuscle Programme Affilie",
-    description: "Programme d'affiliation RetroMuscle pour createurs: missions mensuelles, validation rapide, paiements reguliers.",
+    title: "RetroMuscle Programme Createur",
+    description: "Upload tes videos fitness, choisis le type, touche entre 95 et 180 EUR par video validee. Aucun quota, aucun plafond.",
     url: SITE_URL,
     siteName: SITE_NAME,
     type: "website",
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "RetroMuscle Programme Affilie",
-    description: "Programme d'affiliation RetroMuscle pour createurs: missions mensuelles, validation rapide, paiements reguliers.",
+    title: "RetroMuscle Programme Createur",
+    description: "Upload tes videos fitness, choisis le type, touche entre 95 et 180 EUR par video validee. Aucun quota, aucun plafond.",
     images: [BRAND_ASSETS.heroLifestyle]
   }
 };

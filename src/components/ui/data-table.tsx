@@ -62,7 +62,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-3">
       {renderMobileRow ? (
-        <div className="space-y-2 sm:hidden">
+        <div className="space-y-3 px-4 pb-4 sm:hidden">
           {rows.length === 0 ? <p className="py-6 text-center text-sm text-foreground/60">{emptyMessage}</p> : null}
           {rows.map((row) => (
             <div key={row.id}>{renderMobileRow(row.original)}</div>
@@ -70,7 +70,7 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className={cn(renderMobileRow ? "hidden sm:block" : undefined)}>
+      <div className={cn("overflow-x-auto", renderMobileRow ? "hidden sm:block" : undefined)}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
