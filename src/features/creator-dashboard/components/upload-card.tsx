@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CardSection } from "@/components/layout/card-section";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { VIDEO_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
-import { VIDEO_TYPES, type VideoAsset, type VideoType } from "@/domain/types";
+import { type VideoAsset, type VideoType } from "@/domain/types";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { formatCurrency } from "@/lib/currency";
@@ -133,7 +133,7 @@ export function UploadCard({
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [activeType, setActiveType] = useState<VideoType>("CINEMATIC");
+  const [activeType, setActiveType] = useState<VideoType | null>(ratesByType[0]?.videoType ?? null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -142,18 +142,35 @@ export function UploadCard({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
 
-  const canUpload = Boolean(auth.user && !uploading);
+  const hasActiveVideoTypes = ratesByType.length > 0;
+  const canUpload = Boolean(auth.user && !uploading && hasActiveVideoTypes && activeType);
 
   useEffect(() => {
     setResolvedTrackingId(monthlyTrackingId);
   }, [monthlyTrackingId]);
 
+  useEffect(() => {
+    if (ratesByType.length === 0) {
+      setActiveType(null);
+      return;
+    }
+
+    setActiveType((current) => {
+      if (current && ratesByType.some((item) => item.videoType === current)) {
+        return current;
+      }
+      return ratesByType[0].videoType;
+    });
+  }, [ratesByType]);
+
   const tipsForType = useMemo(() => {
+    if (!activeType) return [];
     const value = tips[activeType];
     return Array.isArray(value) ? value : [];
   }, [tips, activeType]);
 
   const activeRateLabel = useMemo(() => {
+    if (!activeType) return "--";
     const rate = ratesByType.find((item) => item.videoType === activeType)?.ratePerVideo ?? 0;
     return formatCurrency(rate);
   }, [ratesByType, activeType]);
@@ -176,6 +193,10 @@ export function UploadCard({
   async function handleFile(file: File) {
     if (!auth.user) {
       router.replace("/login");
+      return;
+    }
+    if (!activeType) {
+      setErrorMessage("Aucun type de video actif. Contacte un administrateur.");
       return;
     }
 
@@ -322,16 +343,16 @@ export function UploadCard({
       <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Upload categorie active</p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {VIDEO_TYPES.map((type) => (
+          {ratesByType.map((rate) => (
             <Button
-              key={type}
+              key={rate.videoType}
               type="button"
               size="sm"
-              variant={activeType === type ? "default" : "outline"}
-              onClick={() => setActiveType(type)}
+              variant={activeType === rate.videoType ? "default" : "outline"}
+              onClick={() => setActiveType(rate.videoType)}
               disabled={uploading}
             >
-              {VIDEO_TYPE_LABELS[type]}
+              {rate.label}
             </Button>
           ))}
         </div>
@@ -340,6 +361,11 @@ export function UploadCard({
           tone={rejectedCount > 0 ? "warning" : "neutral"}
         />
       </div>
+      {!hasActiveVideoTypes ? (
+        <div className="rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+          Aucun type de video actif pour le moment. Contacte l&apos;equipe RetroMuscle.
+        </div>
+      ) : null}
 
       {statusMessage ? (
         <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/75">{statusMessage}</div>
@@ -366,7 +392,9 @@ export function UploadCard({
           </ul>
         </div>
         <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">Tips {VIDEO_TYPE_LABELS[activeType]}</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">
+            Tips {activeType ? VIDEO_TYPE_LABELS[activeType] : "type inactif"}
+          </p>
           <ul className="space-y-1 text-sm text-foreground/70">
             {tipsForType.map((tip) => (
               <li key={tip}>- {tip}</li>
@@ -502,6 +530,11 @@ export function UploadCard({
                       type="button"
                       size="sm"
                       onClick={() => {
+                        const canReuploadThisType = ratesByType.some((rate) => rate.videoType === video.videoType);
+                        if (!canReuploadThisType) {
+                          setErrorMessage("Ce type de video est desactive par l'administration.");
+                          return;
+                        }
                         setActiveType(video.videoType);
                         fileInputRef.current?.click();
                       }}

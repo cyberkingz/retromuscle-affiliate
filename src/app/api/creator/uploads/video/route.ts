@@ -18,6 +18,29 @@ interface UploadVideoPayload {
   fileSizeMb: number;
 }
 
+function resolveRecordUploadError(error: unknown): { status: number; code: "BAD_REQUEST" | "NOT_FOUND" | "INTERNAL"; message: string } {
+  if (!(error instanceof Error)) {
+    return { status: 500, code: "INTERNAL", message: "Unable to record upload" };
+  }
+
+  if (
+    error.message.startsWith("Invalid videoType:") ||
+    error.message.startsWith("Rate not found for videoType:") ||
+    error.message.startsWith("Video type is disabled:")
+  ) {
+    return { status: 400, code: "BAD_REQUEST", message: error.message };
+  }
+
+  if (
+    error.message.toLowerCase().includes("creator not found") ||
+    error.message.toLowerCase().includes("tracking")
+  ) {
+    return { status: 404, code: "NOT_FOUND", message: error.message };
+  }
+
+  return { status: 500, code: "INTERNAL", message: "Unable to record upload" };
+}
+
 function parsePayload(body: unknown): UploadVideoPayload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid payload");
@@ -119,7 +142,12 @@ export async function POST(request: Request) {
       // ignore
     }
 
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to record upload" });
+    const uploadError = resolveRecordUploadError(error);
+    const response = apiError(ctx, {
+      status: uploadError.status,
+      code: uploadError.code,
+      message: uploadError.message
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

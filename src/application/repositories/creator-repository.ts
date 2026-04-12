@@ -66,6 +66,10 @@ export interface CreatorRepository {
     ratePerVideo: number;
   }): Promise<VideoRate>;
 
+  deleteVideoRate(input: {
+    videoType: VideoRate["videoType"];
+  }): Promise<VideoRate>;
+
   // Creator payout details (creator-facing + admin views)
   getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null>;
   /** Fetch all payout profiles in a single query (avoids N+1). */

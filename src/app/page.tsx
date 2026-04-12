@@ -5,7 +5,7 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "RetroMuscle Programme Créateur",
-  description: "Tu filmes deja du contenu fitness. Maintenant sois paye pour ca. 95 a 180 EUR par video validee, sans quota ni plafond.",
+  description: "Tu filmes deja du contenu fitness. Maintenant sois paye pour ca, au tarif actif de chaque type de video validee.",
   path: ""
 });
 

@@ -9,7 +9,9 @@ interface MutationState {
   lastSuccess: string | null;
 }
 
-export function useConfigMutation<TPayload>(endpoint: string) {
+type MutationMethod = "PUT" | "POST" | "PATCH" | "DELETE";
+
+export function useConfigMutation<TPayload>(endpoint: string, method: MutationMethod = "PUT") {
   const router = useRouter();
   const [state, setState] = useState<MutationState>({
     isPending: false,
@@ -23,7 +25,7 @@ export function useConfigMutation<TPayload>(endpoint: string) {
 
       try {
         const response = await fetch(endpoint, {
-          method: "PUT",
+          method,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
@@ -43,7 +45,7 @@ export function useConfigMutation<TPayload>(endpoint: string) {
         return false;
       }
     },
-    [endpoint, router]
+    [endpoint, method, router]
   );
 
   const reset = useCallback(() => {

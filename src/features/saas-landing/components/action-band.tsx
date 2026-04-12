@@ -22,7 +22,11 @@ export function ActionBand({ title, subtitle, cta }: ActionBandProps) {
             </p>
           </div>
 
-          <Button asChild size="lg" className="h-12 px-8 text-base font-semibold">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 w-full max-w-[22rem] px-6 text-sm font-semibold tracking-[0.04em] sm:h-14 sm:w-auto sm:max-w-none sm:px-8 sm:text-base"
+          >
             <Link href={cta.href}>
               {cta.label}
               <ArrowRight className="ml-2 h-4 w-4" />

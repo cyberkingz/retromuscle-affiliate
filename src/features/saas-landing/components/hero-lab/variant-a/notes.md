@@ -1,0 +1,9 @@
+- Layout intent: split the hero into a strong text column and a much wider image column so the desktop view feels premium instead of compact.
+- The design uses one main image only, which keeps the composition readable and avoids the collage effect that was hurting clarity.
+- CTA hierarchy is explicit: one primary action, one secondary action, then a compact row of trust/stat cards.
+- The image area carries the visual weight, while the text column stays readable through short lines, controlled width, and generous spacing.
+- A translucent overlay inside the image adds context without introducing extra media or clutter.
+- The footer stats under the image give the hero structure and help the page feel more productized.
+- Mobile behavior stays safe because the grid collapses cleanly and all key messages remain stacked in a simple order.
+- Tradeoff: this variant is less “social proof dense” than a collage-based hero, but it is much clearer and more premium at first glance.
+- Tradeoff: the large image treatment depends on having a strong source photo; if the asset is weak, the whole hero loses impact.

@@ -1,0 +1,8 @@
+- Image-first layout with the visual panel taking the largest share of desktop width.
+- Stronger typography hierarchy on the right side to make the CTA and core promise easier to scan.
+- Only one main image is used, which keeps the composition stable and avoids visual noise.
+- The copy area is intentionally compact so the page feels clearer and more conversion oriented.
+- Metric cards are short and repetitive on purpose: validation, payout, scale.
+- The hero stacks cleanly on mobile by placing the copy before the image.
+- The image treatment uses a simple overlay and one caption strip instead of multiple floating badges.
+- This variant is strongest when the brand wants to look premium, trustworthy, and easy to understand fast.

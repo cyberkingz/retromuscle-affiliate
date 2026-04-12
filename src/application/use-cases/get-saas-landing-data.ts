@@ -14,6 +14,7 @@ export interface ImageTextBlock {
   imageUrl: string;
   imageAlt: string;
   imagePosition: "left" | "right";
+  imageObjectPosition?: "top" | "center" | "bottom";
   bullets?: string[];
   cta?: { label: string; href: "/apply" };
 }
@@ -38,6 +39,7 @@ export interface FlowData {
 /* ------------------------------------------------------------------ */
 export interface EarningsScenario {
   label: string;
+  videosPerDay: number;
   videosPerMonth: number;
   estimatedAmount: number;
   breakdown: Array<{ label: string; delivered: number; rate: number; subtotal: number }>;
@@ -116,35 +118,44 @@ export interface SaasLandingData {
 export async function getSaasLandingData(): Promise<SaasLandingData> {
   const repository = getRepository();
   const rates = await repository.listRates();
-  const rateRows: RateSheetRow[] = VIDEO_TYPES.map((videoType) => {
-    const rate = rates.find((item) => item.videoType === videoType);
+  const activeRates = rates.filter((rate) => !rate.isPlaceholder);
+  const activeVideoTypes = VIDEO_TYPES.filter((videoType) =>
+    activeRates.some((rate) => rate.videoType === videoType)
+  );
+
+  const rateRows: RateSheetRow[] = activeVideoTypes.map((videoType) => {
+    const rate = activeRates.find((item) => item.videoType === videoType);
     return {
       key: videoType,
       label: VIDEO_TYPE_LABELS[videoType],
       ratePerVideo: rate?.ratePerVideo ?? 0,
-      isPlaceholder: Boolean(rate?.isPlaceholder)
+      isPlaceholder: false
     };
   });
 
   // Illustrative creator profiles showing realistic monthly earnings.
-  const scenarioVolumes = [
-    { label: "Cr\u00e9ateur occasionnel", videosPerMonth: 5 },
-    { label: "Cr\u00e9ateur r\u00e9gulier", videosPerMonth: 15 },
-    { label: "Cr\u00e9ateur actif", videosPerMonth: 30 }
+  const scenarioPaces = [
+    { label: "Rythme progressif", videosPerDay: 1 },
+    { label: "Rythme solide", videosPerDay: 2 },
+    { label: "Rythme intensif", videosPerDay: 3 }
   ];
 
-  const earningsScenarios: EarningsScenario[] = scenarioVolumes.map((scenario) => {
-    // Distribute evenly across video types for the example.
-    const perType = Math.floor(scenario.videosPerMonth / VIDEO_TYPES.length);
-    const remainder = scenario.videosPerMonth % VIDEO_TYPES.length;
-    const delivered = Object.fromEntries(
-      VIDEO_TYPES.map((vt, i) => [vt, perType + (i < remainder ? 1 : 0)])
-    ) as Record<(typeof VIDEO_TYPES)[number], number>;
+  const earningsScenarios: EarningsScenario[] = scenarioPaces.map((scenario) => {
+    const videosPerMonth = scenario.videosPerDay * 30;
+    // Distribute evenly across active video types for the example.
+    const activeTypeCount = activeVideoTypes.length;
+    const perType = activeTypeCount > 0 ? Math.floor(videosPerMonth / activeTypeCount) : 0;
+    const remainder = activeTypeCount > 0 ? videosPerMonth % activeTypeCount : 0;
+    const delivered = Object.fromEntries(VIDEO_TYPES.map((vt) => [vt, 0])) as Record<(typeof VIDEO_TYPES)[number], number>;
+    activeVideoTypes.forEach((vt, i) => {
+      delivered[vt] = perType + (i < remainder ? 1 : 0);
+    });
 
-    const payout = calculatePayout(delivered, rates);
+    const payout = calculatePayout(delivered, activeRates);
     return {
       label: scenario.label,
-      videosPerMonth: scenario.videosPerMonth,
+      videosPerDay: scenario.videosPerDay,
+      videosPerMonth,
       estimatedAmount: payout.total,
       breakdown: payout.items.map((item) => ({
         label: VIDEO_TYPE_LABELS[item.key as keyof typeof VIDEO_TYPE_LABELS],
@@ -161,7 +172,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       kicker: "Programme Cr\u00e9ateurs RetroMuscle",
       title: "Tu filmes d\u00e9j\u00e0. Maintenant tu es pay\u00e9 pour \u00e7a.",
       subtitle:
-        "Envoie tes rushes fitness, choisis le type, touche entre 95 et 180\u00a0\u20ac par vid\u00e9o valid\u00e9e. Pas besoin de monter, on g\u00e8re. Aucune contrainte, tu produis \u00e0 ton rythme.",
+        "Tes rushes bruts suffisent. Pas de montage, pas de quota, aucun minimum d\u2019abonn\u00e9s. Tu produis quand tu veux, tu encaisses chaque mois.",
       primaryCta: { label: "Je veux \u00eatre pay\u00e9", href: "/apply" },
       visuals: {
         logoUrl: BRAND_ASSETS.logo,
@@ -200,7 +211,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
         tag: "La fin des collabs fant\u00f4mes",
         title: "Des marques qui paient \u00e0 la livraison, \u00e7a existe. On en fait partie.",
         body: "Tu connais le sch\u00e9ma\u00a0: une DM enthousiaste, des promesses vagues, et puis le silence. Ou le paiement qui tarde. RetroMuscle fonctionne autrement. Tarifs affich\u00e9s, validation sous 48\u00a0h, virement chaque mois. On a construit \u00e7a pour les cr\u00e9ateurs s\u00e9rieux.",
-        imageUrl: BRAND_ASSETS.heroLifestyle,
+        imageUrl: BRAND_ASSETS.lifestyleDetail,
         imageAlt: "Cr\u00e9ateurs RetroMuscle dans une salle de sport r\u00e9tro",
         imagePosition: "left",
         bullets: [
@@ -216,6 +227,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
         imageUrl: BRAND_ASSETS.lifestyleProduct,
         imageAlt: "Cr\u00e9ateur RetroMuscle consultant ses revenus",
         imagePosition: "right",
+        imageObjectPosition: "top",
         cta: { label: "Voir les tarifs et postuler", href: "/apply" }
       }
     ],
@@ -223,10 +235,10 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     /* ---- D — D\u00c9SIR\u00a0: Chiffres concrets -------------------------------- */
     earnings: {
       title: "Ce que gagnent nos cr\u00e9ateurs.",
-      subtitle: "Trois profils, trois rythmes, trois niveaux de revenus. Le tien d\u00e9pend de toi.",
+      subtitle: "Visualise tes revenus a partir d'un rythme simple: videos validees par jour, puis conversion mensuelle.",
       scenarios: earningsScenarios,
       cta: { label: "Je postule maintenant", href: "/apply" },
-      hint: "Pas besoin d\u2019un gros compte. Le crit\u00e8re, c\u2019est la qualit\u00e9 de ton contenu."
+      hint: "Plus ton rythme de videos validees est regulier, plus ton revenu mensuel grimpe."
     },
 
     rates: {
@@ -261,7 +273,7 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
       },
       {
         question: "Combien je peux gagner par mois\u00a0?",
-        answer: "Il n\u2019y a aucun plafond. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e entre 95\u00a0\u20ac et 180\u00a0\u20ac selon son type. 10 vid\u00e9os valid\u00e9es = entre 950 et 1\u00a0800\u00a0\u20ac. C\u2019est toi qui d\u00e9cides de ton rythme."
+        answer: "Il n'y a aucun plafond. Chaque video validee est payee au tarif actif de son type. Ton revenu mensuel depend donc directement de ton rythme de videos validees."
       },
       {
         question: "Y a-t-il un engagement ou un minimum\u00a0?",

@@ -29,6 +29,15 @@ export async function recordVideoUpload(input: {
   }
 
   const repository = getRepository();
+  const rates = await repository.listRates();
+  const rate = rates.find((item) => item.videoType === input.videoType);
+  if (!rate) {
+    throw new Error(`Rate not found for videoType: ${input.videoType}`);
+  }
+  if (rate.isPlaceholder) {
+    throw new Error(`Video type is disabled: ${input.videoType}`);
+  }
+
   const context = await resolveUploadTrackingForUser({
     userId: input.userId,
     monthlyTrackingId: input.monthlyTrackingId

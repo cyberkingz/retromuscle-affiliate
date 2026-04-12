@@ -242,11 +242,13 @@ export async function getCreatorDashboardData(input: {
     })),
     upload: {
       monthlyTrackingId: currentTracking.id,
-      ratesByType: VIDEO_TYPES.map((videoType) => ({
-        videoType,
-        label: VIDEO_TYPE_LABELS[videoType],
-        ratePerVideo: rates.find((rate) => rate.videoType === videoType)?.ratePerVideo ?? 0
-      })),
+      ratesByType: rates
+        .filter((rate) => !rate.isPlaceholder)
+        .map((rate) => ({
+          videoType: rate.videoType,
+          label: VIDEO_TYPE_LABELS[rate.videoType],
+          ratePerVideo: rate.ratePerVideo
+        })),
       specs: [
         "Formats preferes: MP4, MOV (autres formats videos acceptes)",
         "Resolution recommandee: 1080x1920 (9:16) ou 1080x1080 (1:1)",

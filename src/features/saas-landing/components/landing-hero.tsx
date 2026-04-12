@@ -26,26 +26,31 @@ export function LandingHero({
   primaryCta,
   visuals
 }: LandingHeroProps) {
+  const { primaryImageUrl } = visuals;
+
   return (
-    <section className="relative overflow-visible pb-10 pt-0 sm:pt-2">
-      <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-12">
-        <div className="relative z-30 min-w-0 space-y-7 animate-fade-up lg:pr-8 text-center lg:text-left">
+    <section className="relative overflow-x-clip overflow-y-visible pb-12 pt-4 sm:pb-16 sm:pt-6">
+      <div className="absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.7),transparent_42%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.45),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.34),transparent_70%)]" />
+      <div className="absolute right-[-8rem] top-24 -z-10 h-72 w-72 rounded-full bg-secondary/10 blur-3xl" />
+      <div className="absolute left-[-9rem] top-56 -z-10 h-80 w-80 rounded-full bg-white/45 blur-3xl" />
+
+      <div className="relative grid items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-12 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+        <div className="min-w-0 space-y-8 animate-fade-up text-center lg:text-left">
           <div className="flex justify-center lg:justify-start">
-            <Badge variant="outline" className="bg-white/80">
+            <Badge variant="outline" className="bg-white/85">
               {kicker}
             </Badge>
           </div>
 
-          <h1 className="font-display text-lg uppercase leading-[1.04] tracking-tight text-secondary sm:text-xl md:text-2xl lg:text-3xl mx-auto lg:mx-0">
-            {title}
-          </h1>
+          <div className="mx-auto max-w-3xl space-y-4 lg:mx-0">
+            <h1 className="font-display text-4xl uppercase leading-[0.88] tracking-tight text-secondary sm:text-5xl lg:text-6xl xl:text-[4.8rem]">
+              {title}
+            </h1>
+            <p className="max-w-xl text-base text-foreground/75 sm:text-lg">{subtitle}</p>
+          </div>
 
-          <p className="max-w-[42rem] text-base text-foreground/80 sm:text-lg md:text-xl mx-auto lg:mx-0">
-            {subtitle}
-          </p>
-
-          <div className="flex max-w-[720px] flex-wrap gap-3 justify-center lg:justify-start mx-auto lg:mx-0">
-            <Button asChild size="lg" className="h-14 w-full px-8 text-base sm:w-auto">
+          <div className="flex justify-center lg:justify-start">
+            <Button asChild size="lg" className="h-12 w-full px-8 sm:w-auto">
               <Link href={primaryCta.href}>
                 {primaryCta.label}
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -53,91 +58,37 @@ export function LandingHero({
             </Button>
           </div>
 
-          <div className="grid gap-3 pt-2 sm:grid-cols-3">
-            <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">48h</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">R&eacute;ponse &agrave; ton profil</p>
-            </div>
-            <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">95-180&nbsp;&euro;</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Par vid&eacute;o valid&eacute;e</p>
-            </div>
-            <div className="glass-panel rounded-2xl px-4 py-3">
-              <p className="font-display text-3xl uppercase leading-none text-secondary">Z&eacute;ro</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-foreground/65">Quota minimum</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-sm text-foreground/75">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-foreground/70 lg:justify-start">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/70 px-3 py-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Aucun plafond de gains</span>
+              <span>Aucun quota</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/70 px-3 py-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Virement mensuel garanti</span>
+              <span>Valid&eacute; en 48h</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/70 px-3 py-1.5">
               <CheckCircle2 className="h-4 w-4 text-mint" />
-              <span>Pas besoin d&apos;un gros compte</span>
+              <span>Petit compte OK</span>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 animate-fade-in lg:justify-self-end">
-          <div className="retro-outline relative z-10 mx-auto w-full max-w-[540px] overflow-hidden rounded-[2rem] bg-white lg:mx-0">
-            <div className="relative h-[280px] sm:h-[340px]">
+        <div className="relative min-w-0 animate-fade-in lg:justify-self-stretch">
+          <div className="absolute -inset-4 hidden rounded-[2.4rem] bg-secondary/10 blur-2xl lg:block" />
+          <div className="relative mx-auto w-full max-w-[940px] overflow-hidden rounded-[2rem] border-2 border-foreground bg-white shadow-none sm:shadow-[0_14px_32px_-18px_rgba(6,13,56,0.46)] lg:ml-auto">
+            <div className="relative aspect-[4/3] min-h-[360px] lg:aspect-[5/4] lg:min-h-[580px]">
               <Image
-                src={visuals.primaryImageUrl}
-                alt="Créateurs RetroMuscle"
+                src={primaryImageUrl}
+                alt="Cr&eacute;ateurs RetroMuscle"
                 fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 560px"
+                className="object-cover object-center"
+                sizes="(max-width: 1024px) 100vw, 900px"
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-secondary/50 via-transparent to-transparent" />
-              <div className="absolute left-4 top-4 rounded-full border border-white/30 bg-white/20 px-3 py-1 text-[11px] uppercase tracking-[0.1em] text-white backdrop-blur">
+              <div className="absolute inset-0 bg-gradient-to-t from-secondary/65 via-secondary/18 to-transparent" />
+              <div className="absolute left-4 top-4 rounded-full border border-white/35 bg-white/20 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-white backdrop-blur">
                 Programme cr&eacute;ateur
-              </div>
-            </div>
-
-            <div className="space-y-3 p-4 pb-7 sm:p-5 sm:pb-8">
-              <div className="grid gap-3 sm:grid-cols-[0.7fr_1.3fr]">
-                <div className="relative h-32 overflow-hidden rounded-2xl border border-line">
-                  <Image
-                    src={visuals.secondaryImageUrl}
-                    alt="Lookbook RetroMuscle"
-                    fill
-                    className="object-cover"
-                    sizes="220px"
-                  />
-                </div>
-                <div className="rounded-2xl border border-line bg-frost px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-foreground/55">Ce mois-ci</p>
-                  <div className="mt-2 flex items-end justify-between">
-                    <p className="font-display text-5xl uppercase leading-none text-secondary">2 450&euro;</p>
-                    <p className="text-sm text-foreground/70">14 vid&eacute;os valid&eacute;es</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {visuals.productImageUrls.map((imageUrl, index) => (
-                  <div key={imageUrl} className="relative h-20 overflow-hidden rounded-xl border border-line">
-                    <Image
-                      src={imageUrl}
-                      alt={`Produit RetroMuscle ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="180px"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border-2 border-foreground bg-primary px-4 py-3 text-sm text-foreground shadow-xl">
-                <p className="font-semibold uppercase tracking-[0.08em]">Aucun plafond</p>
-                <p className="text-foreground/80">Plus tu produis, plus tu gagnes.</p>
               </div>
             </div>
           </div>

@@ -21,23 +21,24 @@ export interface LandingPageData {
 export async function getLandingPageData(): Promise<LandingPageData> {
   const repository = getRepository();
   const rates = await repository.listRates();
+  const activeRates = rates.filter((rate) => !rate.isPlaceholder);
 
   return {
     hero: {
       title: "Tu filmes d\u00e9j\u00e0. Maintenant tu es pay\u00e9 pour \u00e7a.",
       subtitle:
-        "Envoie tes rushes, choisis le type de contenu, touche entre 95 et 180\u00a0\u20ac par vid\u00e9o valid\u00e9e. Pas besoin de monter, on s\u2019en charge. Pas de quota, pas de deadline.",
+        "Envoie tes rushes, choisis le type de contenu, et sois paye au tarif actif affiche dans ton espace. Pas besoin de monter, on s'en charge. Pas de quota, pas de deadline.",
       ctaLabel: "Je veux \u00eatre pay\u00e9",
       ctaHref: "/apply"
     },
-    videoRates: rates.map((rate) => ({
+    videoRates: activeRates.map((rate) => ({
       videoType: VIDEO_TYPE_LABELS[rate.videoType],
       ratePerVideo: rate.ratePerVideo,
       isPlaceholder: rate.isPlaceholder
     })),
     goals: [
       { label: "Quota minimum", metric: "Z\u00e9ro" },
-      { label: "Par vid\u00e9o valid\u00e9e", metric: "95-180\u00a0\u20ac" },
+      { label: "Par vid\u00e9o valid\u00e9e", metric: "Tarif actif par type" },
       { label: "Plafond de gains", metric: "Illimit\u00e9" },
       { label: "Validation sous", metric: "48\u00a0h" }
     ],
@@ -57,7 +58,7 @@ export async function getLandingPageData(): Promise<LandingPageData> {
       },
       {
         question: "Combien je peux gagner par mois\u00a0?",
-        answer: "Il n\u2019y a aucun plafond. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e entre 95\u00a0\u20ac et 180\u00a0\u20ac selon le type. 10 vid\u00e9os valid\u00e9es dans le mois, c\u2019est entre 950 et 1\u00a0800\u00a0\u20ac. C\u2019est toi qui d\u00e9cides de ton rythme."
+        answer: "Il n'y a aucun plafond. Chaque video validee est payee au tarif actif de son type. Ton revenu mensuel depend directement de ton rythme de videos validees."
       },
       {
         question: "Comment \u00e7a marche concr\u00e8tement\u00a0?",

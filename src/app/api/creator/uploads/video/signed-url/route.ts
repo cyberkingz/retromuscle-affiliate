@@ -2,6 +2,7 @@ import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
+import { getRepository } from "@/application/dependencies";
 import { resolveUploadTrackingForUser } from "@/application/use-cases/resolve-upload-tracking";
 import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
@@ -74,6 +75,23 @@ export async function POST(request: Request) {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 12 * 1024 }));
   } catch (error) {
     const response = handleBodyParseError(ctx, error);
+    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+    return response;
+  }
+
+  try {
+    const rate = (await getRepository().listRates()).find((item) => item.videoType === payload.videoType);
+    if (!rate || rate.isPlaceholder) {
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Ce type de video est desactive"
+      });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
+    }
+  } catch {
+    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to resolve video type" });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

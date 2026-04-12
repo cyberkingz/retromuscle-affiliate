@@ -134,6 +134,12 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     throw new Error("Config updates are not available in offline mode");
   }
 
+  async deleteVideoRate(_input: {
+    videoType: VideoRate["videoType"];
+  }): Promise<VideoRate> {
+    throw new Error("Config updates are not available in offline mode");
+  }
+
   async getPayoutProfileByCreatorId(_creatorId: string): Promise<CreatorPayoutProfile | null> {
     return null;
   }

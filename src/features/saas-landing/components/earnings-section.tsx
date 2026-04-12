@@ -53,13 +53,16 @@ export function EarningsSection({
                   {scenario.label}
                 </p>
 
-                {/* Video count */}
+                {/* Daily pace (primary) */}
                 <div className="mt-2 flex items-baseline gap-1.5">
                   <span className="font-display text-4xl uppercase text-secondary">
-                    {scenario.videosPerMonth}
+                    {scenario.videosPerDay}
                   </span>
-                  <span className="text-sm text-foreground/60">videos/mois</span>
+                  <span className="text-sm text-foreground/60">video{scenario.videosPerDay > 1 ? "s" : ""} validee{scenario.videosPerDay > 1 ? "s" : ""}/jour</span>
                 </div>
+                <p className="mt-1 text-xs uppercase tracking-[0.1em] text-foreground/50">
+                  ~ {scenario.videosPerMonth} videos validees/mois
+                </p>
 
                 {/* Estimated earnings */}
                 <div className="mt-4 rounded-xl border border-line bg-frost/60 px-4 py-3">

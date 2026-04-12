@@ -723,6 +723,30 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     };
   }
 
+  async deleteVideoRate(input: {
+    videoType: VideoType;
+  }): Promise<VideoRate> {
+    const { data, error } = await this.client
+      .from("video_rates")
+      .update({
+        is_placeholder: true
+      })
+      .eq("video_type", input.videoType)
+      .select(RATE_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(`Failed to disable video rate ${input.videoType}: ${error?.message ?? "missing row"}`);
+    }
+
+    const row = data as VideoRateRow;
+    return {
+      videoType: toVideoType(row.video_type),
+      ratePerVideo: Number(row.rate_per_video),
+      isPlaceholder: row.is_placeholder ?? false
+    };
+  }
+
   async listCreatorApplications(status?: ApplicationStatus): Promise<CreatorApplication[]> {
     let query = this.client
       .from("creator_applications")
