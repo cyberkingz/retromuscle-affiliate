@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 import { ArrowRight, BadgeCheck, Clock3, ShieldCheck, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 type HeroCta = {
   label: string;
-  href: string;
+  href: Route;
 };
 
 type HeroStat = {
