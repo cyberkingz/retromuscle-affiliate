@@ -32,6 +32,12 @@ const nextConfig = {
       }
     ]
   },
+  async redirects() {
+    return [
+      { source: "/register", destination: "/apply", permanent: true },
+      { source: "/signup", destination: "/apply", permanent: true }
+    ];
+  },
   async headers() {
     return [
       {
