@@ -18,7 +18,8 @@ function parsePayload(body: unknown): MarkPaidPayload {
   }
 
   const input = body as Record<string, unknown>;
-  const monthlyTrackingId = typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
+  const monthlyTrackingId =
+    typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
 
   if (!monthlyTrackingId || !isUuid(monthlyTrackingId)) {
     throw new Error("Invalid monthlyTrackingId");
@@ -33,7 +34,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:payments:mark-paid",
+    limit: 60,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -44,7 +51,14 @@ export async function POST(request: Request) {
   }
 
   // Per-user rate limit (stricter, scoped to authenticated admin)
-  const userLimited = await rateLimit({ ctx, request, key: "admin:payments:mark-paid", limit: 60, windowMs: 60_000, userId: auth.session.userId });
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:payments:mark-paid",
+    limit: 60,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
   if (userLimited) {
     return userLimited;
   }
@@ -59,9 +73,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const tracking = await markMonthlyTrackingPaid({ monthlyTrackingId: payload.monthlyTrackingId });
+    const tracking = await markMonthlyTrackingPaid({
+      monthlyTrackingId: payload.monthlyTrackingId
+    });
 
-    void writeAdminAuditLog({
+    writeAdminAuditLog({
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
@@ -73,21 +89,20 @@ export async function POST(request: Request) {
         creatorId: tracking.creatorId,
         paidAt: tracking.paidAt ?? null
       }
-    });
+    }).catch(console.error);
 
     const response = apiJson(ctx, { tracking }, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to mark paid";
-    const isValidation = message.startsWith("Impossible:");
+    const rawMessage = error instanceof Error ? error.message : "";
+    const isValidation = rawMessage.startsWith("Impossible:");
     const response = apiError(ctx, {
       status: isValidation ? 400 : 500,
       code: isValidation ? "BAD_REQUEST" : "INTERNAL",
-      message
+      message: isValidation ? rawMessage : "Unable to mark paid"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }
-

@@ -37,12 +37,15 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
 
       {/* Payout profile warning */}
       {!data.hasPayoutProfile ? (
-        <div className="rounded-2xl border border-secondary/40 bg-secondary/10 px-4 py-4" role="alert">
+        <div
+          className="rounded-2xl border border-secondary/40 bg-secondary/10 px-4 py-4"
+          role="alert"
+        >
           <p className="text-sm font-semibold text-foreground/90">
-            Profil de paiement non configure
+            Profil de paiement non configuré
           </p>
           <p className="mt-1 text-sm text-foreground/70">
-            Pour recevoir tes paiements, renseigne tes coordonnees bancaires dans les parametres.
+            Pour recevoir tes paiements, renseigne tes coordonnées bancaires dans les paramètres.
           </p>
           <Link
             href="/settings"
@@ -57,13 +60,14 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
       {availableMonths.length > 1 ? (
         <CardSection className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Periode</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">Période</p>
             <select
               value={data.month}
               onChange={(event) => {
                 const month = event.target.value;
                 router.push(`/payouts?month=${month}`);
               }}
+              aria-label="Sélectionner la période"
               className="h-9 rounded-xl border border-line bg-white px-3 text-sm capitalize"
             >
               {availableMonths.map((m) => (
@@ -80,7 +84,9 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
       <CardSection>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">{monthToLabel(data.month)}</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">
+              {monthToLabel(data.month)}
+            </p>
             <p className="mt-2 font-display text-5xl uppercase leading-none text-secondary">
               {formatCurrency(data.progress.estimatedPayout)}
             </p>
@@ -88,7 +94,10 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
               Estimation basee sur les videos validees du mois.
             </p>
             <div className="mt-3 flex items-center gap-3">
-              <StatusBadge label={currentPaymentStatus} tone={paymentStatusTone(currentPaymentStatus)} />
+              <StatusBadge
+                label={currentPaymentStatus}
+                tone={paymentStatusTone(currentPaymentStatus)}
+              />
               {currentMonthPayment?.paidAt ? (
                 <span className="text-xs text-foreground/60">
                   Paye le {toShortDate(currentMonthPayment.paidAt)}
@@ -98,7 +107,7 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
           </div>
 
           <div className="rounded-2xl border border-line bg-frost/60 p-4 text-sm text-foreground/75">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Videos livrees</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Videos livrees</p>
             <p className="mt-2 font-display text-2xl uppercase leading-none text-foreground/80">
               {data.progress.deliveredTotal}
             </p>
@@ -109,13 +118,13 @@ export function CreatorPayoutsPage({ data }: CreatorPayoutsPageProps) {
       {/* Current month stats */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Videos livrees</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Videos livrees</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-foreground/80">
             {data.progress.deliveredTotal}
           </p>
         </div>
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Gains estimes</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Gains estimes</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-mint">
             {formatCurrency(data.progress.estimatedPayout)}
           </p>

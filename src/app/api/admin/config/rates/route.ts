@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { updateVideoRate } from "@/application/use-cases/update-video-rate";
 import { deleteVideoRate } from "@/application/use-cases/delete-video-rate";
 import { requireApiRole } from "@/features/auth/server/api-guards";
@@ -20,7 +20,8 @@ function parseVideoType(body: unknown): string {
   const input = body as Record<string, unknown>;
 
   const videoType = typeof input.videoType === "string" ? input.videoType.trim() : "";
-  if (!VIDEO_TYPES.includes(videoType as (typeof VIDEO_TYPES)[number])) throw new Error("Invalid video type");
+  if (!VIDEO_TYPES.includes(videoType as (typeof VIDEO_TYPES)[number]))
+    throw new Error("Invalid video type");
 
   return videoType;
 }
@@ -55,7 +56,13 @@ export async function PUT(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "admin:config:rates", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:config:rates",
+    limit: 30,
+    windowMs: 60_000
+  });
   if (limited) return limited;
 
   const auth = await requireApiRole(request, "admin", { ctx });
@@ -72,26 +79,27 @@ export async function PUT(request: Request) {
 
   try {
     const result = await updateVideoRate(payload);
+    revalidateTag("rates");
     revalidatePath("/", "page");
     revalidatePath("/creators", "page");
 
-    void writeAdminAuditLog({
+    writeAdminAuditLog({
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
       action: "config.rate.updated",
       entityType: "video_rate",
       metadata: { videoType: payload.videoType, ratePerVideo: payload.ratePerVideo }
-    });
+    }).catch(console.error);
 
     const response = apiJson(ctx, result, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
-  } catch (error) {
+  } catch {
     const response = apiError(ctx, {
       status: 500,
       code: "INTERNAL",
-      message: error instanceof Error ? error.message : "Unable to update rate"
+      message: "Unable to update rate"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
@@ -104,7 +112,13 @@ export async function DELETE(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "admin:config:rates", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:config:rates",
+    limit: 30,
+    windowMs: 60_000
+  });
   if (limited) return limited;
 
   const auth = await requireApiRole(request, "admin", { ctx });
@@ -121,17 +135,18 @@ export async function DELETE(request: Request) {
 
   try {
     const result = await deleteVideoRate({ videoType });
+    revalidateTag("rates");
     revalidatePath("/", "page");
     revalidatePath("/creators", "page");
 
-    void writeAdminAuditLog({
+    writeAdminAuditLog({
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
       action: "config.rate.disabled",
       entityType: "video_rate",
       metadata: { videoType }
-    });
+    }).catch(console.error);
 
     const response = apiJson(ctx, result, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
@@ -141,7 +156,7 @@ export async function DELETE(request: Request) {
     const response = apiError(ctx, {
       status,
       code: status === 400 ? "BAD_REQUEST" : "INTERNAL",
-      message: error instanceof Error ? error.message : "Unable to disable rate"
+      message: status === 400 && error instanceof Error ? error.message : "Unable to disable rate"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;

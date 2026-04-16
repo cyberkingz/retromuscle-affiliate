@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { AFFILIATE_CONTRACT_VERSION } from "@/domain/contracts/affiliate-program-contract";
 import type { AuthRole, RedirectTarget } from "@/features/auth/types";
 
 function normalizeRole(value: unknown): string {
@@ -41,10 +42,24 @@ export async function resolveAuthRoutingForUser(input: {
     }
 
     if (creator?.id) {
-      return { role: "affiliate", target: creator.contract_signed_at ? "/dashboard" : "/contract" };
+      if (!creator.contract_signed_at) {
+        return { role: "affiliate", target: "/contract" };
+      }
+
+      // Verify the creator has signed the current contract version.
+      const { data: sig } = await input.supabase
+        .from("creator_contract_signatures")
+        .select("id")
+        .eq("creator_id", creator.id)
+        .eq("contract_version", AFFILIATE_CONTRACT_VERSION)
+        .maybeSingle();
+
+      return { role: "affiliate", target: sig ? "/dashboard" : "/contract" };
     }
+
+    // Application approved but creator not yet provisioned (admin lag).
+    return { role: "affiliate", target: "/onboarding/approved" };
   }
 
   return { role: "affiliate", target: "/onboarding" };
 }
-

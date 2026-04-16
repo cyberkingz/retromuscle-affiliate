@@ -9,4 +9,3 @@ export function getRequestId(request: Request): string {
   // Use Web Crypto when available (works in Node 20+ and Edge runtime).
   return globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}`;
 }
-

@@ -2,6 +2,10 @@ import {
   reviewCreatorApplication,
   ReviewCreatorApplicationError
 } from "@/application/use-cases/review-creator-application";
+import {
+  sendApplicationApprovedEmail,
+  sendApplicationRejectedEmail
+} from "@/infrastructure/email/send-emails";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -70,7 +74,14 @@ export async function POST(request: Request) {
   }
 
   // Per-user rate limit (stricter, scoped to authenticated admin)
-  const userLimited = await rateLimit({ ctx, request, key: "admin:applications:review", limit: 60, windowMs: 60_000, userId: auth.session.userId });
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:applications:review",
+    limit: 60,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
   if (userLimited) {
     return userLimited;
   }
@@ -86,7 +97,22 @@ export async function POST(request: Request) {
 
   try {
     const result = await reviewCreatorApplication(payload);
-    void writeAdminAuditLog({
+
+    // Fire-and-forget — email failure must never break the review flow
+    if (payload.decision === "approved") {
+      sendApplicationApprovedEmail({
+        to: result.application.email,
+        fullName: result.application.fullName
+      }).catch(console.error);
+    } else {
+      sendApplicationRejectedEmail({
+        to: result.application.email,
+        fullName: result.application.fullName,
+        notes: payload.reviewNotes
+      }).catch(console.error);
+    }
+
+    writeAdminAuditLog({
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
@@ -96,8 +122,8 @@ export async function POST(request: Request) {
       metadata: {
         decision: payload.decision,
         notes: payload.reviewNotes ?? null
-        }
-    });
+      }
+    }).catch(console.error);
 
     const response = apiJson(ctx, result, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);

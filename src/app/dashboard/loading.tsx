@@ -2,7 +2,13 @@ function PulseLine({ className }: { className: string }) {
   return <div className={`animate-pulse rounded-lg bg-white/70 ${className}`} />;
 }
 
-function SkeletonCard({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
+function SkeletonCard({
+  children,
+  className = ""
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`rounded-[22px] border border-line bg-white/80 p-5 sm:p-6 ${className}`}>
       {children}
@@ -12,7 +18,10 @@ function SkeletonCard({ children, className = "" }: { children?: React.ReactNode
 
 export default function DashboardLoading() {
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-6 sm:px-8 sm:py-10" aria-hidden="true">
+    <div
+      className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-6 sm:px-8 sm:py-10"
+      aria-hidden="true"
+    >
       <SkeletonCard>
         <div className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-3">

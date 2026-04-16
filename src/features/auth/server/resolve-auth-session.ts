@@ -1,6 +1,10 @@
 import "server-only";
 
-import { createSupabaseServerClient, isSupabaseConfigured } from "@/infrastructure/supabase/server-client";
+import {
+  createSupabaseServerClient,
+  isSupabaseConfigured
+} from "@/infrastructure/supabase/server-client";
+import { AFFILIATE_CONTRACT_VERSION } from "@/domain/contracts/affiliate-program-contract";
 import type { AuthRole, RedirectTarget } from "@/features/auth/types";
 import { ACCESS_TOKEN_COOKIE_NAME } from "@/features/auth/server/auth-cookies";
 
@@ -102,13 +106,39 @@ export async function resolveAuthSessionFromAccessToken(
     // Avoid redirect loops: an approved application must be provisioned as a creator
     // before the user can access /dashboard.
     if (creator?.id) {
+      if (!creator.contract_signed_at) {
+        return {
+          role: "affiliate",
+          target: "/contract",
+          userId: user.id,
+          email: user.email ?? undefined
+        };
+      }
+
+      // Verify the creator has signed the current contract version.
+      const { data: sig } = await client
+        .from("creator_contract_signatures")
+        .select("id")
+        .eq("creator_id", creator.id)
+        .eq("contract_version", AFFILIATE_CONTRACT_VERSION)
+        .maybeSingle();
+
       return {
         role: "affiliate",
-        target: creator.contract_signed_at ? "/dashboard" : "/contract",
+        target: sig ? "/dashboard" : "/contract",
         userId: user.id,
         email: user.email ?? undefined
       };
     }
+
+    // Application is approved but creator row doesn't exist yet (provisioning lag).
+    // Send the user to a waiting page instead of back to onboarding.
+    return {
+      role: "affiliate",
+      target: "/onboarding/approved",
+      userId: user.id,
+      email: user.email ?? undefined
+    };
   }
 
   return {
@@ -119,7 +149,9 @@ export async function resolveAuthSessionFromAccessToken(
   };
 }
 
-export async function findCreatorIdForUserEmail(email: string | null | undefined): Promise<string | null> {
+export async function findCreatorIdForUserEmail(
+  email: string | null | undefined
+): Promise<string | null> {
   if (!isSupabaseConfigured()) {
     return null;
   }

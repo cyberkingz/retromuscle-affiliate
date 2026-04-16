@@ -13,13 +13,7 @@ interface EarningsSectionProps {
   hint: string;
 }
 
-export function EarningsSection({
-  title,
-  subtitle,
-  scenarios,
-  cta,
-  hint
-}: EarningsSectionProps) {
+export function EarningsSection({ title, subtitle, scenarios, cta, hint }: EarningsSectionProps) {
   return (
     <section className="animate-fade-up">
       <div className="text-center space-y-4">
@@ -49,7 +43,7 @@ export function EarningsSection({
               ) : null}
 
               <CardContent className="flex flex-1 flex-col p-5">
-                <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
+                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
                   {scenario.label}
                 </p>
 
@@ -58,15 +52,18 @@ export function EarningsSection({
                   <span className="font-display text-4xl uppercase text-secondary">
                     {scenario.videosPerDay}
                   </span>
-                  <span className="text-sm text-foreground/60">video{scenario.videosPerDay > 1 ? "s" : ""} validee{scenario.videosPerDay > 1 ? "s" : ""}/jour</span>
+                  <span className="text-sm text-foreground/60">
+                    video{scenario.videosPerDay > 1 ? "s" : ""} validee
+                    {scenario.videosPerDay > 1 ? "s" : ""}/jour
+                  </span>
                 </div>
-                <p className="mt-1 text-xs uppercase tracking-[0.1em] text-foreground/50">
+                <p className="mt-1 text-xs uppercase tracking-[0.1em] text-foreground/75">
                   ~ {scenario.videosPerMonth} videos validees/mois
                 </p>
 
                 {/* Estimated earnings */}
                 <div className="mt-4 rounded-xl border border-line bg-frost/60 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">
+                  <p className="text-xs uppercase tracking-[0.12em] text-foreground/75">
                     Estimation mensuelle
                   </p>
                   <p className="mt-1 font-display text-3xl uppercase leading-none text-secondary">
@@ -76,14 +73,17 @@ export function EarningsSection({
 
                 {/* Breakdown */}
                 <div className="mt-3 flex-1 space-y-1.5 text-xs text-foreground/65">
-                  {scenario.breakdown.filter((row) => row.delivered > 0).map((row) => (
-                    <div key={row.label} className="flex items-center justify-between gap-2">
-                      <span className="truncate">{row.label}</span>
-                      <span className="font-medium text-foreground/80">
-                        {row.delivered}&times;{formatCurrency(row.rate)} = {formatCurrency(row.subtotal)}
-                      </span>
-                    </div>
-                  ))}
+                  {scenario.breakdown
+                    .filter((row) => row.delivered > 0)
+                    .map((row) => (
+                      <div key={row.label} className="flex items-center justify-between gap-2">
+                        <span className="truncate">{row.label}</span>
+                        <span className="font-medium text-foreground/80">
+                          {row.delivered}&times;{formatCurrency(row.rate)} ={" "}
+                          {formatCurrency(row.subtotal)}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>

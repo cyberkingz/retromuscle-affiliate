@@ -31,7 +31,7 @@ export function OnboardingFlow() {
     hasSession: Boolean(flow.user),
     loading: flow.loadingSession,
     stayOn: "/onboarding",
-    fallback: "/login",
+    fallback: "/login"
   });
 
   useEffect(() => {
@@ -77,16 +77,20 @@ export function OnboardingFlow() {
               <Link href="/login">Aller a la connexion</Link>
             </Button>
             <Button asChild size="pill" variant="outline">
-              <Link href="/apply">Creer un compte</Link>
+              <Link href="/apply">Créer un compte</Link>
             </Button>
           </div>
         </CardSection>
       ) : (
         <CardSection>
           <SectionHeading
-            eyebrow="Onboarding createur"
+            eyebrow="Onboarding créateur"
             title={isPendingReview ? "Dossier en cours de revue" : "Finalise ton inscription"}
-            subtitle={isPendingReview ? "Notre equipe revient vers toi sous 48h." : "Renseigne ton profil, puis envoie ton dossier a la derniere etape."}
+            subtitle={
+              isPendingReview
+                ? "Notre equipe revient vers toi sous 48h."
+                : "Renseigne ton profil, puis envoie ton dossier a la derniere etape."
+            }
           />
 
           <div className="mt-5 space-y-4">
@@ -110,7 +114,7 @@ export function OnboardingFlow() {
                 </p>
                 {flow.application?.review_notes ? (
                   <div className="mt-3 rounded-xl border border-destructive/15 bg-white px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">
+                    <p className="text-xs uppercase tracking-[0.12em] text-foreground/75">
                       Feedback equipe
                     </p>
                     <p className="mt-1 text-sm text-foreground/70">
@@ -121,12 +125,7 @@ export function OnboardingFlow() {
                 <p className="mt-3 text-sm text-foreground/70">
                   Tu peux modifier ton dossier ci-dessous et le re-soumettre.
                 </p>
-                <Button
-                  type="button"
-                  size="pill"
-                  className="mt-4"
-                  onClick={() => moveToStep(0)}
-                >
+                <Button type="button" size="pill" className="mt-4" onClick={() => moveToStep(0)}>
                   Modifier et re-soumettre
                 </Button>
               </Card>
@@ -135,7 +134,7 @@ export function OnboardingFlow() {
             {isPendingReview ? (
               <>
                 <Card className="border-line bg-white p-5 sm:p-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/50">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/75">
                     Recapitulatif de ton dossier
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -147,13 +146,28 @@ export function OnboardingFlow() {
                       { label: "Handle", value: flow.application!.handle || undefined },
                       { label: "TikTok", value: flow.application!.social_tiktok },
                       { label: "Instagram", value: flow.application!.social_instagram },
-                      { label: "Abonnes TikTok", value: flow.application!.followers_tiktok ? String(flow.application!.followers_tiktok) : undefined },
-                      { label: "Abonnes Instagram", value: flow.application!.followers_instagram ? String(flow.application!.followers_instagram) : undefined },
+                      {
+                        label: "Abonnes TikTok",
+                        value: flow.application!.followers_tiktok
+                          ? String(flow.application!.followers_tiktok)
+                          : undefined
+                      },
+                      {
+                        label: "Abonnes Instagram",
+                        value: flow.application!.followers_instagram
+                          ? String(flow.application!.followers_instagram)
+                          : undefined
+                      }
                     ]
                       .filter((item) => item.value)
                       .map((item) => (
-                        <div key={item.label} className="rounded-xl border border-line bg-frost/40 px-3 py-2">
-                          <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/50">{item.label}</p>
+                        <div
+                          key={item.label}
+                          className="rounded-xl border border-line bg-frost/40 px-3 py-2"
+                        >
+                          <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/75">
+                            {item.label}
+                          </p>
                           <p className="mt-0.5 text-sm text-foreground/80">{item.value}</p>
                         </div>
                       ))}
@@ -178,7 +192,9 @@ export function OnboardingFlow() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive/70">
                         A corriger
                       </p>
-                      <p className="mt-1 text-sm text-foreground/75">{flow.application.review_notes}</p>
+                      <p className="mt-1 text-sm text-foreground/75">
+                        {flow.application.review_notes}
+                      </p>
                     </div>
                   ) : null}
                   <div className="space-y-4 rounded-[26px] border border-line bg-white p-5 sm:p-6">
@@ -205,7 +221,10 @@ export function OnboardingFlow() {
                     ) : null}
                   </div>
 
-                  <FlashMessages statusMessage={flow.statusMessage} errorMessage={flow.errorMessage} />
+                  <FlashMessages
+                    statusMessage={flow.statusMessage}
+                    errorMessage={flow.errorMessage}
+                  />
 
                   {flow.draftRestored ? (
                     <p className="text-center text-xs text-secondary/60 transition-opacity">
@@ -213,7 +232,7 @@ export function OnboardingFlow() {
                     </p>
                   ) : null}
                   {flow.draftSaved ? (
-                    <p className="text-center text-xs text-foreground/40 transition-opacity">
+                    <p className="text-center text-xs text-foreground/60 transition-opacity">
                       Brouillon sauvegarde
                     </p>
                   ) : null}
@@ -240,7 +259,9 @@ export function OnboardingFlow() {
 
           {flow.application?.review_notes && !isRejected ? (
             <Card className="border-line bg-frost/70 p-4">
-              <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Feedback equipe</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-foreground/75">
+                Feedback equipe
+              </p>
               <p className="mt-2 text-sm text-foreground/70">{flow.application.review_notes}</p>
             </Card>
           ) : null}

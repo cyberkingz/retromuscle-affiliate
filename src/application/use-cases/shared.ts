@@ -12,7 +12,10 @@ export function createZeroDeliveredCount(): VideoTypeCount {
   }, {} as VideoTypeCount);
 }
 
-export function resolveMonth(requestedMonth: string | undefined, availableMonths: string[]): string {
+export function resolveMonth(
+  requestedMonth: string | undefined,
+  availableMonths: string[]
+): string {
   if (requestedMonth) {
     try {
       const parsed = parseMonthParam(requestedMonth);

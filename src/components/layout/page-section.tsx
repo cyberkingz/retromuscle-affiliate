@@ -10,4 +10,3 @@ export function PageSection({ as = "section", className, ...props }: PageSection
   const Component = as;
   return <Component className={cn("space-y-4 sm:space-y-5", className)} {...props} />;
 }
-

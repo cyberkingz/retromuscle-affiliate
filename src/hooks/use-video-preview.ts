@@ -42,19 +42,16 @@ async function fetchSignedUrl(
   fileUrl: string,
   endpoint: "/api/videos/preview" | "/api/rushes/preview"
 ): Promise<string> {
-  const response = await fetch(
-    `${endpoint}?fileUrl=${encodeURIComponent(fileUrl)}`,
-    { cache: "no-store" }
-  );
+  const response = await fetch(`${endpoint}?fileUrl=${encodeURIComponent(fileUrl)}`, {
+    cache: "no-store"
+  });
   const payload = (await response.json().catch(() => null)) as {
     signedUrl?: string;
     message?: string;
   } | null;
 
   if (!response.ok || !payload?.signedUrl) {
-    throw new Error(
-      payload?.message ?? "Impossible de generer un lien de preview."
-    );
+    throw new Error(payload?.message ?? "Impossible de generer un lien de preview.");
   }
 
   return payload.signedUrl;
@@ -69,7 +66,7 @@ export function useVideoPreview(
     loading: false,
     error: null,
     currentIndex: 0,
-    items: [],
+    items: []
   });
 
   const loadUrl = useCallback(
@@ -83,9 +80,7 @@ export function useVideoPreview(
           ...prev,
           loading: false,
           error:
-            caught instanceof Error
-              ? caught.message
-              : "Impossible de generer un lien de preview.",
+            caught instanceof Error ? caught.message : "Impossible de generer un lien de preview."
         }));
       }
     },
@@ -102,7 +97,7 @@ export function useVideoPreview(
         loading: false,
         error: null,
         currentIndex: index >= 0 ? index : 0,
-        items,
+        items
       });
       void loadUrl(item);
     },
@@ -116,7 +111,7 @@ export function useVideoPreview(
       loading: false,
       error: null,
       currentIndex: 0,
-      items: [],
+      items: []
     });
   }, []);
 
@@ -137,8 +132,7 @@ export function useVideoPreview(
   const next = useCallback(() => navigate(1), [navigate]);
   const prev = useCallback(() => navigate(-1), [navigate]);
 
-  const currentItem =
-    state.items.length > 0 ? (state.items[state.currentIndex] ?? null) : null;
+  const currentItem = state.items.length > 0 ? (state.items[state.currentIndex] ?? null) : null;
 
   return {
     isOpen: state.isOpen,
@@ -153,6 +147,6 @@ export function useVideoPreview(
     open,
     close,
     next,
-    prev,
+    prev
   };
 }

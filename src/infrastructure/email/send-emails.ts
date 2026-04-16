@@ -1,0 +1,174 @@
+import { getResendClient, isResendConfigured } from "./resend-client";
+
+const FROM = "RetroMuscle Affiliate <noreply@affiliate.retromuscle.net>";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://affiliate.retromuscle.net";
+
+// ---------------------------------------------------------------------------
+// Application approved
+// ---------------------------------------------------------------------------
+export async function sendApplicationApprovedEmail(input: {
+  to: string;
+  fullName: string;
+}): Promise<void> {
+  if (!isResendConfigured()) return;
+
+  await getResendClient().emails.send({
+    from: FROM,
+    to: input.to,
+    subject: "🎉 Candidature acceptée — Bienvenue chez RetroMuscle !",
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;padding:0 20px;">
+    <tr><td>
+      <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px 36px;">
+        <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
+          Bienvenue dans le programme, ${input.fullName} 🔥
+        </p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#aaa;">
+          Ta candidature a été <strong style="color:#22c55e;">acceptée</strong>. Tu rejoins officiellement le programme d'affiliation RetroMuscle.
+        </p>
+        <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#aaa;">
+          Prochaine étape : signe ton contrat pour commencer à uploader tes vidéos et générer tes revenus.
+        </p>
+        <a href="${APP_URL}/contract"
+           style="display:inline-block;background:#ef4444;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+          Signer mon contrat →
+        </a>
+        <p style="margin:32px 0 0;font-size:13px;color:#555;">
+          Des questions ? Réponds à cet email, on est là.
+        </p>
+      </div>
+      <p style="margin:20px 0 0;text-align:center;font-size:12px;color:#444;">
+        © ${new Date().getFullYear()} RetroMuscle · <a href="${APP_URL}" style="color:#666;text-decoration:none;">${APP_URL}</a>
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>
+    `.trim()
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Application rejected
+// ---------------------------------------------------------------------------
+export async function sendApplicationRejectedEmail(input: {
+  to: string;
+  fullName: string;
+  notes?: string | null;
+}): Promise<void> {
+  if (!isResendConfigured()) return;
+
+  const notesBlock = input.notes
+    ? `<div style="background:#1a1a1a;border-left:3px solid #ef4444;border-radius:4px;padding:14px 16px;margin:20px 0;">
+         <p style="margin:0;font-size:14px;color:#aaa;line-height:1.6;">${input.notes}</p>
+       </div>`
+    : "";
+
+  await getResendClient().emails.send({
+    from: FROM,
+    to: input.to,
+    subject: "Candidature RetroMuscle — Décision",
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;padding:0 20px;">
+    <tr><td>
+      <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px 36px;">
+        <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
+          Bonjour ${input.fullName},
+        </p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#aaa;">
+          Après examen de ta candidature, nous ne sommes pas en mesure de t'intégrer au programme pour le moment.
+        </p>
+        ${notesBlock}
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#aaa;">
+          Tu peux re-soumettre une candidature à tout moment si ta situation évolue.
+        </p>
+        <p style="margin:28px 0 0;font-size:13px;color:#555;">
+          Des questions ? Réponds à cet email.
+        </p>
+      </div>
+      <p style="margin:20px 0 0;text-align:center;font-size:12px;color:#444;">
+        © ${new Date().getFullYear()} RetroMuscle · <a href="${APP_URL}" style="color:#666;text-decoration:none;">${APP_URL}</a>
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>
+    `.trim()
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Video rejected
+// ---------------------------------------------------------------------------
+const VIDEO_TYPE_LABELS: Record<string, string> = {
+  OOTD: "OOTD",
+  TRAINING: "Training",
+  BEFORE_AFTER: "Before/After",
+  SPORTS_80S: "Sports 80s",
+  CINEMATIC: "Cinematic"
+};
+
+export async function sendVideoRejectedEmail(input: {
+  to: string;
+  creatorName: string;
+  videoType: string;
+  reason?: string | null;
+}): Promise<void> {
+  if (!isResendConfigured()) return;
+
+  const typeLabel = VIDEO_TYPE_LABELS[input.videoType] ?? input.videoType;
+  const reasonBlock = input.reason
+    ? `<div style="background:#1a1a1a;border-left:3px solid #ef4444;border-radius:4px;padding:14px 16px;margin:20px 0;">
+         <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Raison</p>
+         <p style="margin:0;font-size:14px;color:#aaa;line-height:1.6;">${input.reason}</p>
+       </div>`
+    : "";
+
+  await getResendClient().emails.send({
+    from: FROM,
+    to: input.to,
+    subject: `Vidéo refusée — ${typeLabel}`,
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;padding:0 20px;">
+    <tr><td>
+      <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px 36px;">
+        <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
+          Bonjour ${input.creatorName},
+        </p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#aaa;">
+          Ta vidéo <strong style="color:#fff;">${typeLabel}</strong> n'a pas été validée.
+        </p>
+        ${reasonBlock}
+        <p style="margin:16px 0 28px;font-size:15px;line-height:1.6;color:#aaa;">
+          Tu peux uploader une nouvelle version directement depuis ton espace.
+        </p>
+        <a href="${APP_URL}/uploads"
+           style="display:inline-block;background:#ef4444;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+          Re-uploader →
+        </a>
+        <p style="margin:32px 0 0;font-size:13px;color:#555;">
+          Des questions ? Réponds à cet email.
+        </p>
+      </div>
+      <p style="margin:20px 0 0;text-align:center;font-size:12px;color:#444;">
+        © ${new Date().getFullYear()} RetroMuscle · <a href="${APP_URL}" style="color:#666;text-decoration:none;">${APP_URL}</a>
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>
+    `.trim()
+  });
+}

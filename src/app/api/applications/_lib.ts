@@ -43,14 +43,26 @@ export function parsePayload(
   if (!isNonEmptyString(input.fullName)) {
     throw new Error("Ajoute ton nom complet.");
   }
+  if ((input.fullName as string).trim().length > 200) {
+    throw new Error("Nom trop long (200 caractères max).");
+  }
   if (!isNonEmptyString(input.whatsapp)) {
     throw new Error("Ajoute ton numero WhatsApp.");
+  }
+  if ((input.whatsapp as string).trim().length > 30) {
+    throw new Error("Numéro WhatsApp trop long (30 caractères max).");
   }
   if (!isNonEmptyString(input.country)) {
     throw new Error("Ajoute ton pays.");
   }
+  if ((input.country as string).trim().length > 100) {
+    throw new Error("Pays trop long (100 caractères max).");
+  }
   if (!isNonEmptyString(input.address)) {
     throw new Error("Ajoute ton adresse de livraison.");
+  }
+  if ((input.address as string).trim().length > 500) {
+    throw new Error("Adresse trop longue (500 caractères max).");
   }
 
   const email = (options?.authEmail ?? "").trim().toLowerCase();
@@ -59,12 +71,22 @@ export function parsePayload(
   }
 
   const followersTiktok = Number(input.followers_tiktok ?? 0);
-  if (!Number.isFinite(followersTiktok) || !Number.isInteger(followersTiktok) || followersTiktok < 0 || followersTiktok > 100000000) {
+  if (
+    !Number.isFinite(followersTiktok) ||
+    !Number.isInteger(followersTiktok) ||
+    followersTiktok < 0 ||
+    followersTiktok > 100000000
+  ) {
     throw new Error("Le nombre d'abonnes TikTok est invalide.");
   }
 
   const followersInstagram = Number(input.followers_instagram ?? 0);
-  if (!Number.isFinite(followersInstagram) || !Number.isInteger(followersInstagram) || followersInstagram < 0 || followersInstagram > 100000000) {
+  if (
+    !Number.isFinite(followersInstagram) ||
+    !Number.isInteger(followersInstagram) ||
+    followersInstagram < 0 ||
+    followersInstagram > 100000000
+  ) {
     throw new Error("Le nombre d'abonnes Instagram est invalide.");
   }
 
@@ -85,7 +107,9 @@ export function parsePayload(
   const handle = derivedHandle ?? "";
 
   if (!handle) {
-    throw new Error("Ajoute un lien TikTok ou Instagram valide (profil public) pour detecter ton handle.");
+    throw new Error(
+      "Ajoute un lien TikTok ou Instagram valide (profil public) pour detecter ton handle."
+    );
   }
 
   return {

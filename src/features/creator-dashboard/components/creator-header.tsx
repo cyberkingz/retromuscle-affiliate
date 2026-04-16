@@ -19,7 +19,9 @@ export function CreatorHeader({
   return (
     <Card className="grid gap-4 bg-gradient-to-br from-white to-frost/80 p-7 sm:grid-cols-[1.2fr_0.8fr]">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Mon espace createur</p>
+        <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">
+          Mon espace créateur
+        </p>
         <h1 className="font-display text-5xl uppercase leading-none">{handle}</h1>
         <p className="text-sm text-foreground/70">
           {displayName} - {country}
@@ -27,7 +29,7 @@ export function CreatorHeader({
         <StatusBadge label={status} tone={status === "actif" ? "success" : "neutral"} />
       </div>
       <div className="space-y-3 rounded-xl bg-white/80 p-4">
-        <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">{monthLabel}</p>
+        <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">{monthLabel}</p>
         <p className="text-sm text-foreground/70">Chaque video validee est remuneree.</p>
       </div>
     </Card>

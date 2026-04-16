@@ -10,7 +10,10 @@ export default function AdminApplicationsLoading() {
       {/* Filter buttons */}
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-9 w-28 animate-pulse rounded-full border border-line bg-white/70" />
+          <div
+            key={index}
+            className="h-9 w-28 animate-pulse rounded-full border border-line bg-white/70"
+          />
         ))}
       </div>
       {/* Search bar */}

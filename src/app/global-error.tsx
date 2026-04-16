@@ -22,12 +22,15 @@ export default function GlobalError({
       <body className="bg-background text-foreground">
         <main className="container-wide flex min-h-screen items-center justify-center py-10">
           <div className="w-full max-w-xl space-y-4 rounded-[22px] border border-line bg-white/95 p-6 sm:p-8">
-            <p className="text-xs uppercase tracking-[0.14em] text-foreground/55">Erreur critique</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-foreground/70">
+              Erreur critique
+            </p>
             <h1 className="font-display text-4xl uppercase leading-none text-secondary">
               Une erreur inattendue est survenue
             </h1>
             <p className="text-sm text-foreground/75">
-              Recharge la page ou retourne a l&apos;accueil. Si le probleme persiste, reconnecte-toi.
+              Recharge la page ou retourne a l&apos;accueil. Si le probleme persiste,
+              reconnecte-toi.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="pill" onClick={reset}>

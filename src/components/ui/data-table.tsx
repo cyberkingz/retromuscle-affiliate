@@ -14,7 +14,14 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -25,11 +32,16 @@ interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   isRowSelected?: (row: TData) => boolean;
   renderMobileRow?: (row: TData) => React.ReactNode;
+  "aria-label"?: string;
 }
 
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (!direction) return null;
-  return direction === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+  return direction === "asc" ? (
+    <ChevronUp className="h-4 w-4" />
+  ) : (
+    <ChevronDown className="h-4 w-4" />
+  );
 }
 
 export function DataTable<TData>({
@@ -40,7 +52,8 @@ export function DataTable<TData>({
   getRowId,
   onRowClick,
   isRowSelected,
-  renderMobileRow
+  renderMobileRow,
+  "aria-label": ariaLabel
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize });
@@ -63,7 +76,9 @@ export function DataTable<TData>({
     <div className="space-y-3">
       {renderMobileRow ? (
         <div className="space-y-3 px-4 pb-4 sm:hidden">
-          {rows.length === 0 ? <p className="py-6 text-center text-sm text-foreground/60">{emptyMessage}</p> : null}
+          {rows.length === 0 ? (
+            <p className="py-6 text-center text-sm text-foreground/60">{emptyMessage}</p>
+          ) : null}
           {rows.map((row) => (
             <div key={row.id}>{renderMobileRow(row.original)}</div>
           ))}
@@ -71,7 +86,7 @@ export function DataTable<TData>({
       ) : null}
 
       <div className={cn("overflow-x-auto", renderMobileRow ? "hidden sm:block" : undefined)}>
-        <Table>
+        <Table aria-label={ariaLabel}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -82,19 +97,25 @@ export function DataTable<TData>({
                     <TableHead
                       key={header.id}
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                      onKeyDown={canSort ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          header.column.getToggleSortingHandler()?.(e);
-                        }
-                      } : undefined}
+                      onKeyDown={
+                        canSort
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                header.column.getToggleSortingHandler()?.(e);
+                              }
+                            }
+                          : undefined
+                      }
                       tabIndex={canSort ? 0 : undefined}
                       role={canSort ? "button" : undefined}
                       aria-sort={
                         canSort
-                          ? direction === "asc" ? "ascending"
-                            : direction === "desc" ? "descending"
-                            : "none"
+                          ? direction === "asc"
+                            ? "ascending"
+                            : direction === "desc"
+                              ? "descending"
+                              : "none"
                           : undefined
                       }
                       className={cn(
@@ -103,7 +124,9 @@ export function DataTable<TData>({
                       )}
                     >
                       <span className="inline-flex items-center gap-1">
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                         {canSort ? <SortIcon direction={direction} /> : null}
                       </span>
                     </TableHead>
@@ -115,7 +138,10 @@ export function DataTable<TData>({
           <TableBody>
             {rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-foreground/60">
+                <TableCell
+                  colSpan={columns.length}
+                  className="py-10 text-center text-sm text-foreground/60"
+                >
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -177,20 +203,25 @@ function DataTableRow<TData>({
     <TableRow
       className={cn(isSelected ? "bg-frost/70 hover:bg-frost/70" : undefined)}
       onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-      onKeyDown={onRowClick ? (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onRowClick(row.original);
-        }
-      } : undefined}
+      onKeyDown={
+        onRowClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onRowClick(row.original);
+              }
+            }
+          : undefined
+      }
       tabIndex={onRowClick ? 0 : undefined}
       role={onRowClick ? "link" : undefined}
       style={onRowClick ? { cursor: "pointer" } : undefined}
     >
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+        <TableCell key={cell.id}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
       ))}
     </TableRow>
   );
 }
-

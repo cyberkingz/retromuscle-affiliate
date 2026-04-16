@@ -18,7 +18,11 @@ export async function recordVideoUpload(input: {
   if (!input.fileUrl || typeof input.fileUrl !== "string") {
     throw new Error("fileUrl is required");
   }
-  if (typeof input.durationSeconds !== "number" || input.durationSeconds <= 0 || input.durationSeconds > 600) {
+  if (
+    typeof input.durationSeconds !== "number" ||
+    input.durationSeconds <= 0 ||
+    input.durationSeconds > 600
+  ) {
     throw new Error("durationSeconds must be between 1 and 600");
   }
   if (input.resolution !== "1080x1920" && input.resolution !== "1080x1080") {

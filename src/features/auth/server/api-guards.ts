@@ -20,7 +20,11 @@ export type ApiGuardResult =
       ok: true;
       requestId: string;
       session: ResolvedAuthSession;
-      setAuthCookies?: { accessToken: string; refreshToken: string; expiresAt: number | null | undefined };
+      setAuthCookies?: {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number | null | undefined;
+      };
     }
   | { ok: false; requestId: string; response: NextResponse };
 

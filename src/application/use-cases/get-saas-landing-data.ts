@@ -1,8 +1,8 @@
-import { getRepository } from "@/application/dependencies";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
 import { VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { VIDEO_TYPES } from "@/domain/types";
+import { getCachedRates } from "@/application/use-cases/get-cached-rates";
 
 /* ------------------------------------------------------------------ */
 /*  Image/Text block -- reusable alternating layout data               */
@@ -116,8 +116,7 @@ export interface SaasLandingData {
 /*  Data fetcher                                                       */
 /* ------------------------------------------------------------------ */
 export async function getSaasLandingData(): Promise<SaasLandingData> {
-  const repository = getRepository();
-  const rates = await repository.listRates();
+  const rates = await getCachedRates();
   const activeRates = rates.filter((rate) => !rate.isPlaceholder);
   const activeVideoTypes = VIDEO_TYPES.filter((videoType) =>
     activeRates.some((rate) => rate.videoType === videoType)
@@ -146,7 +145,10 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     const activeTypeCount = activeVideoTypes.length;
     const perType = activeTypeCount > 0 ? Math.floor(videosPerMonth / activeTypeCount) : 0;
     const remainder = activeTypeCount > 0 ? videosPerMonth % activeTypeCount : 0;
-    const delivered = Object.fromEntries(VIDEO_TYPES.map((vt) => [vt, 0])) as Record<(typeof VIDEO_TYPES)[number], number>;
+    const delivered = Object.fromEntries(VIDEO_TYPES.map((vt) => [vt, 0])) as Record<
+      (typeof VIDEO_TYPES)[number],
+      number
+    >;
     activeVideoTypes.forEach((vt, i) => {
       delivered[vt] = perType + (i < remainder ? 1 : 0);
     });
@@ -190,17 +192,20 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
         {
           step: 1,
           title: "Tu candidates",
-          description: "Remplis le formulaire en 2 minutes. On regarde ton profil et ton \u00e9nergie, pas ton nombre d\u2019abonn\u00e9s. R\u00e9ponse sous 48\u00a0h."
+          description:
+            "Remplis le formulaire en 2 minutes. On regarde ton profil et ton \u00e9nergie, pas ton nombre d\u2019abonn\u00e9s. R\u00e9ponse sous 48\u00a0h."
         },
         {
           step: 2,
           title: "Tu filmes et tu upload",
-          description: "Tu filmes tes rushes, pas besoin de monter. Tu upload le raw footage sur la plateforme et tu choisis le type. On s\u2019occupe du montage, on valide sous 48\u00a0h."
+          description:
+            "Tu filmes tes rushes, pas besoin de monter. Tu upload le raw footage sur la plateforme et tu choisis le type. On s\u2019occupe du montage, on valide sous 48\u00a0h."
         },
         {
           step: 3,
           title: "Tu encaisses",
-          description: "Chaque vid\u00e9o valid\u00e9e d\u00e9clenche un paiement au tarif fixe de son type. Virement mensuel sur IBAN, PayPal ou Stripe."
+          description:
+            "Chaque vid\u00e9o valid\u00e9e d\u00e9clenche un paiement au tarif fixe de son type. Virement mensuel sur IBAN ou PayPal."
         }
       ]
     },
@@ -217,12 +222,13 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
         bullets: [
           "Tarifs affich\u00e9s\u00a0: tu sais combien tu touches avant de filmer",
           "Validation sous 48\u00a0h, pas d\u2019attente interminable",
-          "Virement mensuel sur IBAN, PayPal ou Stripe"
+          "Virement mensuel sur IBAN ou PayPal"
         ]
       },
       {
         tag: "Ton contenu vaut de l\u2019argent",
-        title: "Pendant que tu postes pour rien, d\u2019autres cr\u00e9ateurs re\u00e7oivent un virement chaque mois.",
+        title:
+          "Pendant que tu postes pour rien, d\u2019autres cr\u00e9ateurs re\u00e7oivent un virement chaque mois.",
         body: "Chez RetroMuscle, tu ne cr\u00e9es pas gratuitement en \u00e9change d\u2019un code promo. Chaque vid\u00e9o valid\u00e9e d\u00e9clenche un paiement r\u00e9el. Aucun minimum d\u2019abonn\u00e9s, aucun quota \u00e0 respecter. Juste toi, ton contenu, et un virement qui arrive.",
         imageUrl: BRAND_ASSETS.lifestyleProduct,
         imageAlt: "Cr\u00e9ateur RetroMuscle consultant ses revenus",
@@ -235,15 +241,17 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     /* ---- D — D\u00c9SIR\u00a0: Chiffres concrets -------------------------------- */
     earnings: {
       title: "Ce que gagnent nos cr\u00e9ateurs.",
-      subtitle: "Visualise tes revenus a partir d'un rythme simple: videos validees par jour, puis conversion mensuelle.",
+      subtitle:
+        "Visualise tes revenus a partir d'un rythme simple: videos validees par jour, puis conversion mensuelle.",
       scenarios: earningsScenarios,
       cta: { label: "Je postule maintenant", href: "/apply" },
-      hint: "Plus ton rythme de videos validees est regulier, plus ton revenu mensuel grimpe."
+      hint: "Plus ton rythme de videos validees est régulier, plus ton revenu mensuel grimpe."
     },
 
     rates: {
       title: "Tarif par type de vid\u00e9o",
-      subtitle: "Prix affich\u00e9s \u00e0 l\u2019avance. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e au tarif du type choisi au moment de l\u2019upload.",
+      subtitle:
+        "Prix affich\u00e9s \u00e0 l\u2019avance. Chaque vid\u00e9o valid\u00e9e est pay\u00e9e au tarif du type choisi au moment de l\u2019upload.",
       rows: rateRows
     },
 
@@ -268,28 +276,35 @@ export async function getSaasLandingData(): Promise<SaasLandingData> {
     /* ---- A — ACTION\u00a0: Lever les derni\u00e8res objections ----------------- */
     faqs: [
       {
-        question: "J\u2019ai pas beaucoup d\u2019abonn\u00e9s, \u00e7a marche quand m\u00eame\u00a0?",
-        answer: "Oui. On se fiche de ton nombre d\u2019abonn\u00e9s. Ce qu\u2019on valide, c\u2019est la qualit\u00e9 de ta vid\u00e9o, pas ta notori\u00e9t\u00e9. Des cr\u00e9ateurs avec moins de 500 abonn\u00e9s sont d\u00e9j\u00e0 pay\u00e9s dans le programme."
+        question:
+          "J\u2019ai pas beaucoup d\u2019abonn\u00e9s, \u00e7a marche quand m\u00eame\u00a0?",
+        answer:
+          "Oui. On se fiche de ton nombre d\u2019abonn\u00e9s. Ce qu\u2019on valide, c\u2019est la qualit\u00e9 de ta vid\u00e9o, pas ta notori\u00e9t\u00e9. Des cr\u00e9ateurs avec moins de 500 abonn\u00e9s sont d\u00e9j\u00e0 pay\u00e9s dans le programme."
       },
       {
         question: "Combien je peux gagner par mois\u00a0?",
-        answer: "Il n'y a aucun plafond. Chaque video validee est payee au tarif actif de son type. Ton revenu mensuel depend donc directement de ton rythme de videos validees."
+        answer:
+          "Il n'y a aucun plafond. Chaque video validee est payee au tarif actif de son type. Ton revenu mensuel depend donc directement de ton rythme de videos validees."
       },
       {
         question: "Y a-t-il un engagement ou un minimum\u00a0?",
-        answer: "Aucun. Tu upload quand tu veux, autant que tu veux, ou rien du tout pendant un mois. Pas de deadline, pas de p\u00e9nalit\u00e9. Tu produis \u00e0 ton rythme."
+        answer:
+          "Aucun. Tu upload quand tu veux, autant que tu veux, ou rien du tout pendant un mois. Pas de deadline, pas de p\u00e9nalit\u00e9. Tu produis \u00e0 ton rythme."
       },
       {
         question: "Comment se passe la validation\u00a0?",
-        answer: "Tu upload tes rushes bruts et tu choisis le type. Pas besoin de monter, on s\u2019en charge. Notre \u00e9quipe review sous 48\u00a0h. Si c\u2019est valid\u00e9, le paiement est programm\u00e9. En cas de refus, tu re\u00e7ois un retour clair pour corriger et re-uploader."
+        answer:
+          "Tu upload tes rushes bruts et tu choisis le type. Pas besoin de monter, on s\u2019en charge. Notre \u00e9quipe review sous 48\u00a0h. Si c\u2019est valid\u00e9, le paiement est programm\u00e9. En cas de refus, tu re\u00e7ois un retour clair pour corriger et re-uploader."
       },
       {
         question: "Quand et comment je suis pay\u00e9\u00a0?",
-        answer: "Les virements sont effectu\u00e9s une fois par mois pour toutes les vid\u00e9os valid\u00e9es. Tu choisis ton mode de paiement\u00a0: IBAN, PayPal ou Stripe."
+        answer:
+          "Les virements sont effectu\u00e9s une fois par mois pour toutes les vid\u00e9os valid\u00e9es. Tu choisis ton mode de paiement\u00a0: IBAN ou PayPal."
       },
       {
         question: "\u00c7a m\u2019engage \u00e0 quoi si je rejoins\u00a0?",
-        answer: "\u00c0 rien. L\u2019inscription est gratuite. Tu cr\u00e9es quand tu as envie, tu arr\u00eates quand tu veux. La seule chose que tu risques, c\u2019est de regretter de ne pas avoir essay\u00e9 plus t\u00f4t."
+        answer:
+          "\u00c0 rien. L\u2019inscription est gratuite. Tu cr\u00e9es quand tu as envie, tu arr\u00eates quand tu veux. La seule chose que tu risques, c\u2019est de regretter de ne pas avoir essay\u00e9 plus t\u00f4t."
       }
     ],
 

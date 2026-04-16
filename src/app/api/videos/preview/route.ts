@@ -14,7 +14,13 @@ function parseFileUrlParam(value: string | null): string {
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = await rateLimit({ ctx, request, key: "videos:preview", limit: 240, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "videos:preview",
+    limit: 240,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -48,7 +54,11 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.storage.from("videos").createSignedUrl(fileUrl, 300);
 
   if (error || !data?.signedUrl) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to generate preview URL" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to generate preview URL"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

@@ -4,7 +4,12 @@ function getFormatter(locale: string, currency: string): Intl.NumberFormat {
   const key = `${locale}:${currency}`;
   let fmt = formatterCache.get(key);
   if (!fmt) {
-    fmt = new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    fmt = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
     formatterCache.set(key, fmt);
   }
   return fmt;

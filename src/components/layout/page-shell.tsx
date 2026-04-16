@@ -19,7 +19,10 @@ interface PageShellProps extends PropsWithChildren {
     | "/payouts"
     | "/settings"
     | "/admin"
-    | "/admin/applications";
+    | "/admin/applications"
+    | "/admin/config"
+    | "/about"
+    | "/onboarding/approved";
 }
 
 export function PageShell({ children, currentPath }: PageShellProps) {

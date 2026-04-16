@@ -24,11 +24,13 @@ const isProd = process.env.NODE_ENV === "production";
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isProd ? "" : "'unsafe-eval'"} https:`,
-    "style-src 'self' 'unsafe-inline' https:",
+    // 'strict-dynamic' is used by CSP3 browsers; https: is the CSP2 fallback.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isProd ? "" : "'unsafe-eval'"}`,
+    "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https:",
+    "font-src 'self' data:",
+    // H-07: Explicit allowlist — no blanket https: so data cannot be exfiltrated to arbitrary origins on XSS.
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel-insights.com https://vitals.vercel-insights.com",
     "media-src 'self' https://*.supabase.co blob:",
     "frame-src 'self'",
     "base-uri 'self'",

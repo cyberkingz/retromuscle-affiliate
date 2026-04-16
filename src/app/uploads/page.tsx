@@ -32,7 +32,8 @@ export default async function UploadsRoute({ searchParams }: UploadsRouteProps) 
   }
 
   const creatorId =
-    (await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ?? undefined;
+    (await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ??
+    undefined;
 
   if (!creatorId) {
     // Admin without a creator profile should go to admin dashboard, not onboarding.

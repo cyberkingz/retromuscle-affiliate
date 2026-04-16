@@ -41,7 +41,10 @@ export function PaymentHistoryTable({ history }: PaymentHistoryTableProps) {
               <TableCell className="font-semibold capitalize">{monthToLabel(item.month)}</TableCell>
               <TableCell>{item.deliveredTotal}</TableCell>
               <TableCell>
-                <StatusBadge label={item.paymentStatus} tone={paymentStatusTone(item.paymentStatus)} />
+                <StatusBadge
+                  label={item.paymentStatus}
+                  tone={paymentStatusTone(item.paymentStatus)}
+                />
               </TableCell>
               <TableCell className="font-medium">{formatCurrency(item.amount)}</TableCell>
               <TableCell>{item.paidAt ? toShortDate(item.paidAt) : "-"}</TableCell>

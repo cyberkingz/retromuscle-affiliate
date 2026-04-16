@@ -15,7 +15,7 @@ describe("readJsonBodyWithLimit", () => {
     const payload = { name: "test", count: 42 };
     const request = jsonRequest(JSON.stringify(payload));
 
-    const result = await readJsonBodyWithLimit<typeof payload>(request, { maxBytes: 1024 });
+    const result = await readJsonBodyWithLimit(request, { maxBytes: 1024 });
     expect(result).toEqual(payload);
   });
 
@@ -23,7 +23,9 @@ describe("readJsonBodyWithLimit", () => {
     const body = JSON.stringify({ data: "x".repeat(200) });
     const request = jsonRequest(body, { "content-length": "500" });
 
-    await expect(readJsonBodyWithLimit(request, { maxBytes: 100 })).rejects.toThrow("PAYLOAD_TOO_LARGE");
+    await expect(readJsonBodyWithLimit(request, { maxBytes: 100 })).rejects.toThrow(
+      "PAYLOAD_TOO_LARGE"
+    );
   });
 
   it("throws PAYLOAD_TOO_LARGE when actual body size exceeds maxBytes (no content-length header)", async () => {
@@ -35,13 +37,17 @@ describe("readJsonBodyWithLimit", () => {
       body: largeBody
     });
 
-    await expect(readJsonBodyWithLimit(request, { maxBytes: 10 })).rejects.toThrow("PAYLOAD_TOO_LARGE");
+    await expect(readJsonBodyWithLimit(request, { maxBytes: 10 })).rejects.toThrow(
+      "PAYLOAD_TOO_LARGE"
+    );
   });
 
   it("throws INVALID_JSON for non-JSON body", async () => {
     const request = jsonRequest("this is not json");
 
-    await expect(readJsonBodyWithLimit(request, { maxBytes: 1024 })).rejects.toThrow("INVALID_JSON");
+    await expect(readJsonBodyWithLimit(request, { maxBytes: 1024 })).rejects.toThrow(
+      "INVALID_JSON"
+    );
   });
 
   it("works with empty object {}", async () => {
@@ -58,7 +64,7 @@ describe("readJsonBodyWithLimit", () => {
     // The body should be well under 1024 bytes
     const request = jsonRequest(body);
 
-    const result = await readJsonBodyWithLimit<typeof payload>(request, { maxBytes: 1024 });
+    const result = await readJsonBodyWithLimit(request, { maxBytes: 1024 });
     expect(result).toEqual(payload);
   });
 
@@ -72,14 +78,16 @@ describe("readJsonBodyWithLimit", () => {
       body
     });
 
-    await expect(readJsonBodyWithLimit(request, { maxBytes: 10 })).rejects.toThrow("PAYLOAD_TOO_LARGE");
+    await expect(readJsonBodyWithLimit(request, { maxBytes: 10 })).rejects.toThrow(
+      "PAYLOAD_TOO_LARGE"
+    );
   });
 
   it("works with nested JSON structures", async () => {
     const payload = { a: { b: { c: [1, 2, 3] } } };
     const request = jsonRequest(JSON.stringify(payload));
 
-    const result = await readJsonBodyWithLimit<typeof payload>(request, { maxBytes: 1024 });
+    const result = await readJsonBodyWithLimit(request, { maxBytes: 1024 });
     expect(result).toEqual(payload);
   });
 
@@ -87,7 +95,7 @@ describe("readJsonBodyWithLimit", () => {
     const payload = [1, 2, 3];
     const request = jsonRequest(JSON.stringify(payload));
 
-    const result = await readJsonBodyWithLimit<typeof payload>(request, { maxBytes: 1024 });
+    const result = await readJsonBodyWithLimit(request, { maxBytes: 1024 });
     expect(result).toEqual([1, 2, 3]);
   });
 
@@ -107,7 +115,9 @@ describe("readJsonBodyWithLimit", () => {
       body
     });
 
-    await expect(readJsonBodyWithLimit(request, { maxBytes: 2 })).rejects.toThrow("PAYLOAD_TOO_LARGE");
+    await expect(readJsonBodyWithLimit(request, { maxBytes: 2 })).rejects.toThrow(
+      "PAYLOAD_TOO_LARGE"
+    );
   });
 
   it("skips content-length check when header is not a finite number", async () => {

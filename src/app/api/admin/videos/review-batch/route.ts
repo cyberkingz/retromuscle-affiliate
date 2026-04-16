@@ -32,6 +32,9 @@ function sanitizeBatchError(error: unknown): string {
   if (raw.includes("invalid status")) {
     return "Statut de review invalide";
   }
+  if (raw.includes("already approved")) {
+    return "Vidéo déjà approuvée";
+  }
 
   return "Review impossible";
 }
@@ -43,7 +46,8 @@ function parsePayload(body: unknown): ReviewBatchPayload {
 
   const input = body as Record<string, unknown>;
   const decision = input.decision;
-  const rejectionReason = typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
+  const rejectionReason =
+    typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
   if (decision !== "approved" && decision !== "rejected") {
     throw new Error("Invalid decision");
@@ -86,7 +90,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "admin:videos:review-batch", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:videos:review-batch",
+    limit: 30,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -116,7 +126,7 @@ export async function POST(request: Request) {
         rejectionReason: payload.rejectionReason
       });
 
-      void writeAdminAuditLog({
+      writeAdminAuditLog({
         request,
         requestId: ctx.requestId,
         adminUserId: auth.session.userId,
@@ -128,7 +138,7 @@ export async function POST(request: Request) {
           rejectionReason: payload.rejectionReason ?? null,
           batch: true
         }
-      });
+      }).catch(console.error);
 
       results.push({ videoId, ok: true });
     } catch (caught) {

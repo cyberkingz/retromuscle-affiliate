@@ -1,5 +1,4 @@
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { SelectableCardButton } from "@/components/ui/selectable-card-button";
 import { cn } from "@/lib/cn";
 
 interface WizardStepperProps {
@@ -12,41 +11,39 @@ interface WizardStepperProps {
 export function WizardStepper({ step, stepPercent, steps, onSelect }: WizardStepperProps) {
   return (
     <div className="space-y-3">
-      <ProgressBar percent={stepPercent} label={`Etape ${step + 1}/${steps.length}`} className="px-1" />
-      <ol aria-label="Etapes d'inscription" className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] md:grid md:grid-cols-3 md:overflow-visible list-none">
+      <ProgressBar
+        percent={stepPercent}
+        label={`Étape ${step + 1}/${steps.length}`}
+        className="px-1"
+      />
+      <div
+        className="grid gap-1 rounded-2xl border border-line bg-frost/50 p-1"
+        style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}
+      >
         {steps.map((item, index) => {
           const active = index === step;
-
+          const done = index < step;
           return (
-            <li key={item.title} aria-current={active ? "step" : undefined}>
-            <SelectableCardButton
+            <button
+              key={item.title}
+              type="button"
               onClick={() => onSelect(index)}
-              selected={active}
+              aria-current={active ? "step" : undefined}
               className={cn(
-                `shrink-0 snap-start px-4 py-3 md:shrink ${active ? "" : "glass-panel"}`,
-                "min-w-[220px] md:min-w-0"
+                "rounded-xl px-3 py-2.5 text-left transition-all",
+                active
+                  ? "bg-secondary text-secondary-foreground shadow-sm"
+                  : "text-foreground/60 hover:bg-white/70"
               )}
             >
-              <p
-                className={`text-[11px] uppercase tracking-[0.12em] ${
-                  active ? "text-secondary-foreground/75" : "text-foreground/50"
-                }`}
-              >
-                Etape {index + 1}
+              <p className="text-[10px] uppercase tracking-[0.1em] opacity-70">
+                {done ? "✓ " : ""}Étape {index + 1}
               </p>
-              <p className="mt-1 text-sm font-semibold">{item.title}</p>
-              <p
-                className={`mt-1 hidden text-xs sm:block ${
-                  active ? "text-secondary-foreground/75" : "text-foreground/65"
-                }`}
-              >
-                {item.description}
-              </p>
-            </SelectableCardButton>
-            </li>
+              <p className="mt-0.5 text-sm font-semibold leading-tight">{item.title}</p>
+            </button>
           );
         })}
-      </ol>
+      </div>
     </div>
   );
 }

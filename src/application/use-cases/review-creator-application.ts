@@ -128,7 +128,7 @@ export async function reviewCreatorApplication(
         if (hasConstraintError(retryError, "creators_handle_key")) {
           throw new ReviewCreatorApplicationError(
             "HANDLE_CONFLICT",
-            "Ce handle est deja utilise. Demande au createur de modifier son handle puis de re-soumettre."
+            "Ce handle est deja utilise. Demande au créateur de modifier son handle puis de re-soumettre."
           );
         }
         throw retryError;
@@ -136,7 +136,7 @@ export async function reviewCreatorApplication(
     } else if (hasConstraintError(error, "creators_email_key")) {
       throw new ReviewCreatorApplicationError(
         "EMAIL_CONFLICT",
-        "Cet email est deja utilise sur un autre compte createur."
+        "Cet email est deja utilise sur un autre compte créateur."
       );
     } else {
       throw error;

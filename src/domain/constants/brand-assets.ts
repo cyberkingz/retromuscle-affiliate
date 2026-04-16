@@ -1,6 +1,5 @@
 export const BRAND_ASSETS = {
-  logo:
-    "https://retromuscle.net/cdn/shop/files/LOGO_RETROMUSCLE_SITE_1a27cc0f-e82a-4f31-94b3-42f083e8dc28.png?v=1729207969&width=240",
+  logo: "https://retromuscle.net/cdn/shop/files/LOGO_RETROMUSCLE_SITE_1a27cc0f-e82a-4f31-94b3-42f083e8dc28.png?v=1729207969&width=240",
   heroLifestyle: "/images/community/community-hero-client-89c9.jpg",
   heroVertical: "/images/community/community-vertical.jpg",
   lifestyleGym:

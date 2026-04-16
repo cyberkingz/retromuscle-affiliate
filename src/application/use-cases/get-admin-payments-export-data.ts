@@ -1,6 +1,6 @@
 import { getRepository } from "@/application/dependencies";
 import { calculatePayout } from "@/domain/services/calculate-payout";
-import { resolveMonth } from "@/application/use-cases/shared";
+import { resolveCurrentMonth, resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminPaymentsExportRow {
   monthlyTrackingId: string;
@@ -15,7 +15,6 @@ export interface AdminPaymentsExportRow {
   accountHolderName: string | null;
   iban: string | null;
   paypalEmail: string | null;
-  stripeAccount: string | null;
 }
 
 export async function getAdminPaymentsExportData(input?: { month?: string }): Promise<{
@@ -23,32 +22,17 @@ export async function getAdminPaymentsExportData(input?: { month?: string }): Pr
   rows: AdminPaymentsExportRow[];
 }> {
   const repository = getRepository();
-  const [creators, rates] = await Promise.all([
-    repository.listCreators(),
-    repository.listRates()
-  ]);
+  const [creators, rates] = await Promise.all([repository.listCreators(), repository.listRates()]);
 
-  let targetMonth: string;
-  let monthTrackings = [] as Awaited<ReturnType<typeof repository.listMonthlyTrackings>>;
+  // Fetch all trackings in a single query to avoid a double-fetch in the fallback path.
+  const allTrackings = await repository.listMonthlyTrackings();
+  const availableMonths = Array.from(new Set(allTrackings.map((t) => t.month)));
 
-  if (input?.month) {
-    const trackings = await repository.listMonthlyTrackings(input.month);
-    targetMonth = resolveMonth(input.month, Array.from(new Set(trackings.map((tracking) => tracking.month))));
-    monthTrackings = trackings;
-  } else {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const current = await repository.listMonthlyTrackings(currentMonth);
+  const targetMonth = input?.month
+    ? resolveMonth(input.month, availableMonths)
+    : resolveMonth(resolveCurrentMonth(), availableMonths);
 
-    if (current.length > 0) {
-      targetMonth = currentMonth;
-      monthTrackings = current;
-    } else {
-      const allTrackings = await repository.listMonthlyTrackings();
-      targetMonth = resolveMonth(undefined, Array.from(new Set(allTrackings.map((tracking) => tracking.month))));
-      monthTrackings = allTrackings.filter((tracking) => tracking.month === targetMonth);
-    }
-  }
+  const monthTrackings = allTrackings.filter((t) => t.month === targetMonth);
   const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
 
   // Fetch all payout profiles in a single query (fixes N+1)
@@ -76,8 +60,7 @@ export async function getAdminPaymentsExportData(input?: { month?: string }): Pr
       payoutMethod: profile?.method ?? null,
       accountHolderName: profile?.accountHolderName ?? null,
       iban: profile?.iban ?? null,
-      paypalEmail: profile?.paypalEmail ?? null,
-      stripeAccount: profile?.stripeAccount ?? null
+      paypalEmail: profile?.paypalEmail ?? null
     };
   });
 

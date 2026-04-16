@@ -10,12 +10,18 @@ interface DataTableCardProps extends PropsWithChildren {
   className?: string;
 }
 
-export function DataTableCard({ title, subtitle, action, className, children }: DataTableCardProps) {
+export function DataTableCard({
+  title,
+  subtitle,
+  action,
+  className,
+  children
+}: DataTableCardProps) {
   return (
     <Card className={cn("overflow-hidden border-line bg-white/95", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pb-3 pt-5">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">{title}</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">{title}</p>
           {subtitle ? <p className="text-sm text-foreground/70">{subtitle}</p> : null}
         </div>
         {action}

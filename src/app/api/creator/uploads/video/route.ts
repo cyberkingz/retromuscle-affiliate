@@ -18,7 +18,11 @@ interface UploadVideoPayload {
   fileSizeMb: number;
 }
 
-function resolveRecordUploadError(error: unknown): { status: number; code: "BAD_REQUEST" | "NOT_FOUND" | "INTERNAL"; message: string } {
+function resolveRecordUploadError(error: unknown): {
+  status: number;
+  code: "BAD_REQUEST" | "NOT_FOUND" | "INTERNAL";
+  message: string;
+} {
   if (!(error instanceof Error)) {
     return { status: 500, code: "INTERNAL", message: "Unable to record upload" };
   }
@@ -47,11 +51,16 @@ function parsePayload(body: unknown): UploadVideoPayload {
   }
 
   const input = body as Record<string, unknown>;
-  const monthlyTrackingId = typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
+  const monthlyTrackingId =
+    typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
   const videoType = typeof input.videoType === "string" ? input.videoType.trim().toUpperCase() : "";
   const fileUrl = typeof input.fileUrl === "string" ? input.fileUrl.trim() : "";
-  const durationSecondsRaw = typeof input.durationSeconds === "number" ? input.durationSeconds : Number(input.durationSeconds);
-  const fileSizeMbRaw = typeof input.fileSizeMb === "number" ? input.fileSizeMb : Number(input.fileSizeMb);
+  const durationSecondsRaw =
+    typeof input.durationSeconds === "number"
+      ? input.durationSeconds
+      : Number(input.durationSeconds);
+  const fileSizeMbRaw =
+    typeof input.fileSizeMb === "number" ? input.fileSizeMb : Number(input.fileSizeMb);
   const resolution = typeof input.resolution === "string" ? input.resolution.trim() : "";
 
   if (!monthlyTrackingId || !isUuid(monthlyTrackingId)) {
@@ -94,7 +103,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "creator:uploads:video", limit: 40, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "creator:uploads:video",
+    limit: 40,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -114,9 +129,31 @@ export async function POST(request: Request) {
   }
 
   if (!payload.fileUrl.startsWith(`${auth.session.userId}/`)) {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid fileUrl prefix" });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid fileUrl prefix"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
+  }
+
+  // C-01: Verify the file actually exists in storage before creating a DB record.
+  // Without this check a creator can skip the upload and register a phantom video.
+  {
+    const supabase = createSupabaseServerClient();
+    const { error: storageError } = await supabase.storage
+      .from("videos")
+      .createSignedUrl(payload.fileUrl, 10);
+    if (storageError) {
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Uploaded file not found"
+      });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
+    }
   }
 
   try {

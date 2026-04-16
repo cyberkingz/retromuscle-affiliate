@@ -1,6 +1,9 @@
 import "server-only";
 
-import { createSupabaseAnonServerClient, isSupabaseAnonConfigured } from "@/infrastructure/supabase/anon-server-client";
+import {
+  createSupabaseAnonServerClient,
+  isSupabaseAnonConfigured
+} from "@/infrastructure/supabase/anon-server-client";
 
 export async function refreshSupabaseSession(refreshToken: string): Promise<{
   accessToken: string;
@@ -24,4 +27,3 @@ export async function refreshSupabaseSession(refreshToken: string): Promise<{
     expiresAt: data.session.expires_at ?? null
   };
 }
-

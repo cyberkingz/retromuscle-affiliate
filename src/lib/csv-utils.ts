@@ -10,7 +10,7 @@ export function csvEscape(value: unknown): string {
     text = "'" + text;
   }
   if (/[\",\n\r]/.test(text)) {
-    return `"${text.replace(/\"/g, "\"\"")}"`;
+    return `"${text.replace(/\"/g, '""')}"`;
   }
   return text;
 }

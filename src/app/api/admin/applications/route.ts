@@ -5,7 +5,9 @@ import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { apiError, apiJson, createApiContext } from "@/lib/api-response";
 
 function isApplicationStatus(value: unknown): value is ApplicationStatus {
-  return value === "draft" || value === "pending_review" || value === "approved" || value === "rejected";
+  return (
+    value === "draft" || value === "pending_review" || value === "approved" || value === "rejected"
+  );
 }
 
 export async function GET(request: Request) {
@@ -27,11 +29,18 @@ export async function GET(request: Request) {
 
   try {
     const data = await getAdminApplicationsData({ status });
-    const response = apiJson(ctx, data, { status: 200 });
+    const response = apiJson(ctx, data, {
+      status: 200,
+      headers: { "Cache-Control": "private, no-cache" }
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to load applications" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to load applications"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

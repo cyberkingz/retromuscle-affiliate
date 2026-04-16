@@ -1,22 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw } from "lucide-react";
 
 import type { UseVideoPreviewReturn } from "@/hooks/use-video-preview";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { videoStatusTone } from "@/lib/status-tone";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
 
 interface VideoPreviewModalProps {
@@ -24,10 +14,7 @@ interface VideoPreviewModalProps {
   title?: string;
 }
 
-export function VideoPreviewModal({
-  preview,
-  title = "Preview",
-}: VideoPreviewModalProps) {
+export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewModalProps) {
   const {
     isOpen,
     signedUrl,
@@ -41,7 +28,7 @@ export function VideoPreviewModal({
     close,
     next,
     prev,
-    open,
+    open
   } = preview;
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -89,18 +76,19 @@ export function VideoPreviewModal({
   // Build metadata parts (videoType excluded — shown as badge already)
   const metaParts: string[] = [];
   if (currentItem?.resolution) metaParts.push(currentItem.resolution);
-  if (currentItem?.durationSeconds != null)
-    metaParts.push(`${currentItem.durationSeconds}s`);
-  if (currentItem?.fileSizeMb != null)
-    metaParts.push(`${currentItem.fileSizeMb} MB`);
+  if (currentItem?.durationSeconds != null) metaParts.push(`${currentItem.durationSeconds}s`);
+  if (currentItem?.fileSizeMb != null) metaParts.push(`${currentItem.fileSizeMb} MB`);
 
   // Download filename
-  const downloadName =
-    currentItem?.fileName ??
-    `video-${currentItem?.id ?? "preview"}.mp4`;
+  const downloadName = currentItem?.fileName ?? `video-${currentItem?.id ?? "preview"}.mp4`;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(o) => {
+        if (!o) close();
+      }}
+    >
       <DialogContent
         className={cn(
           "max-h-[95vh] overflow-hidden border-none bg-black p-0",
@@ -115,10 +103,7 @@ export function VideoPreviewModal({
         {/* Glass header */}
         <div className="absolute left-0 right-0 top-0 z-20 flex items-center gap-3 bg-black/60 px-4 py-3 backdrop-blur-md">
           {currentItem?.status && (
-            <StatusBadge
-              label={currentItem.status}
-              tone={videoStatusTone(currentItem.status)}
-            />
+            <StatusBadge label={currentItem.status} tone={videoStatusTone(currentItem.status)} />
           )}
           {currentItem?.videoType && (
             <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-white/80">
@@ -126,9 +111,7 @@ export function VideoPreviewModal({
             </span>
           )}
           {metaParts.length > 0 && (
-            <span className="text-xs text-white/60">
-              {metaParts.join(" \u00B7 ")}
-            </span>
+            <span className="text-xs text-white/60">{metaParts.join(" \u00B7 ")}</span>
           )}
         </div>
 
@@ -239,9 +222,7 @@ export function VideoPreviewModal({
                   key={i}
                   className={cn(
                     "h-2 w-2 rounded-full transition-colors",
-                    i === currentIndex
-                      ? "bg-white"
-                      : "bg-white/30"
+                    i === currentIndex ? "bg-white" : "bg-white/30"
                   )}
                 />
               ))}

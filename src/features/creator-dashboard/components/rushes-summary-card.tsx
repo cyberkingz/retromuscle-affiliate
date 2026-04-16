@@ -61,14 +61,19 @@ export function RushesSummaryCard({
       const response = await fetch(`/api/rushes/preview?fileUrl=${encodeURIComponent(fileUrl)}`, {
         cache: "no-store"
       });
-      const data = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
+      const data = (await response.json().catch(() => null)) as {
+        signedUrl?: string;
+        message?: string;
+      } | null;
       if (!response.ok || !data?.signedUrl) {
         throw new Error(data?.message ?? "Impossible de generer un lien de preview.");
       }
 
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (caught) {
-      setErrorMessage(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
+      setErrorMessage(
+        caught instanceof Error ? caught.message : "Impossible de generer un lien de preview."
+      );
     }
   }
 
@@ -96,16 +101,18 @@ export function RushesSummaryCard({
     const signed = await fetch("/api/creator/uploads/rush/signed-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      cache: "no-store",
       body: JSON.stringify({
         monthlyTrackingId: resolvedTrackingId,
         filename
       })
     });
 
-    const signedPayload = (await signed.json().catch(() => null)) as
-      | { key?: string; signedUrl?: string; monthlyTrackingId?: string; message?: string }
-      | null;
+    const signedPayload = (await signed.json().catch(() => null)) as {
+      key?: string;
+      signedUrl?: string;
+      monthlyTrackingId?: string;
+      message?: string;
+    } | null;
 
     if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
       throw new Error(signedPayload?.message ?? "Impossible de preparer l'upload.");
@@ -136,7 +143,6 @@ export function RushesSummaryCard({
     const recorded = await fetch("/api/creator/uploads/rush", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      cache: "no-store",
       body: JSON.stringify({
         monthlyTrackingId: trackingIdForUpload,
         fileUrl: signedPayload.key,
@@ -185,7 +191,7 @@ export function RushesSummaryCard({
     <CardSection className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Rushes (bonus)</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">Rushes (bonus)</p>
           <p className="mt-3 font-display text-4xl uppercase leading-none text-secondary">
             {totalFiles} fichiers
           </p>
@@ -267,7 +273,9 @@ export function RushesSummaryCard({
       >
         <UploadCloud className="mx-auto mb-3 h-10 w-10 text-secondary" />
         <p className="font-medium text-foreground">Ajoute tes rushes (optionnel)</p>
-        <p className="mt-1 text-xs text-foreground/65">MP4/MOV, multiple fichiers, max 2GB chacun.</p>
+        <p className="mt-1 text-xs text-foreground/65">
+          MP4/MOV, multiple fichiers, max 2GB chacun.
+        </p>
         <div className="mt-4 flex justify-center">
           <Button
             type="button"
@@ -285,7 +293,7 @@ export function RushesSummaryCard({
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Derniers rushes</p>
+        <p className="text-xs uppercase tracking-[0.12em] text-foreground/75">Derniers rushes</p>
         {recentRushes.length === 0 ? (
           <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
             Aucun rush upload pour ce mois.
@@ -300,7 +308,8 @@ export function RushesSummaryCard({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{rush.fileName}</p>
                   <p className="mt-1 text-xs text-foreground/65">
-                    {(rush.fileSizeMb / 1024).toFixed(2)} GB • {new Date(rush.createdAt).toLocaleString("fr-FR")}
+                    {(rush.fileSizeMb / 1024).toFixed(2)} GB •{" "}
+                    {new Date(rush.createdAt).toLocaleString("fr-FR")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

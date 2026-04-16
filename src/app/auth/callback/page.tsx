@@ -18,7 +18,9 @@ function AuthCallbackClient() {
     try {
       supabase = getSupabaseBrowserClient();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Service d'authentification indisponible.");
+      setMessage(
+        error instanceof Error ? error.message : "Service d'authentification indisponible."
+      );
       return;
     }
     if (!supabase) {
@@ -28,7 +30,11 @@ function AuthCallbackClient() {
     const code = searchParams.get("code");
     const next = searchParams.get("next");
     const safeNext =
-      next === "/onboarding" || next === "/login" || next === "/dashboard" || next === "/admin" || next === "/contract"
+      next === "/onboarding" ||
+      next === "/login" ||
+      next === "/dashboard" ||
+      next === "/admin" ||
+      next === "/contract"
         ? next
         : "/login";
 

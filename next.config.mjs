@@ -17,6 +17,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
   images: {
@@ -47,7 +48,7 @@ const nextConfig = {
     ];
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"]
+    optimizePackageImports: ["lucide-react", "@tanstack/react-table"]
   }
 };
 

@@ -1,6 +1,9 @@
 import "server-only";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
+
+export type TypedSupabaseClient = SupabaseClient<Database>;
 
 function getRequired(name: string): string {
   const value = process.env[name];
@@ -18,7 +21,7 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(resolveServiceRoleKey());
 }
 
-export function createSupabaseServerClient(): SupabaseClient {
+export function createSupabaseServerClient(): TypedSupabaseClient {
   const url = getRequired("NEXT_PUBLIC_SUPABASE_URL");
   const serviceKey = resolveServiceRoleKey();
 
@@ -26,7 +29,7 @@ export function createSupabaseServerClient(): SupabaseClient {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  return createClient(url, serviceKey, {
+  return createClient<Database>(url, serviceKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false

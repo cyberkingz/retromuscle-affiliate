@@ -11,7 +11,7 @@ interface PendingReviewPanelProps {
 export function PendingReviewPanel({ application }: PendingReviewPanelProps) {
   return (
     <Card className="border-line bg-frost/70 p-5 sm:p-6">
-      <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Dossier recu</p>
+      <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Dossier recu</p>
       <p className="mt-2 font-display text-2xl uppercase leading-none text-secondary">
         Ton dossier est en cours de revue
       </p>
@@ -21,19 +21,25 @@ export function PendingReviewPanel({ application }: PendingReviewPanelProps) {
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white px-4 py-3">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Handle</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Handle</p>
           <p className="mt-1 text-sm font-semibold text-foreground">{application.handle}</p>
         </div>
         {application.followers_tiktok > 0 ? (
           <div className="rounded-2xl border border-line bg-white px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Abonnes TikTok</p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{application.followers_tiktok.toLocaleString("fr-FR")}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Abonnes TikTok</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {application.followers_tiktok.toLocaleString("fr-FR")}
+            </p>
           </div>
         ) : null}
         {application.followers_instagram > 0 ? (
           <div className="rounded-2xl border border-line bg-white px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Abonnes Instagram</p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{application.followers_instagram.toLocaleString("fr-FR")}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+              Abonnes Instagram
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {application.followers_instagram.toLocaleString("fr-FR")}
+            </p>
           </div>
         ) : null}
       </div>

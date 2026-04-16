@@ -20,7 +20,7 @@ export default function UploadsError({
   return (
     <div className="py-12">
       <Card className="mx-auto max-w-xl space-y-4 border-line bg-white/95 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.14em] text-foreground/55">Erreur uploads</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-foreground/70">Erreur uploads</p>
         <h1 className="font-display text-4xl uppercase leading-none text-secondary">
           Impossible de charger les uploads
         </h1>

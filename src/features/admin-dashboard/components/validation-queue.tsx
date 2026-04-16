@@ -15,7 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { CardSection } from "@/components/layout/card-section";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoPreviewModal } from "@/components/ui/video-preview-modal";
 import { useVideoPreview } from "@/hooks/use-video-preview";
@@ -77,58 +84,59 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
   const videoPreview = useVideoPreview("/api/videos/preview");
 
-  const reviewMany = useCallback(async (
-    videoIds: string[],
-    decision: "approved" | "rejected",
-    reason?: string | null
-  ) => {
-    if (!canAct) {
-      router.replace("/login");
-      return;
-    }
-
-    setError(null);
-
-    try {
-      const response = await fetch("/api/admin/videos/review-batch", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          videoIds,
-          decision,
-          rejectionReason: decision === "rejected" ? reason ?? null : null
-        }),
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(data?.message ?? "Impossible de mettre a jour les videos.");
+  const reviewMany = useCallback(
+    async (videoIds: string[], decision: "approved" | "rejected", reason?: string | null) => {
+      if (!canAct) {
+        router.replace("/login");
+        return;
       }
 
-      const data = (await response.json().catch(() => null)) as {
-        results?: Array<{ videoId: string; ok: boolean; error?: string }>;
-      } | null;
+      setError(null);
 
-      const failures = data?.results?.filter((r) => !r.ok) ?? [];
-      if (failures.length > 0) {
-        const failedCount = failures.length;
-        const totalCount = videoIds.length;
-        setError(`${failedCount}/${totalCount} video(s) en erreur. ${failures[0]?.error ?? ""}`);
+      try {
+        const response = await fetch("/api/admin/videos/review-batch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            videoIds,
+            decision,
+            rejectionReason: decision === "rejected" ? (reason ?? null) : null
+          }),
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          const data = (await response.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(data?.message ?? "Impossible de mettre a jour les videos.");
+        }
+
+        const data = (await response.json().catch(() => null)) as {
+          results?: Array<{ videoId: string; ok: boolean; error?: string }>;
+        } | null;
+
+        const failures = data?.results?.filter((r) => !r.ok) ?? [];
+        if (failures.length > 0) {
+          const failedCount = failures.length;
+          const totalCount = videoIds.length;
+          setError(`${failedCount}/${totalCount} video(s) en erreur. ${failures[0]?.error ?? ""}`);
+        }
+
+        setRejectingId(null);
+        setRejectionReason("");
+        setBulkRejecting(false);
+        setBulkRejectionReason("");
+        setRowSelection({});
+        router.refresh();
+      } catch (caught) {
+        setError(
+          caught instanceof Error ? caught.message : "Impossible de mettre a jour les videos."
+        );
       }
-
-      setRejectingId(null);
-      setRejectionReason("");
-      setBulkRejecting(false);
-      setBulkRejectionReason("");
-      setRowSelection({});
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour les videos.");
-    }
-  }, [canAct, router]);
+    },
+    [canAct, router]
+  );
 
   const reviewOne = useCallback(
     async (videoId: string, decision: "approved" | "rejected", reason?: string | null) => {
@@ -203,7 +211,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                     fileUrl: row.original.fileUrl,
                     videoType: row.original.videoType,
                     resolution: row.original.resolution,
-                    durationSeconds: row.original.durationSeconds,
+                    durationSeconds: row.original.durationSeconds
                   });
                 }}
                 disabled={!canAct}
@@ -231,7 +239,9 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                 onClick={(event) => {
                   event.stopPropagation();
                   setError(null);
-                  setRejectingId((current) => (current === row.original.videoId ? null : row.original.videoId));
+                  setRejectingId((current) =>
+                    current === row.original.videoId ? null : row.original.videoId
+                  );
                   setRejectionReason("");
                 }}
                 disabled={!canAct}
@@ -265,7 +275,9 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
   return (
     <CardSection className="space-y-3">
-      <p className="mb-3 text-xs uppercase tracking-[0.15em] text-foreground/50">File de validation</p>
+      <p className="mb-3 text-xs uppercase tracking-[0.15em] text-foreground/75">
+        File de validation
+      </p>
 
       {error ? (
         <div
@@ -286,8 +298,8 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             <Input
               value={creatorFilter}
               onChange={(event) => setCreatorFilter(event.target.value)}
-              placeholder="Filtrer par createur..."
-              aria-label="Filtrer par createur"
+              placeholder="Filtrer par créateur..."
+              aria-label="Filtrer par créateur"
               className="h-10 w-full sm:w-[240px]"
             />
             <select
@@ -307,7 +319,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             <select
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value as "ALL" | "7D" | "30D")}
-              aria-label="Filtrer par periode"
+              aria-label="Filtrer par période"
               className="h-10 rounded-xl border border-line bg-white px-3 text-sm"
             >
               <option value="ALL">Toutes les dates</option>
@@ -345,7 +357,9 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
           {bulkRejecting && selectedIds.length > 0 ? (
             <div className="rounded-2xl border border-line bg-frost/70 p-4">
-              <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Raison (pour tout le lot)</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+                Raison (pour tout le lot)
+              </p>
               <Textarea
                 value={bulkRejectionReason}
                 onChange={(event) => setBulkRejectionReason(event.target.value)}
@@ -378,7 +392,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
           ) : null}
 
           <div className="overflow-x-auto">
-            <Table>
+            <Table aria-label="File de validation">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -390,9 +404,31 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           key={header.id}
                           className={cn(canSort ? "cursor-pointer select-none" : undefined)}
                           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                          onKeyDown={
+                            canSort
+                              ? (e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    header.column.getToggleSortingHandler()?.(e);
+                                  }
+                                }
+                              : undefined
+                          }
+                          tabIndex={canSort ? 0 : undefined}
+                          aria-sort={
+                            canSort
+                              ? direction === "asc"
+                                ? "ascending"
+                                : direction === "desc"
+                                  ? "descending"
+                                  : "none"
+                              : undefined
+                          }
                         >
                           <span className="inline-flex items-center gap-1">
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
                             {direction === "asc" ? "↑" : direction === "desc" ? "↓" : null}
                           </span>
                         </TableHead>
@@ -404,7 +440,10 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
               <TableBody>
                 {table.getRowModel().rows.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-foreground/60">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="py-10 text-center text-sm text-foreground/60"
+                    >
                       Aucun contenu dans cette vue.
                     </TableCell>
                   </TableRow>
@@ -424,7 +463,9 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={columns.length}>
                               <div className="rounded-2xl border border-line bg-frost/70 p-4">
-                                <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Raison du rejet</p>
+                                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+                                  Raison du rejet
+                                </p>
                                 <Textarea
                                   value={rejectionReason}
                                   onChange={(event) => setRejectionReason(event.target.value)}
@@ -436,7 +477,13 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                                   <Button
                                     type="button"
                                     size="sm"
-                                    onClick={() => void reviewOne(row.original.videoId, "rejected", rejectionReason)}
+                                    onClick={() =>
+                                      void reviewOne(
+                                        row.original.videoId,
+                                        "rejected",
+                                        rejectionReason
+                                      )
+                                    }
                                     disabled={!canAct || rejectionReason.trim().length === 0}
                                   >
                                     Confirmer le rejet

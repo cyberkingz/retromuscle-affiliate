@@ -17,9 +17,7 @@ export function ActionBand({ title, subtitle, cta }: ActionBandProps) {
             <h2 className="font-display text-4xl uppercase tracking-tight sm:text-5xl md:text-6xl">
               {title}
             </h2>
-            <p className="text-lg text-secondary-foreground/85 md:text-xl">
-              {subtitle}
-            </p>
+            <p className="text-lg text-secondary-foreground/85 md:text-xl">{subtitle}</p>
           </div>
 
           <Button

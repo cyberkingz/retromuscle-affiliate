@@ -30,7 +30,7 @@ export default async function NotAuthorizedPage({ searchParams }: NotAuthorizedP
           <SectionHeading
             eyebrow="403"
             title="Acces refuse"
-            subtitle="Ton compte n'a pas l'autorisation d'acceder a cette page."
+            subtitle="Ton compte n'a pas l'autorisation d'accéder a cette page."
           />
 
           <div className="mt-6 flex flex-wrap gap-2">

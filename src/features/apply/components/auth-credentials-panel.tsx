@@ -44,7 +44,8 @@ export function AuthCredentialsPanel({
   const hasPassword = password.length >= 8;
   const hasConfirm = !isSignup || confirmPassword.length > 0;
   const passwordsMatch = !isSignup || confirmPassword.length === 0 || confirmPassword === password;
-  const canSubmit = hasEmail && hasValidEmail && hasPassword && hasConfirm && passwordsMatch && !submitting;
+  const canSubmit =
+    hasEmail && hasValidEmail && hasPassword && hasConfirm && passwordsMatch && !submitting;
 
   return (
     <form
@@ -56,10 +57,20 @@ export function AuthCredentialsPanel({
     >
       {showModeSwitch ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" size="pill" variant={isSignup ? "default" : "outline"} onClick={() => onModeChange("signup")}>
-            Creer un compte
+          <Button
+            type="button"
+            size="pill"
+            variant={isSignup ? "default" : "outline"}
+            onClick={() => onModeChange("signup")}
+          >
+            Créer un compte
           </Button>
-          <Button type="button" size="pill" variant={isSignup ? "outline" : "default"} onClick={() => onModeChange("signin")}>
+          <Button
+            type="button"
+            size="pill"
+            variant={isSignup ? "outline" : "default"}
+            onClick={() => onModeChange("signin")}
+          >
             Se connecter
           </Button>
         </div>
@@ -129,11 +140,13 @@ export function AuthCredentialsPanel({
       ) : null}
 
       <Button type="submit" disabled={!canSubmit} size="pill" className="w-full sm:w-auto">
-        {submitting ? "Chargement..." : isSignup ? "Creer mon compte" : "Me connecter"}
+        {submitting ? "Chargement..." : isSignup ? "Créer mon compte" : "Me connecter"}
       </Button>
 
       <p className="text-xs text-foreground/65">
-        {isSignup ? "Inscription simple par email + mot de passe." : "Connecte-toi pour reprendre ton onboarding."}
+        {isSignup
+          ? "Inscription simple par email + mot de passe."
+          : "Connecte-toi pour reprendre ton onboarding."}
       </p>
 
       {isSignup && (

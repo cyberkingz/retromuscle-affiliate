@@ -1,3 +1,5 @@
+import { revalidateTag } from "next/cache";
+
 import { getRepository } from "@/application/dependencies";
 import { VIDEO_TYPES, type VideoRate, type VideoType } from "@/domain/types";
 
@@ -13,8 +15,10 @@ export async function updateVideoRate(input: {
   }
 
   const repository = getRepository();
-  return repository.updateVideoRate({
+  const result = await repository.updateVideoRate({
     videoType: input.videoType as VideoType,
     ratePerVideo: input.ratePerVideo
   });
+  revalidateTag("rates");
+  return result;
 }

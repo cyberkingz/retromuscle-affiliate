@@ -10,7 +10,13 @@ import { parseMonthParam } from "@/lib/validation";
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = await rateLimit({ ctx, request, key: "admin:payments:export", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:payments:export",
+    limit: 30,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -21,7 +27,14 @@ export async function GET(request: Request) {
   }
 
   // Per-user rate limit (stricter, scoped to authenticated admin)
-  const userLimited = await rateLimit({ ctx, request, key: "admin:payments:export", limit: 30, windowMs: 60_000, userId: auth.session.userId });
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:payments:export",
+    limit: 30,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
   if (userLimited) {
     return userLimited;
   }
@@ -49,7 +62,6 @@ export async function GET(request: Request) {
       "account_holder_name",
       "iban",
       "paypal_email",
-      "stripe_account",
       "monthly_tracking_id",
       "creator_id"
     ];
@@ -68,10 +80,11 @@ export async function GET(request: Request) {
           row.accountHolderName ?? "",
           maskIban(row.iban),
           maskEmail(row.paypalEmail),
-          row.stripeAccount ?? "",
           row.monthlyTrackingId,
           row.creatorId
-        ].map(csvEscape).join(",")
+        ]
+          .map(csvEscape)
+          .join(",")
       );
     }
 
@@ -82,16 +95,20 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         "content-type": "text/csv; charset=utf-8",
-        "content-disposition": `attachment; filename=\"${filename}\"`
+        "content-disposition": `attachment; filename=\"${filename}\"`,
+        "Cache-Control": "private, no-store"
       }
     });
 
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return finalizeResponse(ctx, response, { rows: exportData.rows.length });
   } catch {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to export payments" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to export payments"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }
-

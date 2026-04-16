@@ -67,7 +67,11 @@ export function ImageTextSection({ block }: ImageTextSectionProps) {
 
           {block.cta ? (
             <div className="pt-2">
-              <Button asChild size="lg" className="h-12 w-full max-w-full px-5 text-sm sm:w-auto sm:px-7 sm:text-base">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 w-full max-w-full px-5 text-sm sm:w-auto sm:px-7 sm:text-base"
+              >
                 <Link href={block.cta.href}>
                   {block.cta.label}
                   <ArrowRight className="ml-2 h-4 w-4" />

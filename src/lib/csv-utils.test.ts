@@ -59,7 +59,7 @@ describe("csvEscape", () => {
   it("handles combined formula injection and special CSV characters", () => {
     // The = is prefixed with ', then the comma triggers quoting
     const result = csvEscape("=SUM,A1");
-    expect(result).toBe("\"'=SUM,A1\"");
+    expect(result).toBe('"\'=SUM,A1"');
   });
 });
 

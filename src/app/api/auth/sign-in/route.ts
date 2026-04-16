@@ -36,7 +36,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "auth:sign-in", limit: 20, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "auth:sign-in",
+    limit: 20,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }

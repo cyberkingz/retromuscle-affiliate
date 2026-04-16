@@ -9,11 +9,7 @@ import type {
   ApplicationRecord,
   OnboardingOptions
 } from "@/features/apply/types";
-import {
-  isValidInstagramUrl,
-  isValidTiktokUrl,
-  normalizeHttpUrl
-} from "@/lib/validation";
+import { isValidInstagramUrl, isValidTiktokUrl, normalizeHttpUrl } from "@/lib/validation";
 
 // ---------------------------------------------------------------------------
 // Supabase draft persistence helpers
@@ -112,10 +108,7 @@ interface UseOnboardingFlowResult {
   errorMessage: string | null;
   canEdit: boolean;
   setStep(step: number): void;
-  updateField<K extends keyof ApplicationFormState>(
-    field: K,
-    value: ApplicationFormState[K]
-  ): void;
+  updateField<K extends keyof ApplicationFormState>(field: K, value: ApplicationFormState[K]): void;
   draftSaved: boolean;
   draftRestored: boolean;
   errorField: keyof ApplicationFormState | null;
@@ -167,7 +160,10 @@ function validateStep1(form: ApplicationFormState): StepValidationResult {
     return fail("socialTiktok", "Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte");
   }
   if (instagram && !isValidInstagramUrl(instagram)) {
-    return fail("socialInstagram", "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte");
+    return fail(
+      "socialInstagram",
+      "Lien Instagram invalide. Exemple: https://www.instagram.com/toncompte"
+    );
   }
 
   if (tiktok) {
@@ -269,7 +265,8 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       const f = formRef.current;
-      const hasContent = f.fullName.trim() || f.whatsapp.trim() || f.socialTiktok.trim() || f.socialInstagram.trim();
+      const hasContent =
+        f.fullName.trim() || f.whatsapp.trim() || f.socialTiktok.trim() || f.socialInstagram.trim();
       if (hasContent) {
         event.preventDefault();
       }

@@ -1,10 +1,4 @@
-export const VIDEO_TYPES = [
-  "OOTD",
-  "TRAINING",
-  "BEFORE_AFTER",
-  "SPORTS_80S",
-  "CINEMATIC"
-] as const;
+export const VIDEO_TYPES = ["OOTD", "TRAINING", "BEFORE_AFTER", "SPORTS_80S", "CINEMATIC"] as const;
 
 export type VideoType = (typeof VIDEO_TYPES)[number];
 
@@ -12,7 +6,7 @@ export type CreatorStatus = "candidat" | "actif" | "pause" | "inactif";
 export type PaymentStatus = "a_faire" | "en_cours" | "paye";
 export type VideoStatus = "uploaded" | "pending_review" | "approved" | "rejected";
 export type ApplicationStatus = "draft" | "pending_review" | "approved" | "rejected";
-export type PayoutMethod = "iban" | "paypal" | "stripe";
+export type PayoutMethod = "iban" | "paypal";
 
 export type VideoTypeCount = Record<VideoType, number>;
 
@@ -51,6 +45,7 @@ export interface MonthlyTracking {
   delivered: VideoTypeCount;
   paymentStatus: PaymentStatus;
   paidAt?: string;
+  paidAmount?: number | null;
 }
 
 export interface VideoAsset {
@@ -85,7 +80,6 @@ export interface CreatorPayoutProfile {
   accountHolderName?: string | null;
   iban?: string | null;
   paypalEmail?: string | null;
-  stripeAccount?: string | null;
   createdAt: string;
   updatedAt: string;
 }

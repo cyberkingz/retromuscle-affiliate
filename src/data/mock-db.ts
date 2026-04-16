@@ -1,10 +1,5 @@
 import { VIDEO_RATES } from "@/domain/constants/video-rates";
-import type {
-  Creator,
-  MonthlyTracking,
-  RushAsset,
-  VideoAsset
-} from "@/domain/types";
+import type { Creator, MonthlyTracking, RushAsset, VideoAsset } from "@/domain/types";
 
 // Empty data -- demo records removed for production launch.
 // InMemoryCreatorRepository uses these as fallback when Supabase is not configured.

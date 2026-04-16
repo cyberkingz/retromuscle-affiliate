@@ -5,7 +5,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Admin Candidatures RetroMuscle",
-  description: "Valide les dossiers creator, ajoute un feedback, et declenche l'acces au dashboard.",
+  description:
+    "Valide les dossiers créateur, ajoute un feedback, et déclenche l'accès au dashboard.",
   path: "/admin/applications",
   noIndex: true
 });
@@ -14,7 +15,5 @@ export default async function AdminApplicationsRoute() {
   await protectPage("/admin");
   const data = await getAdminApplicationsData();
 
-  return (
-    <AdminApplicationsPage data={data} />
-  );
+  return <AdminApplicationsPage data={data} />;
 }

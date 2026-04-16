@@ -1,3 +1,4 @@
+import { getRepository } from "@/application/dependencies";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
 
 export interface ApplyMarketingData {
@@ -28,51 +29,74 @@ export interface ApplyPageData {
 }
 
 export async function getApplyPageData(): Promise<ApplyPageData> {
+  const repository = getRepository();
+  const rates = await repository.listRates();
+  const activeAmounts = rates.filter((r) => !r.isPlaceholder).map((r) => r.ratePerVideo);
+  const minRate = activeAmounts.length > 0 ? Math.min(...activeAmounts) : null;
+  const maxRate = activeAmounts.length > 0 ? Math.max(...activeAmounts) : null;
+  const rateRangeLabel =
+    minRate === null
+      ? "Tarif actif"
+      : minRate === maxRate
+        ? `${minRate}\u20ac`
+        : `${minRate}-${maxRate}\u20ac`;
+  const rateInterestPoint =
+    minRate === null
+      ? "Tarif fixe par vid\u00e9o"
+      : minRate === maxRate
+        ? `Tarif fixe par vid\u00e9o\u00a0: ${minRate}\u20ac`
+        : `Tarif fixe par vid\u00e9o\u00a0: ${minRate}\u20ac \u00e0 ${maxRate}\u20ac`;
+
   return {
     marketing: {
       heroImageUrl: BRAND_ASSETS.heroLifestyle,
       attention: {
-        badge: "Programme Createur 2026",
+        badge: "Programme Créateur 2026",
         headline: "Tu filmes deja. Maintenant tu es paye pour ca.",
         supportingText:
           "Postule en 2 minutes. Si ton profil est valide, tu upload tes videos et tu es paye pour chaque contenu accepte. Aucun quota, aucune limite."
       },
       interestPoints: [
-        "Tarif fixe par video : 95 a 180 EUR",
+        rateInterestPoint,
         "Aucun quota, tu produis a ton rythme",
         "Paiement mensuel des contenus valides"
       ],
       socialProof: {
         stats: [
           { label: "Reponse", value: "Sous 48h" },
-          { label: "Par video", value: "95-180 EUR" },
+          { label: "Par video", value: rateRangeLabel },
           { label: "Plafond", value: "Aucun" }
         ],
         creators: [
           {
             name: "Yasmine",
             niche: "Fitness & lifestyle",
-            quote: "J\u2019avais 800 abonn\u00e9s quand j\u2019ai postul\u00e9. Ils m\u2019ont accept\u00e9e en 24h. Premier virement re\u00e7u le mois suivant."
+            quote:
+              "J\u2019avais 800 abonn\u00e9s quand j\u2019ai postul\u00e9. Ils m\u2019ont accept\u00e9e en 24h. Premier virement re\u00e7u le mois suivant."
           },
           {
             name: "Th\u00e9o",
             niche: "Musculation",
-            quote: "Z\u00e9ro prise de t\u00eate. Tu filmes tes rushes, tu upload, c\u2019est pay\u00e9. Pas de brief \u00e0 rallonge, pas de relance."
+            quote:
+              "Z\u00e9ro prise de t\u00eate. Tu filmes tes rushes, tu upload, c\u2019est pay\u00e9. Pas de brief \u00e0 rallonge, pas de relance."
           },
           {
             name: "Ma\u00ebva",
             niche: "Crossfit & HIIT",
-            quote: "En un mois j\u2019ai touch\u00e9 plus qu\u2019avec mes 3 derni\u00e8res collabs r\u00e9unies. Et l\u00e0 c\u2019\u00e9tait juste du raw footage."
+            quote:
+              "En un mois j\u2019ai touch\u00e9 plus qu\u2019avec mes 3 derni\u00e8res collabs r\u00e9unies. Et l\u00e0 c\u2019\u00e9tait juste du raw footage."
           },
           {
             name: "Karim",
             niche: "Streetworkout",
-            quote: "Le programme est honn\u00eate\u00a0: les tarifs sont affich\u00e9s, la validation est rapide, et le virement tombe chaque mois."
+            quote:
+              "Le programme est honn\u00eate\u00a0: les tarifs sont affich\u00e9s, la validation est rapide, et le virement tombe chaque mois."
           },
           {
             name: "Lola",
             niche: "Yoga & bien-\u00eatre",
-            quote: "Pas besoin d\u2019un gros compte. Ils veulent du bon contenu, pas des millions de followers. \u00c7a change tout."
+            quote:
+              "Pas besoin d\u2019un gros compte. Ils veulent du bon contenu, pas des millions de followers. \u00c7a change tout."
           }
         ],
         trustedBy: []

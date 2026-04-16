@@ -27,4 +27,3 @@ export function CardSection({
 }: CardSectionProps) {
   return <Card className={cn(toneClass[tone], paddingClass[padding], className)} {...props} />;
 }
-

@@ -21,7 +21,6 @@ function validatePayoutFields(input: {
   method: CreatorPayoutProfile["method"];
   iban?: string | null;
   paypalEmail?: string | null;
-  stripeAccount?: string | null;
 }): void {
   switch (input.method) {
     case "iban": {
@@ -40,12 +39,6 @@ function validatePayoutFields(input: {
       }
       break;
     }
-    case "stripe": {
-      if (!input.stripeAccount || !input.stripeAccount.startsWith("acct_")) {
-        throw new Error("Compte Stripe invalide. Format attendu: acct_XXXX.");
-      }
-      break;
-    }
   }
 }
 
@@ -55,7 +48,6 @@ export async function saveCreatorPayoutProfile(input: {
   accountHolderName?: string | null;
   iban?: string | null;
   paypalEmail?: string | null;
-  stripeAccount?: string | null;
 }): Promise<CreatorPayoutProfile> {
   validatePayoutFields(input);
 
@@ -69,8 +61,7 @@ export async function saveCreatorPayoutProfile(input: {
     creatorId: creator.id,
     method: input.method,
     accountHolderName: input.accountHolderName ?? null,
-    iban: input.method === "iban" ? input.iban?.replace(/\s/g, "").toUpperCase() ?? null : null,
-    paypalEmail: input.method === "paypal" ? input.paypalEmail ?? null : null,
-    stripeAccount: input.method === "stripe" ? input.stripeAccount ?? null : null
+    iban: input.method === "iban" ? (input.iban?.replace(/\s/g, "").toUpperCase() ?? null) : null,
+    paypalEmail: input.method === "paypal" ? (input.paypalEmail ?? null) : null
   });
 }

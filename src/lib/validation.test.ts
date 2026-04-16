@@ -38,7 +38,9 @@ describe("parseMonthParam", () => {
 describe("social profile extraction", () => {
   it("extracts TikTok handles from profile URLs", () => {
     expect(extractTiktokProfileHandle("https://www.tiktok.com/@RetroMuscle")).toBe("@retromuscle");
-    expect(extractTiktokProfileHandle("https://tiktok.com/@retro.muscle/video/123")).toBe("@retro.muscle");
+    expect(extractTiktokProfileHandle("https://tiktok.com/@retro.muscle/video/123")).toBe(
+      "@retro.muscle"
+    );
     expect(isValidTiktokUrl("https://www.tiktok.com/@retro_muscle")).toBe(true);
   });
 
@@ -48,7 +50,9 @@ describe("social profile extraction", () => {
   });
 
   it("extracts Instagram handles from profile URLs", () => {
-    expect(extractInstagramProfileHandle("https://www.instagram.com/RetroMuscle/")).toBe("@retromuscle");
+    expect(extractInstagramProfileHandle("https://www.instagram.com/RetroMuscle/")).toBe(
+      "@retromuscle"
+    );
     expect(extractInstagramProfileHandle("https://instagr.am/retro_muscle")).toBe("@retro_muscle");
     expect(isValidInstagramUrl("https://www.instagram.com/retro.muscle")).toBe(true);
   });

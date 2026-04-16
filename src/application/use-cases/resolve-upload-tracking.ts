@@ -23,6 +23,14 @@ export async function resolveUploadTrackingForUser(input: {
     throw new Error("Creator not found");
   }
 
+  if (!creator.contractSignedAt) {
+    throw new Error("Contract not signed");
+  }
+
+  if (creator.status !== "actif") {
+    throw new Error("Creator account is not active");
+  }
+
   if (input.monthlyTrackingId) {
     const byId = await repository.getMonthlyTrackingById(input.monthlyTrackingId);
     if (byId && byId.creatorId === creator.id) {

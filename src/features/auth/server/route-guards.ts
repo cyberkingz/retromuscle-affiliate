@@ -60,4 +60,3 @@ export async function protectPage(expectedTarget: RedirectTarget) {
     redirect(target);
   }
 }
-

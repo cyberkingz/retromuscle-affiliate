@@ -8,17 +8,18 @@ export interface CreatorSettingsData {
     country: string;
   };
   payoutProfile: {
-    method: "iban" | "paypal" | "stripe";
+    method: "iban" | "paypal";
     accountHolderName?: string | null;
     ibanLast4?: string | null;
     paypalEmail?: string | null;
-    stripeAccount?: string | null;
     createdAt: string;
     updatedAt: string;
   } | null;
 }
 
-export async function getCreatorSettingsData(input: { creatorId: string }): Promise<CreatorSettingsData> {
+export async function getCreatorSettingsData(input: {
+  creatorId: string;
+}): Promise<CreatorSettingsData> {
   const repository = getRepository();
 
   const [creator, payoutProfile] = await Promise.all([
@@ -30,9 +31,7 @@ export async function getCreatorSettingsData(input: { creatorId: string }): Prom
     throw new Error("Creator not found");
   }
 
-  const ibanLast4 = payoutProfile?.iban
-    ? payoutProfile.iban.replace(/\s+/g, "").slice(-4)
-    : null;
+  const ibanLast4 = payoutProfile?.iban ? payoutProfile.iban.replace(/\s+/g, "").slice(-4) : null;
 
   return {
     creator: {
@@ -48,7 +47,6 @@ export async function getCreatorSettingsData(input: { creatorId: string }): Prom
           accountHolderName: payoutProfile.accountHolderName ?? null,
           ibanLast4,
           paypalEmail: payoutProfile.paypalEmail ?? null,
-          stripeAccount: payoutProfile.stripeAccount ?? null,
           createdAt: payoutProfile.createdAt,
           updatedAt: payoutProfile.updatedAt
         }

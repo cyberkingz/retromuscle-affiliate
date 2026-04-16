@@ -13,7 +13,10 @@ export function AdminShell({ children }: PropsWithChildren) {
         Aller au contenu principal
       </a>
       <AdminHeader />
-      <main id="main-content" className="container-wide flex-1 overflow-x-hidden pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12">
+      <main
+        id="main-content"
+        className="container-wide flex-1 overflow-x-hidden pb-8 pt-6 sm:pb-12 sm:pt-10 md:pt-12"
+      >
         <div className="space-y-6">
           <SupabaseConfigWarning />
           {children}
@@ -22,4 +25,3 @@ export function AdminShell({ children }: PropsWithChildren) {
     </div>
   );
 }
-

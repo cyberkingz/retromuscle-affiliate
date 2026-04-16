@@ -54,9 +54,7 @@ class InMemoryRateLimitStorage implements RateLimitStorage {
     const now = Date.now();
     const existing = this.store.get(key);
     const state: BucketState =
-      !existing || existing.resetAt <= now
-        ? { resetAt: now + windowMs, count: 0 }
-        : existing;
+      !existing || existing.resetAt <= now ? { resetAt: now + windowMs, count: 0 } : existing;
 
     state.count += 1;
     this.store.set(key, state);
@@ -160,9 +158,7 @@ export async function rateLimit(options: RateLimitOptions): Promise<NextResponse
   const ip = getClientIp(options.request);
   const now = Date.now();
   const storage = options.storage ?? defaultStorage;
-  const bucketKey = options.userId
-    ? `${options.key}:${options.userId}`
-    : `${options.key}:${ip}`;
+  const bucketKey = options.userId ? `${options.key}:${options.userId}` : `${options.key}:${ip}`;
 
   const result = await storage.hit(bucketKey, options.windowMs, options.limit);
   const { count, resetAt } = result;

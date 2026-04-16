@@ -50,13 +50,17 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
   );
 
   return (
-    <DataTableCard title="Répertoire créateurs" subtitle="Base créateurs et statut de collaboration.">
+    <DataTableCard
+      title="Répertoire créateurs"
+      subtitle="Base créateurs et statut de collaboration."
+    >
       <div className="p-5">
         <DataTable
           data={rows}
           columns={columns}
           pageSize={10}
-          emptyMessage="Aucun createur."
+          emptyMessage="Aucun créateur."
+          aria-label="Répertoire des créateurs"
           getRowId={(row) => row.creatorId}
           renderMobileRow={(row) => (
             <div className="rounded-2xl border border-line bg-white/95 p-4 space-y-3">

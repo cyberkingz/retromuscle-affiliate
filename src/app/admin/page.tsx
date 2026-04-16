@@ -6,7 +6,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Admin RetroMuscle",
-  description: "Operations: validation des contenus, suivi des paiements, et pilotage des createurs.",
+  description:
+    "Operations: validation des contenus, suivi des paiements, et pilotage des créateurs.",
   path: "/admin",
   noIndex: true
 });
@@ -30,7 +31,5 @@ export default async function AdminRoute({ searchParams }: AdminRouteProps) {
 
   const data = await getAdminDashboardData({ month });
 
-  return (
-    <AdminDashboardPage data={data} />
-  );
+  return <AdminDashboardPage data={data} />;
 }

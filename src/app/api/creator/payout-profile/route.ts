@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isValidEmail } from "@/lib/validation";
 
-type PayoutMethod = "iban" | "paypal" | "stripe";
+type PayoutMethod = "iban" | "paypal";
 
 function normalizeIban(value: string): string {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -26,7 +26,7 @@ function maskIbanLast4(value: string | null | undefined): string | null {
 }
 
 function parseMethod(value: unknown): PayoutMethod {
-  if (value === "iban" || value === "paypal" || value === "stripe") {
+  if (value === "iban" || value === "paypal") {
     return value;
   }
   throw new Error("Invalid payout method");
@@ -34,7 +34,13 @@ function parseMethod(value: unknown): PayoutMethod {
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
-  const limited = await rateLimit({ ctx, request, key: "creator:payout-profile:get", limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "creator:payout-profile:get",
+    limit: 60,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -56,17 +62,20 @@ export async function GET(request: Request) {
               accountHolderName: profile.accountHolderName ?? null,
               ibanLast4: maskIbanLast4(profile.iban),
               paypalEmail: profile.paypalEmail ?? null,
-              stripeAccount: profile.stripeAccount ?? null,
               updatedAt: profile.updatedAt
             }
           : null
       },
-      { status: 200 }
+      { status: 200, headers: { "Cache-Control": "private, no-cache" } }
     );
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to fetch payout profile" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to fetch payout profile"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -78,7 +87,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "creator:payout-profile:save", limit: 20, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "creator:payout-profile:save",
+    limit: 20,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -98,7 +113,11 @@ export async function POST(request: Request) {
   }
 
   if (!rawBody || typeof rawBody !== "object") {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Payload invalide." });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Payload invalide."
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -109,7 +128,11 @@ export async function POST(request: Request) {
   try {
     method = parseMethod(input.method);
   } catch (error) {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Invalid method" });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: error instanceof Error ? error.message : "Invalid method"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -118,16 +141,23 @@ export async function POST(request: Request) {
     typeof input.accountHolderName === "string" ? input.accountHolderName.trim() : "";
   const ibanRaw = typeof input.iban === "string" ? input.iban.trim() : "";
   const paypalEmailRaw = typeof input.paypalEmail === "string" ? input.paypalEmail.trim() : "";
-  const stripeAccountRaw = typeof input.stripeAccount === "string" ? input.stripeAccount.trim() : "";
 
   if (method === "iban") {
     if (accountHolderName.length < 2) {
-      const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Nom titulaire invalide." });
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Nom titulaire invalide."
+      });
       if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
       return response;
     }
     if (ibanRaw && !isLikelyIban(ibanRaw)) {
-      const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "IBAN invalide." });
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "IBAN invalide."
+      });
       if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
       return response;
     }
@@ -135,7 +165,11 @@ export async function POST(request: Request) {
 
   if (method === "paypal") {
     if (!paypalEmailRaw || !isValidEmail(paypalEmailRaw)) {
-      const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Email PayPal invalide." });
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Email PayPal invalide."
+      });
       if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
       return response;
     }
@@ -147,8 +181,7 @@ export async function POST(request: Request) {
       method,
       accountHolderName: method === "iban" ? accountHolderName : null,
       iban: method === "iban" && ibanRaw ? normalizeIban(ibanRaw) : null,
-      paypalEmail: method === "paypal" ? paypalEmailRaw.toLowerCase() : null,
-      stripeAccount: method === "stripe" ? stripeAccountRaw : null
+      paypalEmail: method === "paypal" ? paypalEmailRaw.toLowerCase() : null
     });
 
     const response = apiJson(ctx, { ok: true }, { status: 200 });

@@ -29,7 +29,10 @@ function parsePayload(body: unknown): ContractSignPayload {
 
   const input = body as Record<string, unknown>;
   const signerName = typeof input.signerName === "string" ? input.signerName.trim() : "";
-  const accepted = input.accepted && typeof input.accepted === "object" ? (input.accepted as Record<string, unknown>) : {};
+  const accepted =
+    input.accepted && typeof input.accepted === "object"
+      ? (input.accepted as Record<string, unknown>)
+      : {};
 
   const terms = Boolean(accepted.terms);
   const age18 = Boolean(accepted.age18);
@@ -46,7 +49,10 @@ function parsePayload(body: unknown): ContractSignPayload {
 }
 
 function getClientIp(request: Request): string | null {
-  const forwarded = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || request.headers.get("cf-connecting-ip");
+  const forwarded =
+    request.headers.get("x-forwarded-for") ||
+    request.headers.get("x-real-ip") ||
+    request.headers.get("cf-connecting-ip");
   if (!forwarded) {
     return null;
   }
@@ -61,7 +67,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "contract:sign", limit: 30, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "contract:sign",
+    limit: 30,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -108,13 +120,21 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (creatorError) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to load creator profile." });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to load creator profile."
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
   if (!creator?.id) {
-    const response = apiError(ctx, { status: 404, code: "NOT_FOUND", message: "Creator not found" });
+    const response = apiError(ctx, {
+      status: 404,
+      code: "NOT_FOUND",
+      message: "Creator not found"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -140,7 +160,11 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (signatureInsert.error) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to sign contract." });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to sign contract."
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -170,7 +194,11 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (updateError) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to finalize contract signature." });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to finalize contract signature."
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

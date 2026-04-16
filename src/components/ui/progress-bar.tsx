@@ -11,7 +11,9 @@ export function ProgressBar({ percent, label, className }: ProgressBarProps) {
 
   return (
     <div className={cn("space-y-2", className)}>
-      {label ? <p className="text-xs uppercase tracking-[0.12em] text-foreground/60">{label}</p> : null}
+      {label ? (
+        <p className="text-xs uppercase tracking-[0.12em] text-foreground/60">{label}</p>
+      ) : null}
       <div
         className="h-2.5 w-full overflow-hidden rounded-full border border-line bg-foreground/10"
         role="progressbar"

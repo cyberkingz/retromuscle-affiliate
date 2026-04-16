@@ -33,7 +33,6 @@ function createProfile(overrides: Partial<CreatorPayoutProfile> = {}): CreatorPa
     accountHolderName: "Test Creator",
     iban: "FR7630006000011234567890189",
     paypalEmail: null,
-    stripeAccount: null,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     ...overrides
@@ -59,17 +58,21 @@ function makeMockRepository(overrides: Partial<CreatorRepository> = {}): Creator
     reviewVideoAsset: vi.fn(),
     reviewVideoAndUpdateTracking: vi.fn(),
     updateTrackingDelivered: vi.fn(),
-    listRates: vi.fn(),
+    listRates: vi.fn().mockResolvedValue([]),
     updateVideoRate: vi.fn(),
+    deleteVideoRate: vi.fn(),
     listPayoutProfiles: vi.fn(),
     upsertPayoutProfile: vi.fn(),
     listContractSignaturesByCreatorId: vi.fn(),
     listCreatorApplications: vi.fn(),
     getCreatorApplicationByUserId: vi.fn(),
+    upsertCreatorApplication: vi.fn(),
     reviewCreatorApplication: vi.fn(),
     getCreatorByUserId: vi.fn(),
+    updateCreatorStatus: vi.fn(),
     upsertCreatorFromApplication: vi.fn(),
     createMonthlyTracking: vi.fn(),
+    getVideoById: vi.fn(),
     ...overrides
   } as unknown as CreatorRepository;
 }
@@ -85,9 +88,9 @@ describe("markMonthlyTrackingPaid", () => {
     });
     vi.mocked(getRepository).mockReturnValue(repo);
 
-    await expect(
-      markMonthlyTrackingPaid({ monthlyTrackingId: "nonexistent" })
-    ).rejects.toThrow("Impossible: suivi mensuel introuvable.");
+    await expect(markMonthlyTrackingPaid({ monthlyTrackingId: "nonexistent" })).rejects.toThrow(
+      "Impossible: suivi mensuel introuvable."
+    );
   });
 
   it("throws when payout profile is missing", async () => {
@@ -98,9 +101,9 @@ describe("markMonthlyTrackingPaid", () => {
     });
     vi.mocked(getRepository).mockReturnValue(repo);
 
-    await expect(
-      markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })
-    ).rejects.toThrow("Impossible: ce createur n'a pas configure son profil de paiement.");
+    await expect(markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })).rejects.toThrow(
+      "Impossible: ce créateur n'a pas configure son profil de paiement."
+    );
   });
 
   it("throws when IBAN profile has no IBAN value", async () => {
@@ -112,9 +115,9 @@ describe("markMonthlyTrackingPaid", () => {
     });
     vi.mocked(getRepository).mockReturnValue(repo);
 
-    await expect(
-      markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })
-    ).rejects.toThrow("Impossible: le profil de paiement IBAN est incomplet (IBAN manquant).");
+    await expect(markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })).rejects.toThrow(
+      "Impossible: le profil de paiement IBAN est incomplet (IBAN manquant)."
+    );
   });
 
   it("throws when PayPal profile has no email", async () => {
@@ -126,23 +129,9 @@ describe("markMonthlyTrackingPaid", () => {
     });
     vi.mocked(getRepository).mockReturnValue(repo);
 
-    await expect(
-      markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })
-    ).rejects.toThrow("Impossible: le profil de paiement PayPal est incomplet (email manquant).");
-  });
-
-  it("throws when Stripe profile has no account", async () => {
-    const tracking = createTracking();
-    const profile = createProfile({ method: "stripe", stripeAccount: null });
-    const repo = makeMockRepository({
-      getMonthlyTrackingById: vi.fn().mockResolvedValue(tracking),
-      getPayoutProfileByCreatorId: vi.fn().mockResolvedValue(profile)
-    });
-    vi.mocked(getRepository).mockReturnValue(repo);
-
-    await expect(
-      markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })
-    ).rejects.toThrow("Impossible: le profil de paiement Stripe est incomplet (compte manquant).");
+    await expect(markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID })).rejects.toThrow(
+      "Impossible: le profil de paiement PayPal est incomplet (email manquant)."
+    );
   });
 
   it("returns existing tracking unchanged when already paid (idempotency)", async () => {
@@ -162,7 +151,10 @@ describe("markMonthlyTrackingPaid", () => {
   it("calls markMonthlyTrackingPaid on the repository with correct params", async () => {
     const tracking = createTracking({ paymentStatus: "en_cours" });
     const profile = createProfile({ method: "iban", iban: "FR7630006000011234567890189" });
-    const updatedTracking = createTracking({ paymentStatus: "paye", paidAt: "2026-02-23T12:00:00Z" });
+    const updatedTracking = createTracking({
+      paymentStatus: "paye",
+      paidAt: "2026-02-23T12:00:00Z"
+    });
 
     const repo = makeMockRepository({
       getMonthlyTrackingById: vi.fn().mockResolvedValue(tracking),
@@ -178,7 +170,8 @@ describe("markMonthlyTrackingPaid", () => {
 
     expect(repo.markMonthlyTrackingPaid).toHaveBeenCalledWith({
       monthlyTrackingId: TRACKING_ID,
-      paidAt: "2026-02-23T12:00:00Z"
+      paidAt: "2026-02-23T12:00:00Z",
+      paidAmount: expect.any(Number)
     });
     expect(result).toBe(updatedTracking);
   });
@@ -199,7 +192,8 @@ describe("markMonthlyTrackingPaid", () => {
 
     expect(repo.markMonthlyTrackingPaid).toHaveBeenCalledWith({
       monthlyTrackingId: TRACKING_ID,
-      paidAt: null
+      paidAt: null,
+      paidAmount: expect.any(Number)
     });
   });
 
@@ -208,26 +202,6 @@ describe("markMonthlyTrackingPaid", () => {
     const profile = createProfile({
       method: "paypal",
       paypalEmail: "creator@example.com",
-      iban: null
-    });
-    const updatedTracking = createTracking({ paymentStatus: "paye" });
-
-    const repo = makeMockRepository({
-      getMonthlyTrackingById: vi.fn().mockResolvedValue(tracking),
-      getPayoutProfileByCreatorId: vi.fn().mockResolvedValue(profile),
-      markMonthlyTrackingPaid: vi.fn().mockResolvedValue(updatedTracking)
-    });
-    vi.mocked(getRepository).mockReturnValue(repo);
-
-    const result = await markMonthlyTrackingPaid({ monthlyTrackingId: TRACKING_ID });
-    expect(result).toBe(updatedTracking);
-  });
-
-  it("succeeds with a valid Stripe profile", async () => {
-    const tracking = createTracking({ paymentStatus: "en_cours" });
-    const profile = createProfile({
-      method: "stripe",
-      stripeAccount: "acct_abc123",
       iban: null
     });
     const updatedTracking = createTracking({ paymentStatus: "paye" });

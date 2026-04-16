@@ -1,6 +1,10 @@
 import { getRepository } from "@/application/dependencies";
+import { calculatePayout } from "@/domain/services/calculate-payout";
 
-export async function markMonthlyTrackingPaid(input: { monthlyTrackingId: string; paidAt?: string | null }) {
+export async function markMonthlyTrackingPaid(input: {
+  monthlyTrackingId: string;
+  paidAt?: string | null;
+}) {
   const repository = getRepository();
 
   const tracking = await repository.getMonthlyTrackingById(input.monthlyTrackingId);
@@ -16,7 +20,7 @@ export async function markMonthlyTrackingPaid(input: { monthlyTrackingId: string
   // Guard: verify creator has a valid payout profile
   const profile = await repository.getPayoutProfileByCreatorId(tracking.creatorId);
   if (!profile) {
-    throw new Error("Impossible: ce createur n'a pas configure son profil de paiement.");
+    throw new Error("Impossible: ce créateur n'a pas configure son profil de paiement.");
   }
 
   if (profile.method === "iban" && !profile.iban) {
@@ -25,12 +29,14 @@ export async function markMonthlyTrackingPaid(input: { monthlyTrackingId: string
   if (profile.method === "paypal" && !profile.paypalEmail) {
     throw new Error("Impossible: le profil de paiement PayPal est incomplet (email manquant).");
   }
-  if (profile.method === "stripe" && !profile.stripeAccount) {
-    throw new Error("Impossible: le profil de paiement Stripe est incomplet (compte manquant).");
-  }
+
+  // Freeze the payout amount at mark-paid time using current rates.
+  const rates = await repository.listRates();
+  const payout = calculatePayout(tracking.delivered, rates);
 
   return repository.markMonthlyTrackingPaid({
     monthlyTrackingId: input.monthlyTrackingId,
-    paidAt: input.paidAt ?? null
+    paidAt: input.paidAt ?? null,
+    paidAmount: payout.total
   });
 }

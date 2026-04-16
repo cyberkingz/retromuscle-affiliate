@@ -36,7 +36,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "auth:sign-up", limit: 10, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "auth:sign-up",
+    limit: 10,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -82,12 +88,12 @@ export async function POST(request: Request) {
     const raw = (signUpError.message ?? "").toLowerCase();
     const message = (() => {
       if (raw.includes("already") && raw.includes("registered")) {
-        return "Un compte existe deja avec cet email. Connecte-toi.";
+        return "Un compte existe déjà avec cet email. Connecte-toi.";
       }
       if (raw.includes("password") && (raw.includes("weak") || raw.includes("strength"))) {
         return "Mot de passe trop faible. Choisis-en un plus solide.";
       }
-      return "Impossible de creer le compte.";
+      return "Impossible de créer le compte.";
     })();
 
     const isServerIssue = typeof signUpError.status === "number" && signUpError.status >= 500;

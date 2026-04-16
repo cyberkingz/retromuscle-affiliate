@@ -1,6 +1,9 @@
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
 import { InMemoryCreatorRepository } from "@/application/repositories/in-memory-creator-repository";
-import { createSupabaseServerClient, isSupabaseConfigured } from "@/infrastructure/supabase/server-client";
+import {
+  createSupabaseServerClient,
+  isSupabaseConfigured
+} from "@/infrastructure/supabase/server-client";
 import { SupabaseCreatorRepository } from "@/infrastructure/supabase/supabase-creator-repository";
 
 /**

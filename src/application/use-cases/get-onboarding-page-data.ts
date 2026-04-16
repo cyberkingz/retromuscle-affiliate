@@ -7,10 +7,10 @@ export async function getOnboardingPageData(): Promise<OnboardingPageData> {
     steps: [
       {
         title: "Informations personnelles",
-        fields: ["Nom createur", "WhatsApp", "Pays", "Adresse livraison"]
+        fields: ["Nom créateur", "WhatsApp", "Pays", "Adresse livraison"]
       },
       {
-        title: "Profil createur",
+        title: "Profil créateur",
         fields: ["Liens TikTok/Instagram", "Followers"]
       }
     ]

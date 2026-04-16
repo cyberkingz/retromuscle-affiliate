@@ -28,9 +28,23 @@ function iconFor(kind: ActivityItem["kind"]) {
 }
 
 function badgeFor(tone: ActivityItem["tone"]) {
-  if (tone === "success") return <Badge className="bg-mint/15 text-mint border-mint/20" variant="outline">OK</Badge>;
-  if (tone === "warning") return <Badge className="bg-primary/15 text-primary border-primary/25" variant="outline">A corriger</Badge>;
-  return <Badge className="bg-frost text-foreground/70 border-line" variant="outline">Info</Badge>;
+  if (tone === "success")
+    return (
+      <Badge className="bg-mint/15 text-mint border-mint/20" variant="outline">
+        OK
+      </Badge>
+    );
+  if (tone === "warning")
+    return (
+      <Badge className="bg-primary/15 text-primary border-primary/25" variant="outline">
+        A corriger
+      </Badge>
+    );
+  return (
+    <Badge className="bg-frost text-foreground/70 border-line" variant="outline">
+      Info
+    </Badge>
+  );
 }
 
 interface ActivityFeedCardProps {
@@ -42,10 +56,8 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
     <CardSection className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Activite recente</p>
-          <p className="mt-2 text-sm text-foreground/75">
-            Tes uploads, validations et paiements.
-          </p>
+          <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">Activite recente</p>
+          <p className="mt-2 text-sm text-foreground/75">Tes uploads, validations et paiements.</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-foreground/60">
           <Clock className="h-4 w-4" />
@@ -71,7 +83,7 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
                   {item.detail ? (
                     <p className="mt-1 text-xs text-foreground/65">{item.detail}</p>
                   ) : null}
-                  <p className="mt-1 text-[11px] text-foreground/55">
+                  <p className="mt-1 text-[11px] text-foreground/70">
                     {new Date(item.timestamp).toLocaleString("fr-FR")}
                   </p>
                 </div>
@@ -84,4 +96,3 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
     </CardSection>
   );
 }
-

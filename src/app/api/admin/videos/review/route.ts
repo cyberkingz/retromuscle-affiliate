@@ -1,4 +1,6 @@
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
+import { getRepository } from "@/application/dependencies";
+import { sendVideoRejectedEmail } from "@/infrastructure/email/send-emails";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -22,7 +24,8 @@ function parsePayload(body: unknown): ReviewVideoPayload {
   const input = body as Record<string, unknown>;
   const videoId = typeof input.videoId === "string" ? input.videoId.trim() : "";
   const decision = input.decision;
-  const rejectionReason = typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
+  const rejectionReason =
+    typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
   if (!videoId || !isUuid(videoId)) {
     throw new Error("Invalid videoId");
@@ -47,7 +50,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "admin:videos:review", limit: 120, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:videos:review",
+    limit: 120,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -58,7 +67,14 @@ export async function POST(request: Request) {
   }
 
   // Per-user rate limit (stricter, scoped to authenticated admin)
-  const userLimited = await rateLimit({ ctx, request, key: "admin:videos:review", limit: 120, windowMs: 60_000, userId: auth.session.userId });
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:videos:review",
+    limit: 120,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
   if (userLimited) {
     return userLimited;
   }
@@ -80,7 +96,23 @@ export async function POST(request: Request) {
       rejectionReason: payload.rejectionReason
     });
 
-    void writeAdminAuditLog({
+    // Fire-and-forget email on rejection
+    if (payload.decision === "rejected") {
+      getRepository()
+        .getCreatorById(result.video.creatorId)
+        .then((creator) => {
+          if (!creator) return;
+          return sendVideoRejectedEmail({
+            to: creator.email,
+            creatorName: creator.displayName,
+            videoType: result.video.videoType,
+            reason: payload.rejectionReason
+          });
+        })
+        .catch(console.error);
+    }
+
+    writeAdminAuditLog({
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
@@ -90,14 +122,18 @@ export async function POST(request: Request) {
       metadata: {
         decision: payload.decision,
         rejectionReason: payload.rejectionReason ?? null
-        }
-    });
+      }
+    }).catch(console.error);
 
     const response = apiJson(ctx, result, { status: 200 });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to review video" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to review video"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }

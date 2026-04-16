@@ -1,10 +1,4 @@
-import {
-  creators,
-  monthlyTrackings,
-  rushes,
-  videos,
-  references
-} from "@/data/mock-db";
+import { creators, monthlyTrackings, rushes, videos, references } from "@/data/mock-db";
 import type {
   ApplicationStatus,
   Creator,
@@ -53,7 +47,13 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   }
 
   async listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]> {
-    return monthlyTrackings.filter((tracking) => tracking.creatorId === creatorId).sort(byMonthDesc);
+    return monthlyTrackings
+      .filter((tracking) => tracking.creatorId === creatorId)
+      .sort(byMonthDesc);
+  }
+
+  async getVideoById(videoId: string): Promise<VideoAsset | null> {
+    return videos.find((v) => v.id === videoId) ?? null;
   }
 
   async listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]> {
@@ -134,9 +134,7 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     throw new Error("Config updates are not available in offline mode");
   }
 
-  async deleteVideoRate(_input: {
-    videoType: VideoRate["videoType"];
-  }): Promise<VideoRate> {
+  async deleteVideoRate(_input: { videoType: VideoRate["videoType"] }): Promise<VideoRate> {
     throw new Error("Config updates are not available in offline mode");
   }
 
@@ -154,7 +152,6 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     accountHolderName?: string | null;
     iban?: string | null;
     paypalEmail?: string | null;
-    stripeAccount?: string | null;
   }): Promise<CreatorPayoutProfile> {
     throw new Error("Payout settings are not available in offline mode");
   }
@@ -173,6 +170,23 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     return null;
   }
 
+  async upsertCreatorApplication(_input: {
+    userId: string;
+    handle: string;
+    fullName: string;
+    email: string;
+    whatsapp: string;
+    country: string;
+    address: string;
+    socialTiktok?: string;
+    socialInstagram?: string;
+    followersTiktok: number;
+    followersInstagram: number;
+    submit: boolean;
+  }): Promise<CreatorApplication> {
+    throw new Error("Creator applications are not available in offline mode");
+  }
+
   async reviewCreatorApplication(_input: {
     userId: string;
     status: Exclude<ApplicationStatus, "draft" | "pending_review">;
@@ -183,6 +197,13 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async getCreatorByUserId(_userId: string): Promise<Creator | null> {
     return null;
+  }
+
+  async updateCreatorStatus(_input: {
+    creatorId: string;
+    status: Extract<Creator["status"], "actif" | "pause" | "inactif">;
+  }): Promise<Creator> {
+    throw new Error("Status updates are not available in offline mode");
   }
 
   async upsertCreatorFromApplication(_input: {

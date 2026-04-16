@@ -20,6 +20,7 @@ export interface CreatorRepository {
   getMonthlyTrackingById(monthlyTrackingId: string): Promise<MonthlyTracking | null>;
   listCreatorTrackings(creatorId: string): Promise<MonthlyTracking[]>;
 
+  getVideoById(videoId: string): Promise<VideoAsset | null>;
   listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]>;
   listVideosByTracking(monthlyTrackingId: string): Promise<VideoAsset[]>;
   listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]>;
@@ -57,7 +58,11 @@ export interface CreatorRepository {
     monthlyTrackingId: string;
     delivered: MonthlyTracking["delivered"];
   }): Promise<MonthlyTracking>;
-  markMonthlyTrackingPaid(input: { monthlyTrackingId: string; paidAt?: string | null }): Promise<MonthlyTracking>;
+  markMonthlyTrackingPaid(input: {
+    monthlyTrackingId: string;
+    paidAt?: string | null;
+    paidAmount?: number | null;
+  }): Promise<MonthlyTracking>;
 
   listRates(): Promise<VideoRate[]>;
 
@@ -66,9 +71,7 @@ export interface CreatorRepository {
     ratePerVideo: number;
   }): Promise<VideoRate>;
 
-  deleteVideoRate(input: {
-    videoType: VideoRate["videoType"];
-  }): Promise<VideoRate>;
+  deleteVideoRate(input: { videoType: VideoRate["videoType"] }): Promise<VideoRate>;
 
   // Creator payout details (creator-facing + admin views)
   getPayoutProfileByCreatorId(creatorId: string): Promise<CreatorPayoutProfile | null>;
@@ -80,15 +83,28 @@ export interface CreatorRepository {
     accountHolderName?: string | null;
     iban?: string | null;
     paypalEmail?: string | null;
-    stripeAccount?: string | null;
   }): Promise<CreatorPayoutProfile>;
 
   // Contract signatures (creator + admin views)
   listContractSignaturesByCreatorId(creatorId: string): Promise<CreatorContractSignature[]>;
 
-  // Applications (admin-facing)
+  // Applications (creator self-serve + admin)
   listCreatorApplications(status?: ApplicationStatus): Promise<CreatorApplication[]>;
   getCreatorApplicationByUserId(userId: string): Promise<CreatorApplication | null>;
+  upsertCreatorApplication(input: {
+    userId: string;
+    handle: string;
+    fullName: string;
+    email: string;
+    whatsapp: string;
+    country: string;
+    address: string;
+    socialTiktok?: string;
+    socialInstagram?: string;
+    followersTiktok: number;
+    followersInstagram: number;
+    submit: boolean;
+  }): Promise<CreatorApplication>;
   reviewCreatorApplication(input: {
     userId: string;
     status: Exclude<ApplicationStatus, "draft" | "pending_review">;
@@ -97,6 +113,10 @@ export interface CreatorRepository {
 
   // Creator provisioning (admin-facing)
   getCreatorByUserId(userId: string): Promise<Creator | null>;
+  updateCreatorStatus(input: {
+    creatorId: string;
+    status: Extract<Creator["status"], "actif" | "pause" | "inactif">;
+  }): Promise<Creator>;
   upsertCreatorFromApplication(input: {
     application: CreatorApplication;
     status: "actif" | "candidat";

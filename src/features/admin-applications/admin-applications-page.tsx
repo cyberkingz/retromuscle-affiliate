@@ -27,9 +27,9 @@ function statusLabel(status: ApplicationStatus): string {
     case "pending_review":
       return "A traiter";
     case "approved":
-      return "Approuve";
+      return "Approuvé";
     case "rejected":
-      return "Refuse";
+      return "Refusé";
     default:
       return status;
   }
@@ -62,10 +62,16 @@ interface AdminApplicationsPageProps {
 
 export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
   const auth = useAuth();
-  const [applications, setApplications] = useState(() => [...data.applications].sort(sortApplications));
-  const [filter, setFilter] = useState<ApplicationStatus>(() => resolveDefaultFilter(data.applications));
+  const [applications, setApplications] = useState(() =>
+    [...data.applications].sort(sortApplications)
+  );
+  const [filter, setFilter] = useState<ApplicationStatus>(() =>
+    resolveDefaultFilter(data.applications)
+  );
   const [search, setSearch] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(() => data.applications[0]?.userId ?? null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(
+    () => data.applications[0]?.userId ?? null
+  );
   const [reviewNotes, setReviewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -82,29 +88,26 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
     );
   }, [applications]);
 
-  const filtered = useMemo(
-    () => {
-      const needle = search.trim().toLowerCase();
-      return applications
-        .filter((application) => application.status === filter)
-        .filter((application) => {
-          if (!needle) return true;
-          return (
-            application.handle.toLowerCase().includes(needle) ||
-            application.email.toLowerCase().includes(needle) ||
-            application.fullName.toLowerCase().includes(needle)
-          );
-        })
-        .sort(sortApplications);
-    },
-    [applications, filter, search]
-  );
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return applications
+      .filter((application) => application.status === filter)
+      .filter((application) => {
+        if (!needle) return true;
+        return (
+          application.handle.toLowerCase().includes(needle) ||
+          application.email.toLowerCase().includes(needle) ||
+          application.fullName.toLowerCase().includes(needle)
+        );
+      })
+      .sort(sortApplications);
+  }, [applications, filter, search]);
 
   const columns = useMemo<ColumnDef<CreatorApplication>[]>(
     () => [
       {
         id: "creator",
-        header: "Createur",
+        header: "Créateur",
         accessorFn: (row) => row.handle,
         cell: ({ row }) => {
           const application = row.original;
@@ -123,8 +126,10 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         cell: ({ row }) => {
           const app = row.original;
           const parts: string[] = [];
-          if (app.followersTiktok > 0) parts.push(`TT ${app.followersTiktok.toLocaleString("fr-FR")}`);
-          if (app.followersInstagram > 0) parts.push(`IG ${app.followersInstagram.toLocaleString("fr-FR")}`);
+          if (app.followersTiktok > 0)
+            parts.push(`TT ${app.followersTiktok.toLocaleString("fr-FR")}`);
+          if (app.followersInstagram > 0)
+            parts.push(`IG ${app.followersInstagram.toLocaleString("fr-FR")}`);
           return parts.length > 0 ? parts.join(" / ") : "0";
         }
       },
@@ -142,7 +147,10 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         accessorKey: "status",
         header: "Statut",
         cell: ({ row }) => (
-          <StatusBadge label={statusLabel(row.original.status)} tone={statusTone(row.original.status)} />
+          <StatusBadge
+            label={statusLabel(row.original.status)}
+            tone={statusTone(row.original.status)}
+          />
         )
       }
     ],
@@ -170,7 +178,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
       return;
     }
     if (!selected) {
-      setErrorMessage("Selection manquante.");
+      setErrorMessage("Sélection manquante.");
       return;
     }
     if (decision === "rejected" && reviewNotes.trim().length === 0) {
@@ -206,7 +214,9 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
           };
 
       if (!response.ok || !("application" in payload) || !payload.application) {
-        throw new Error(("message" in payload && payload.message) ? payload.message : "Erreur review candidature");
+        throw new Error(
+          "message" in payload && payload.message ? payload.message : "Erreur review candidature"
+        );
       }
 
       const nextApplications = applications.map((item) =>
@@ -216,9 +226,9 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
 
       if (decision === "approved") {
         setLastApproval(payload.creatorId ? { creatorId: payload.creatorId } : null);
-        setStatusMessage("Candidature approuvee. Le compte peut maintenant acceder au dashboard.");
+        setStatusMessage("Candidature approuvée. Le compte peut maintenant accéder au dashboard.");
       } else {
-        setStatusMessage("Candidature refusee. Le createur verra ton feedback.");
+        setStatusMessage("Candidature refusée. Le créateur verra ton feedback.");
       }
 
       // Keep the current application selected so admin sees the confirmation.
@@ -234,8 +244,8 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
     <div className="space-y-6">
       <SectionHeading
         eyebrow="Admin"
-        title="Candidatures createurs"
-        subtitle="Valide les dossiers, ajoute un feedback clair, et declenche l'acces au dashboard."
+        title="Candidatures créateurs"
+        subtitle="Valide les dossiers, ajoute un feedback clair, et déclenche l'accès au dashboard."
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -296,7 +306,9 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                 <Card
                   className={cn(
                     "space-y-3 bg-white/95 p-4",
-                    isSelected ? "border-secondary/40 shadow-[0_18px_40px_-22px_rgba(8,17,66,0.55)]" : undefined
+                    isSelected
+                      ? "border-secondary/40 shadow-[0_18px_40px_-22px_rgba(8,17,66,0.55)]"
+                      : undefined
                   )}
                   onClick={() => selectApplication(row.userId)}
                   role="button"
@@ -317,10 +329,16 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                   </div>
                   <div className="grid gap-1 text-sm text-foreground/75">
                     <p>
-                      {row.followersTiktok > 0 ? `TT ${row.followersTiktok.toLocaleString("fr-FR")}` : ""}
+                      {row.followersTiktok > 0
+                        ? `TT ${row.followersTiktok.toLocaleString("fr-FR")}`
+                        : ""}
                       {row.followersTiktok > 0 && row.followersInstagram > 0 ? " / " : ""}
-                      {row.followersInstagram > 0 ? `IG ${row.followersInstagram.toLocaleString("fr-FR")}` : ""}
-                      {row.followersTiktok === 0 && row.followersInstagram === 0 ? "0 followers" : " followers"}
+                      {row.followersInstagram > 0
+                        ? `IG ${row.followersInstagram.toLocaleString("fr-FR")}`
+                        : ""}
+                      {row.followersTiktok === 0 && row.followersInstagram === 0
+                        ? "0 followers"
+                        : " followers"}
                     </p>
                     <p>
                       {row.country} • {row.submittedAt ? toShortDate(row.submittedAt) : "Brouillon"}
@@ -333,19 +351,26 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         </DataTableCard>
 
         <Card className="space-y-4 bg-white/95 p-5 sm:p-6">
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Detail dossier</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">Détail dossier</p>
 
           {!selected ? (
-            <p className="text-sm text-foreground/70">Selectionne un dossier pour afficher les details.</p>
+            <p className="text-sm text-foreground/70">
+              Sélectionne un dossier pour afficher les détails.
+            </p>
           ) : (
             <div className="space-y-4">
               <div className="rounded-2xl border border-line bg-frost/65 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-display text-3xl uppercase leading-none">{selected.handle}</p>
+                    <p className="font-display text-3xl uppercase leading-none">
+                      {selected.handle}
+                    </p>
                     <p className="text-sm text-foreground/70">{selected.fullName}</p>
                   </div>
-                  <StatusBadge label={statusLabel(selected.status)} tone={statusTone(selected.status)} />
+                  <StatusBadge
+                    label={statusLabel(selected.status)}
+                    tone={statusTone(selected.status)}
+                  />
                 </div>
                 <div className="mt-3 grid gap-2 text-sm text-foreground/75">
                   <p>Email: {selected.email}</p>
@@ -361,7 +386,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Liens</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Liens</p>
                 <div className="grid gap-2 text-sm">
                   {selected.socialTiktok ? (
                     <a
@@ -387,15 +412,17 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
-                  Notes de review (visible createur)
+                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+                  Notes de review (visible créateur)
                 </p>
                 <Textarea
                   value={reviewNotes}
                   onChange={(event) => setReviewNotes(event.target.value)}
                   placeholder="Ex: Super fit. Profil ideal pour contenus OOTD + before/after."
                   rows={5}
-                  disabled={submitting || selected.status === "approved" || selected.status === "rejected"}
+                  disabled={
+                    submitting || selected.status === "approved" || selected.status === "rejected"
+                  }
                 />
               </div>
 
@@ -408,7 +435,12 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
 
               {selected.status === "pending_review" ? (
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="pill" disabled={submitting} onClick={() => submitDecision("approved")}>
+                  <Button
+                    type="button"
+                    size="pill"
+                    disabled={submitting}
+                    onClick={() => submitDecision("approved")}
+                  >
                     {submitting ? "..." : "Approuver"}
                   </Button>
                   <Button
@@ -425,15 +457,8 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
 
               {selected.status === "approved" && lastApproval?.creatorId ? (
                 <Button asChild size="pill" variant="outline">
-                  <Link
-                    href={{
-                      pathname: "/dashboard",
-                      query: {
-                        creator: lastApproval.creatorId
-                      }
-                    }}
-                  >
-                    Voir le dashboard
+                  <Link href={`/admin/creators/${lastApproval.creatorId}`}>
+                    Voir la fiche créateur
                   </Link>
                 </Button>
               ) : null}

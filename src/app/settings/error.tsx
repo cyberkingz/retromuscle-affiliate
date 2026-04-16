@@ -20,9 +20,9 @@ export default function SettingsError({
   return (
     <div className="py-12">
       <Card className="mx-auto max-w-xl space-y-4 border-line bg-white/95 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.14em] text-foreground/55">Erreur parametres</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-foreground/70">Erreur paramètres</p>
         <h1 className="font-display text-4xl uppercase leading-none text-secondary">
-          Impossible de charger les parametres
+          Impossible de charger les paramètres
         </h1>
         <p className="text-sm text-foreground/75">
           Recharge la page ou retourne au dashboard. Si le probleme persiste, reconnecte-toi.

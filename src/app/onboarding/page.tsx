@@ -4,7 +4,7 @@ import { protectPage } from "@/features/auth/server/route-guards";
 import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "Onboarding Programme Affilie RetroMuscle",
+  title: "Onboarding Programme Créateur RetroMuscle",
   description: "Finalise ton dossier: infos perso + reseaux, puis soumets pour validation.",
   path: "/onboarding"
 });

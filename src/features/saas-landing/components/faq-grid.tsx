@@ -10,7 +10,9 @@ export function FaqGrid({ items }: FaqGridProps) {
   return (
     <section className="mx-auto max-w-3xl space-y-8 animate-fade-up [animation-delay:300ms]">
       <div className="text-center">
-        <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">FAQ</h2>
+        <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
+          FAQ
+        </h2>
         <p className="mt-2 text-foreground/70">Questions fréquentes sur le programme.</p>
       </div>
 

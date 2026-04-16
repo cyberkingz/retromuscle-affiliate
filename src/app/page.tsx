@@ -5,7 +5,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "RetroMuscle Programme Créateur",
-  description: "Tu filmes deja du contenu fitness. Maintenant sois paye pour ca, au tarif actif de chaque type de video validee.",
+  description:
+    "Tu filmes déjà du contenu fitness. Maintenant sois payé pour ça, au tarif actif de chaque type de vidéo validée.",
   path: ""
 });
 

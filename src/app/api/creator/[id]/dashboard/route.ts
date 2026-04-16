@@ -30,7 +30,11 @@ export async function GET(request: Request, context: RouteContext) {
 
   const creatorId = (await context.params).id?.trim();
   if (!creatorId || !isUuid(creatorId)) {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid creator id" });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid creator id"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -38,9 +42,16 @@ export async function GET(request: Request, context: RouteContext) {
   if (authSession.role !== "admin") {
     let ownCreatorId: string | null = null;
     try {
-      ownCreatorId = await findCreatorIdForUser({ userId: authSession.userId, email: authSession.email });
+      ownCreatorId = await findCreatorIdForUser({
+        userId: authSession.userId,
+        email: authSession.email
+      });
     } catch {
-      const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to resolve creator mapping" });
+      const response = apiError(ctx, {
+        status: 500,
+        code: "INTERNAL",
+        message: "Unable to resolve creator mapping"
+      });
       if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
       return response;
     }
@@ -68,11 +79,15 @@ export async function GET(request: Request, context: RouteContext) {
 
   try {
     const data = await getCreatorDashboardData({ creatorId, month });
-    const response = apiJson(ctx, data, { status: 200 });
+    const response = apiJson(ctx, data, {
+      status: 200,
+      headers: { "Cache-Control": "private, no-cache" }
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
-    const status = error instanceof Error && error.message.toLowerCase().includes("not found") ? 404 : 500;
+    const status =
+      error instanceof Error && error.message.toLowerCase().includes("not found") ? 404 : 500;
     const response = apiError(ctx, {
       status,
       code: status === 404 ? "NOT_FOUND" : "INTERNAL",

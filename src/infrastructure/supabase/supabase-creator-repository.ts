@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { Database, Tables } from "./database.types";
+type TypedClient = SupabaseClient<Database>;
+
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
 import {
   type ApplicationStatus,
@@ -19,110 +22,14 @@ import {
   type VideoTypeCount
 } from "@/domain/types";
 
-interface CreatorRow {
-  id: string;
-  user_id: string | null;
-  handle: string;
-  display_name: string;
-  email: string;
-  whatsapp: string;
-  country: string;
-  address: string;
-  followers_tiktok: number;
-  followers_instagram: number;
-  social_links: Record<string, unknown> | null;
-  status: string;
-  start_date: string;
-  contract_signed_at: string | null;
-  notes: string | null;
-}
-
-interface MonthlyTrackingRow {
-  id: string;
-  month: string;
-  creator_id: string;
-  delivered: Record<string, unknown>;
-  payment_status: string;
-  paid_at: string | null;
-}
-
-interface VideoRow {
-  id: string;
-  monthly_tracking_id: string;
-  creator_id: string;
-  video_type: string;
-  file_url: string;
-  duration_seconds: number;
-  resolution: "1080x1920" | "1080x1080";
-  file_size_mb: number;
-  status: string;
-  rejection_reason: string | null;
-  reviewed_at?: string | null;
-  reviewed_by?: string | null;
-  created_at: string;
-}
-
-interface RushRow {
-  id: string;
-  monthly_tracking_id: string;
-  creator_id: string;
-  file_name: string;
-  file_size_mb: number;
-  file_url?: string | null;
-  created_at: string;
-}
-
-interface VideoRateRow {
-  video_type: string;
-  rate_per_video: number | string;
-  is_placeholder: boolean | null;
-}
-
-interface CreatorApplicationRow {
-  id: string;
-  user_id: string;
-  status: string;
-  handle: string;
-  full_name: string;
-  email: string;
-  whatsapp: string;
-  country: string;
-  address: string;
-  social_tiktok: string | null;
-  social_instagram: string | null;
-  followers_tiktok: number;
-  followers_instagram: number;
-  submitted_at: string | null;
-  reviewed_at: string | null;
-  review_notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface CreatorPayoutProfileRow {
-  creator_id: string;
-  method: string;
-  account_holder_name: string | null;
-  iban: string | null;
-  paypal_email: string | null;
-  stripe_account: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ContractSignatureRow {
-  id: string;
-  creator_id: string;
-  user_id: string;
-  contract_version: string;
-  contract_checksum: string;
-  signer_name: string;
-  acceptance: Record<string, unknown>;
-  ip: string | null;
-  user_agent: string | null;
-  signed_at: string;
-  created_at: string;
-}
+type CreatorRow = Tables<"creators">;
+type MonthlyTrackingRow = Tables<"monthly_tracking">;
+type VideoRow = Tables<"videos">;
+type RushRow = Tables<"rushes">;
+type VideoRateRow = Tables<"video_rates">;
+type CreatorApplicationRow = Tables<"creator_applications">;
+type CreatorPayoutProfileRow = Tables<"creator_payout_profiles">;
+type ContractSignatureRow = Tables<"creator_contract_signatures">;
 
 function toVideoType(value: string): VideoType {
   const normalized = value.toUpperCase();
@@ -165,15 +72,16 @@ function toApplicationStatus(value: string): ApplicationStatus {
 }
 
 function toPayoutMethod(value: string): CreatorPayoutProfile["method"] {
-  const allowed: CreatorPayoutProfile["method"][] = ["iban", "paypal", "stripe"];
+  const allowed: CreatorPayoutProfile["method"][] = ["iban", "paypal"];
   if (!allowed.includes(value as CreatorPayoutProfile["method"])) {
     throw new Error(`Unknown payout method from database: ${value}`);
   }
   return value as CreatorPayoutProfile["method"];
 }
 
-function toVideoTypeCount(raw: Record<string, unknown> | null | undefined): VideoTypeCount {
-  const input = raw ?? {};
+function toVideoTypeCount(raw: unknown | null | undefined): VideoTypeCount {
+  if (raw !== null && typeof raw !== "object") return {} as VideoTypeCount;
+  const input = (raw as Record<string, unknown>) ?? {};
 
   return VIDEO_TYPES.reduce((acc, type) => {
     const value = input[type];
@@ -184,7 +92,11 @@ function toVideoTypeCount(raw: Record<string, unknown> | null | undefined): Vide
 }
 
 function mapCreator(row: CreatorRow): Creator {
-  const socialLinks = row.social_links ?? {};
+  const socialLinks = (
+    row.social_links && typeof row.social_links === "object" && !Array.isArray(row.social_links)
+      ? row.social_links
+      : {}
+  ) as Record<string, unknown>;
 
   return {
     id: row.id,
@@ -214,7 +126,8 @@ function mapMonthlyTracking(row: MonthlyTrackingRow): MonthlyTracking {
     creatorId: row.creator_id,
     delivered: toVideoTypeCount(row.delivered),
     paymentStatus: toPaymentStatus(row.payment_status),
-    paidAt: row.paid_at ?? undefined
+    paidAt: row.paid_at ?? undefined,
+    paidAmount: row.paid_amount ?? null
   };
 }
 
@@ -226,7 +139,7 @@ function mapVideo(row: VideoRow): VideoAsset {
     videoType: toVideoType(row.video_type),
     fileUrl: row.file_url,
     durationSeconds: row.duration_seconds,
-    resolution: row.resolution,
+    resolution: row.resolution as VideoAsset["resolution"],
     fileSizeMb: row.file_size_mb,
     status: toVideoStatus(row.status),
     rejectionReason: row.rejection_reason ?? undefined,
@@ -278,7 +191,6 @@ function mapPayoutProfile(row: CreatorPayoutProfileRow): CreatorPayoutProfile {
     accountHolderName: row.account_holder_name,
     iban: row.iban,
     paypalEmail: row.paypal_email,
-    stripeAccount: row.stripe_account,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -286,7 +198,12 @@ function mapPayoutProfile(row: CreatorPayoutProfileRow): CreatorPayoutProfile {
 
 function mapContractSignature(row: ContractSignatureRow): CreatorContractSignature {
   const acceptance: Record<string, boolean> = {};
-  for (const [key, value] of Object.entries(row.acceptance ?? {})) {
+  const acceptanceRaw = (
+    row.acceptance && typeof row.acceptance === "object" && !Array.isArray(row.acceptance)
+      ? row.acceptance
+      : {}
+  ) as Record<string, unknown>;
+  for (const [key, value] of Object.entries(acceptanceRaw)) {
     if (typeof value === "boolean") {
       acceptance[key] = value;
     }
@@ -300,7 +217,7 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
     contractChecksum: row.contract_checksum,
     signerName: row.signer_name,
     acceptance,
-    ip: row.ip,
+    ip: typeof row.ip === "string" ? row.ip : null,
     userAgent: row.user_agent,
     signedAt: row.signed_at,
     createdAt: row.created_at
@@ -308,19 +225,24 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
 }
 
 // Explicit column selections to avoid select("*") over-fetching (H-03).
-const CREATOR_COLS = "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes" as const;
-const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at" as const;
-const VIDEO_COLS = "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
-const RUSH_COLS = "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
+const CREATOR_COLS =
+  "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes" as const;
+const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
+const VIDEO_COLS =
+  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
+const RUSH_COLS =
+  "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
 const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
-const APPLICATION_COLS = "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
-const PAYOUT_COLS = "creator_id,method,account_holder_name,iban,paypal_email,stripe_account,created_at,updated_at" as const;
+const APPLICATION_COLS =
+  "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
+const PAYOUT_COLS =
+  "creator_id,method,account_holder_name,iban,paypal_email,created_at,updated_at" as const;
 
 /** Safety limit for unbounded list queries to prevent OOM at scale (H-04). */
 const LIST_LIMIT = 1000;
 
 export class SupabaseCreatorRepository implements CreatorRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: TypedClient) {}
 
   async listCreators(): Promise<Creator[]> {
     const { data, error } = await this.client
@@ -351,7 +273,11 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   }
 
   async listMonthlyTrackings(month?: string): Promise<MonthlyTracking[]> {
-    let query = this.client.from("monthly_tracking").select(TRACKING_COLS).order("month", { ascending: false }).limit(LIST_LIMIT);
+    let query = this.client
+      .from("monthly_tracking")
+      .select(TRACKING_COLS)
+      .order("month", { ascending: false })
+      .limit(LIST_LIMIT);
 
     if (month) {
       query = query.eq("month", month);
@@ -408,6 +334,20 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return (data as MonthlyTrackingRow[]).map(mapMonthlyTracking);
+  }
+
+  async getVideoById(videoId: string): Promise<VideoAsset | null> {
+    const { data, error } = await this.client
+      .from("videos")
+      .select(VIDEO_COLS)
+      .eq("id", videoId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to get video ${videoId}: ${error.message}`);
+    }
+
+    return data ? mapVideo(data as VideoRow) : null;
   }
 
   async listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]> {
@@ -523,7 +463,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .from("videos")
       .update({
         status: input.status,
-        rejection_reason: input.status === "rejected" ? input.rejectionReason ?? null : null,
+        rejection_reason: input.status === "rejected" ? (input.rejectionReason ?? null) : null,
         reviewed_at: new Date().toISOString(),
         reviewed_by: input.reviewedBy
       })
@@ -532,7 +472,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .maybeSingle();
 
     if (error || !data) {
-      throw new Error(`Failed to review video ${input.videoId}: ${error?.message ?? "missing row"}`);
+      throw new Error(
+        `Failed to review video ${input.videoId}: ${error?.message ?? "missing row"}`
+      );
     }
 
     return mapVideo(data as VideoRow);
@@ -547,7 +489,8 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     const { data, error } = await this.client.rpc("review_video_and_update_tracking", {
       p_video_id: input.videoId,
       p_status: input.status,
-      p_rejection_reason: input.status === "rejected" ? input.rejectionReason ?? null : null,
+      p_rejection_reason:
+        input.status === "rejected" ? (input.rejectionReason ?? undefined) : undefined,
       p_reviewed_by: input.reviewedBy
     });
 
@@ -576,7 +519,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .maybeSingle();
 
     if (error || !data) {
-      throw new Error(`Failed to update tracking delivered for ${input.monthlyTrackingId}: ${error?.message ?? "missing row"}`);
+      throw new Error(
+        `Failed to update tracking delivered for ${input.monthlyTrackingId}: ${error?.message ?? "missing row"}`
+      );
     }
 
     return mapMonthlyTracking(data as MonthlyTrackingRow);
@@ -585,6 +530,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async markMonthlyTrackingPaid(input: {
     monthlyTrackingId: string;
     paidAt?: string | null;
+    paidAmount?: number | null;
   }): Promise<MonthlyTracking> {
     const paidAt = input.paidAt ?? new Date().toISOString();
 
@@ -592,7 +538,8 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .from("monthly_tracking")
       .update({
         payment_status: "paye",
-        paid_at: paidAt
+        paid_at: paidAt,
+        paid_amount: input.paidAmount ?? null
       })
       .eq("id", input.monthlyTrackingId)
       .select(TRACKING_COLS)
@@ -640,7 +587,6 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     accountHolderName?: string | null;
     iban?: string | null;
     paypalEmail?: string | null;
-    stripeAccount?: string | null;
   }): Promise<CreatorPayoutProfile> {
     const { data, error } = await this.client
       .from("creator_payout_profiles")
@@ -650,8 +596,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
           method: input.method,
           account_holder_name: input.accountHolderName ?? null,
           iban: input.iban ?? null,
-          paypal_email: input.paypalEmail ?? null,
-          stripe_account: input.stripeAccount ?? null
+          paypal_email: input.paypalEmail ?? null
         },
         { onConflict: "creator_id" }
       )
@@ -668,7 +613,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
   async listContractSignaturesByCreatorId(creatorId: string): Promise<CreatorContractSignature[]> {
     const { data, error } = await this.client
       .from("creator_contract_signatures")
-      .select("id,creator_id,user_id,contract_version,contract_checksum,signer_name,acceptance,ip,user_agent,signed_at,created_at")
+      .select(
+        "id,creator_id,user_id,contract_version,contract_checksum,signer_name,acceptance,ip,user_agent,signed_at,created_at"
+      )
       .eq("creator_id", creatorId)
       .order("signed_at", { ascending: false })
       .limit(LIST_LIMIT);
@@ -697,10 +644,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }));
   }
 
-  async updateVideoRate(input: {
-    videoType: VideoType;
-    ratePerVideo: number;
-  }): Promise<VideoRate> {
+  async updateVideoRate(input: { videoType: VideoType; ratePerVideo: number }): Promise<VideoRate> {
     const { data, error } = await this.client
       .from("video_rates")
       .update({
@@ -723,9 +667,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     };
   }
 
-  async deleteVideoRate(input: {
-    videoType: VideoType;
-  }): Promise<VideoRate> {
+  async deleteVideoRate(input: { videoType: VideoType }): Promise<VideoRate> {
     const { data, error } = await this.client
       .from("video_rates")
       .update({
@@ -736,7 +678,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .maybeSingle();
 
     if (error || !data) {
-      throw new Error(`Failed to disable video rate ${input.videoType}: ${error?.message ?? "missing row"}`);
+      throw new Error(
+        `Failed to disable video rate ${input.videoType}: ${error?.message ?? "missing row"}`
+      );
     }
 
     const row = data as VideoRateRow;
@@ -781,6 +725,52 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     return data ? mapCreatorApplication(data as CreatorApplicationRow) : null;
   }
 
+  async upsertCreatorApplication(input: {
+    userId: string;
+    handle: string;
+    fullName: string;
+    email: string;
+    whatsapp: string;
+    country: string;
+    address: string;
+    socialTiktok?: string;
+    socialInstagram?: string;
+    followersTiktok: number;
+    followersInstagram: number;
+    submit: boolean;
+  }): Promise<CreatorApplication> {
+    const nowIso = new Date().toISOString();
+    const row = {
+      user_id: input.userId,
+      handle: input.handle,
+      full_name: input.fullName,
+      email: input.email,
+      whatsapp: input.whatsapp,
+      country: input.country,
+      address: input.address,
+      social_tiktok: input.socialTiktok ?? null,
+      social_instagram: input.socialInstagram ?? null,
+      followers_tiktok: input.followersTiktok,
+      followers_instagram: input.followersInstagram,
+      status: input.submit ? "pending_review" : "draft",
+      submitted_at: input.submit ? nowIso : null
+    };
+
+    const { data, error } = await this.client
+      .from("creator_applications")
+      .upsert(row, { onConflict: "user_id" })
+      .select(APPLICATION_COLS)
+      .single();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to upsert creator application for ${input.userId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapCreatorApplication(data as CreatorApplicationRow);
+  }
+
   async reviewCreatorApplication(input: {
     userId: string;
     status: Exclude<ApplicationStatus, "draft" | "pending_review">;
@@ -798,7 +788,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .maybeSingle();
 
     if (error || !data) {
-      throw new Error(`Failed to review creator application for ${input.userId}: ${error?.message ?? "missing row"}`);
+      throw new Error(
+        `Failed to review creator application for ${input.userId}: ${error?.message ?? "missing row"}`
+      );
     }
 
     return mapCreatorApplication(data as CreatorApplicationRow);
@@ -816,6 +808,26 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return data ? mapCreator(data as CreatorRow) : null;
+  }
+
+  async updateCreatorStatus(input: {
+    creatorId: string;
+    status: Extract<Creator["status"], "actif" | "pause" | "inactif">;
+  }): Promise<Creator> {
+    const { data, error } = await this.client
+      .from("creators")
+      .update({ status: input.status })
+      .eq("id", input.creatorId)
+      .select(CREATOR_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to update creator status ${input.creatorId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapCreator(data as CreatorRow);
   }
 
   async upsertCreatorFromApplication(input: {
@@ -837,7 +849,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       followers_instagram: input.application.followersInstagram,
       social_links: {
         ...(input.application.socialTiktok ? { tiktok: input.application.socialTiktok } : {}),
-        ...(input.application.socialInstagram ? { instagram: input.application.socialInstagram } : {})
+        ...(input.application.socialInstagram
+          ? { instagram: input.application.socialInstagram }
+          : {})
       },
       status: input.status,
       start_date: input.startDate
@@ -873,7 +887,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         .maybeSingle();
 
       if (updateError || !updated) {
-        throw new Error(`Failed to update creator from application: ${updateError?.message ?? "missing row"}`);
+        throw new Error(
+          `Failed to update creator from application: ${updateError?.message ?? "missing row"}`
+        );
       }
 
       return mapCreator(updated as CreatorRow);
@@ -900,7 +916,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         .maybeSingle();
 
       if (updateError || !updated) {
-        throw new Error(`Failed to attach creator to user: ${updateError?.message ?? "missing row"}`);
+        throw new Error(
+          `Failed to attach creator to user: ${updateError?.message ?? "missing row"}`
+        );
       }
 
       return mapCreator(updated as CreatorRow);

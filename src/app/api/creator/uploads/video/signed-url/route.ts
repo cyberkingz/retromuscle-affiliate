@@ -30,8 +30,10 @@ function parsePayload(body: unknown): SignedUploadPayload {
   }
 
   const input = body as Record<string, unknown>;
-  const monthlyTrackingId = typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
-  const videoTypeRaw = typeof input.videoType === "string" ? input.videoType.trim().toUpperCase() : "";
+  const monthlyTrackingId =
+    typeof input.monthlyTrackingId === "string" ? input.monthlyTrackingId.trim() : "";
+  const videoTypeRaw =
+    typeof input.videoType === "string" ? input.videoType.trim().toUpperCase() : "";
   const filename = typeof input.filename === "string" ? input.filename : "";
 
   if (monthlyTrackingId && !isUuid(monthlyTrackingId)) {
@@ -80,18 +82,24 @@ export async function POST(request: Request) {
   }
 
   try {
-    const rate = (await getRepository().listRates()).find((item) => item.videoType === payload.videoType);
+    const rate = (await getRepository().listRates()).find(
+      (item) => item.videoType === payload.videoType
+    );
     if (!rate || rate.isPlaceholder) {
       const response = apiError(ctx, {
         status: 400,
         code: "BAD_REQUEST",
-        message: "Ce type de video est desactive"
+        message: "Ce type de vidéo est désactivé"
       });
       if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
       return response;
     }
   } catch {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to resolve video type" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to resolve video type"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -104,21 +112,40 @@ export async function POST(request: Request) {
     });
     trackingId = context.monthlyTrackingId;
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.toLowerCase().includes("creator")
-        ? "Createur introuvable"
-        : "Suivi mensuel introuvable";
-    const response = apiError(ctx, { status: 404, code: "NOT_FOUND", message });
+    const msg = error instanceof Error ? error.message : "";
+    const isContractError = msg.toLowerCase().includes("contract");
+    const isStatusError = msg.toLowerCase().includes("not active");
+    const isCreatorError = msg.toLowerCase().includes("creator");
+    const status = isContractError || isStatusError ? 403 : 404;
+    const code = isContractError || isStatusError ? "FORBIDDEN" : "NOT_FOUND";
+    const message = isContractError
+      ? "Contrat non signe"
+      : isStatusError
+        ? "Compte créateur suspendu"
+        : isCreatorError
+          ? "Créateur introuvable"
+          : "Suivi mensuel introuvable";
+    const response = apiError(ctx, {
+      status,
+      code: code as import("@/lib/api-response").ApiErrorCode,
+      message
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
   const supabase = createSupabaseServerClient();
   const key = `${auth.session.userId}/${trackingId}/${payload.videoType}/${Date.now()}-${payload.filename}`;
-  const { data, error } = await supabase.storage.from("videos").createSignedUploadUrl(key, { upsert: false });
+  const { data, error } = await supabase.storage
+    .from("videos")
+    .createSignedUploadUrl(key, { upsert: false });
 
-  if (error || !data?.signedUrl || !data.token) {
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to create upload URL" });
+  if (error || !data?.signedUrl) {
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to create upload URL"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
@@ -128,8 +155,7 @@ export async function POST(request: Request) {
     {
       key,
       monthlyTrackingId: trackingId,
-      signedUrl: data.signedUrl,
-      token: data.token
+      signedUrl: data.signedUrl
     },
     { status: 200 }
   );

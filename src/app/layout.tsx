@@ -30,11 +30,13 @@ const fontBody = Space_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "RetroMuscle Programme Createur",
-  description: "Tu filmes deja du contenu fitness. Sois paye pour ca. 95 a 180 EUR par video validee, sans quota ni plafond.",
+  title: "RetroMuscle Programme Créateur",
+  description:
+    "Tu filmes déjà du contenu fitness. Sois payé pour ça. 95 à 180 EUR par vidéo validée, sans quota ni plafond.",
   openGraph: {
-    title: "RetroMuscle Programme Createur",
-    description: "Upload tes videos fitness, choisis le type, touche entre 95 et 180 EUR par video validee. Aucun quota, aucun plafond.",
+    title: "RetroMuscle Programme Créateur",
+    description:
+      "Upload tes vidéos fitness, choisis le type, touche entre 95 et 180 EUR par vidéo validée. Aucun quota, aucun plafond.",
     url: SITE_URL,
     siteName: SITE_NAME,
     type: "website",
@@ -42,8 +44,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "RetroMuscle Programme Createur",
-    description: "Upload tes videos fitness, choisis le type, touche entre 95 et 180 EUR par video validee. Aucun quota, aucun plafond.",
+    title: "RetroMuscle Programme Créateur",
+    description:
+      "Upload tes vidéos fitness, choisis le type, touche entre 95 et 180 EUR par vidéo validée. Aucun quota, aucun plafond.",
     images: [BRAND_ASSETS.heroLifestyle]
   }
 };
@@ -66,7 +69,7 @@ const STRUCTURED_DATA_JSON = JSON.stringify({
     },
     {
       "@type": "WebSite",
-      name: `${SITE_NAME} Programme Affilie`,
+      name: `${SITE_NAME} Programme Créateur`,
       url: SITE_URL,
       publisher: {
         "@type": "Organization",

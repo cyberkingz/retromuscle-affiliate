@@ -6,7 +6,12 @@ interface ResolveAuthRoutingResult {
 }
 
 function normalizeTarget(value: unknown): RedirectTarget {
-  if (value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding") {
+  if (
+    value === "/admin" ||
+    value === "/dashboard" ||
+    value === "/contract" ||
+    value === "/onboarding"
+  ) {
     return value;
   }
 

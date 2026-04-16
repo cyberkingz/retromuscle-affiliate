@@ -12,10 +12,7 @@ export interface PayoutResult {
   total: number;
 }
 
-export function calculatePayout(
-  deliveredByType: VideoTypeCount,
-  rates: VideoRate[]
-): PayoutResult {
+export function calculatePayout(deliveredByType: VideoTypeCount, rates: VideoRate[]): PayoutResult {
   const items: PayoutBreakdownItem[] = rates.map((rate) => {
     const delivered = Math.max(0, deliveredByType[rate.videoType] ?? 0);
     return {

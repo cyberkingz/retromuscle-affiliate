@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 
 export const metadata = createPageMetadata({
   title: "Admin Creator Detail",
-  description: "Detail createur: profil, uploads, paiements, et contrat.",
+  description: "Detail créateur: profil, uploads, paiements, et contrat.",
   path: "/admin/creators",
   noIndex: true
 });
@@ -17,7 +17,10 @@ interface AdminCreatorDetailRouteProps {
   searchParams?: Promise<{ month?: string }>;
 }
 
-export default async function AdminCreatorDetailRoute({ params, searchParams }: AdminCreatorDetailRouteProps) {
+export default async function AdminCreatorDetailRoute({
+  params,
+  searchParams
+}: AdminCreatorDetailRouteProps) {
   await protectPage("/admin");
   const { id } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -34,7 +37,5 @@ export default async function AdminCreatorDetailRoute({ params, searchParams }: 
   }
 
   const data = await getAdminCreatorDetailData({ creatorId: id, month });
-  return (
-    <AdminCreatorDetailPage data={data} creatorId={id} />
-  );
+  return <AdminCreatorDetailPage data={data} creatorId={id} />;
 }

@@ -23,47 +23,47 @@ export default function TermsPage() {
           />
 
           <div className="mt-6 space-y-5 text-sm leading-relaxed text-foreground/80">
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
               Derniere mise a jour: 6 fevrier 2026
             </p>
 
             <div className="space-y-2">
               <p className="font-semibold">1. Objet</p>
               <p>
-                Ces conditions decrivent le fonctionnement general de la plateforme et du programme createur RetroMuscle
-                (contenus, livrables, validation, remuneration).
+                Ces conditions decrivent le fonctionnement general de la plateforme et du programme
+                créateur RetroMuscle (contenus, livrables, validation, remuneration).
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="font-semibold">2. Eligibilite</p>
               <p>
-                L&apos;acces au programme est soumis a validation. RetroMuscle peut refuser ou mettre en pause un compte
-                en cas de non-respect des criteres de qualite, delais ou comportements abusifs.
+                L&apos;acces au programme est soumis a validation. RetroMuscle peut refuser ou
+                mettre en pause un compte en cas de non-respect des criteres de qualite, delais ou
+                comportements abusifs.
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="font-semibold">3. Contenus</p>
               <p>
-                Les contenus envoyes doivent respecter les specs techniques (format, duree, rendu) et les droits d&apos;image
-                et de musique. Le contrat signe detaille les droits concédés a RetroMuscle.
+                Les contenus envoyes doivent respecter les specs techniques (format, duree, rendu)
+                et les droits d&apos;image et de musique. Le contrat signe détaillé les droits
+                concédés a RetroMuscle.
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="font-semibold">4. Paiements</p>
               <p>
-                Les paiements sont declenches apres validation. Les delais bancaires et frais eventuels restent
-                independants de RetroMuscle.
+                Les paiements sont declenches apres validation. Les delais bancaires et frais
+                eventuels restent independants de RetroMuscle.
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="font-semibold">5. Support</p>
-              <p>
-                Pour toute question: support@retromuscle.net
-              </p>
+              <p>Pour toute question: support@retromuscle.net</p>
             </div>
           </div>
         </CardSection>

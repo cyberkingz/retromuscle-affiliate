@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { getRepository } from "@/application/dependencies";
 import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
@@ -25,7 +27,6 @@ export interface AdminCreatorDetailData {
     accountHolderName?: string | null;
     iban?: string | null;
     paypalEmail?: string | null;
-    stripeAccount?: string | null;
     updatedAt: string;
   } | null;
   contract: {
@@ -73,7 +74,10 @@ export interface AdminCreatorDetailData {
   } | null;
 }
 
-export async function getAdminCreatorDetailData(input: { creatorId: string; month?: string }): Promise<AdminCreatorDetailData> {
+export async function getAdminCreatorDetailData(input: {
+  creatorId: string;
+  month?: string;
+}): Promise<AdminCreatorDetailData> {
   const repository = getRepository();
   const [creator, trackings, rates] = await Promise.all([
     repository.getCreatorById(input.creatorId),
@@ -82,7 +86,7 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
   ]);
 
   if (!creator) {
-    throw new Error("Creator not found");
+    notFound();
   }
 
   const signatures = await repository.listContractSignaturesByCreatorId(creator.id);
@@ -101,7 +105,10 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
       paidAt: tracking.paidAt,
       payoutAmount: payout.total,
       delivered: Object.fromEntries(
-        VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.delivered[videoType]])
+        VIDEO_TYPES.map((videoType) => [
+          VIDEO_TYPE_LABELS[videoType],
+          tracking.delivered[videoType]
+        ])
       )
     };
   });
@@ -112,8 +119,7 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
     trackings.map((t) => t.month)
   );
 
-  const currentTracking =
-    trackings.find((t) => t.month === selectedMonth) ?? trackings[0] ?? null;
+  const currentTracking = trackings.find((t) => t.month === selectedMonth) ?? trackings[0] ?? null;
   const [currentVideos, currentRushes] = currentTracking
     ? await Promise.all([
         repository.listVideosByTracking(currentTracking.id),
@@ -142,7 +148,6 @@ export async function getAdminCreatorDetailData(input: { creatorId: string; mont
           accountHolderName: payoutProfile.accountHolderName ?? null,
           iban: payoutProfile.iban ?? null,
           paypalEmail: payoutProfile.paypalEmail ?? null,
-          stripeAccount: payoutProfile.stripeAccount ?? null,
           updatedAt: payoutProfile.updatedAt
         }
       : null,

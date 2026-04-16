@@ -25,7 +25,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function normalizeTarget(value: unknown): RedirectTarget | null {
-  if (value === "/admin" || value === "/dashboard" || value === "/contract" || value === "/onboarding") {
+  if (
+    value === "/admin" ||
+    value === "/dashboard" ||
+    value === "/contract" ||
+    value === "/onboarding"
+  ) {
     return value;
   }
   return null;
@@ -63,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const expireSession = useCallback(async () => {
     try {
-      await fetch("/api/auth/sign-out", { method: "POST", cache: "no-store" });
+      await fetch("/api/auth/sign-out", { method: "POST" });
     } catch {
       // ignore
     } finally {
@@ -131,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      await fetch("/api/auth/sign-out", { method: "POST", cache: "no-store" });
+      await fetch("/api/auth/sign-out", { method: "POST" });
     } finally {
       setUser(null);
       setRole(null);
@@ -174,7 +179,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshRouting,
       signOut
     }),
-    [user, role, redirectTarget, resolvingRole, loading, error, refreshSession, refreshRouting, signOut]
+    [
+      user,
+      role,
+      redirectTarget,
+      resolvingRole,
+      loading,
+      error,
+      refreshSession,
+      refreshRouting,
+      signOut
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

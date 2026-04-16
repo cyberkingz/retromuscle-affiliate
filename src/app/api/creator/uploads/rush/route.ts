@@ -62,7 +62,13 @@ export async function POST(request: Request) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
 
-  const limited = await rateLimit({ ctx, request, key: "creator:uploads:rush", limit: 40, windowMs: 60_000 });
+  const limited = await rateLimit({
+    ctx,
+    request,
+    key: "creator:uploads:rush",
+    limit: 40,
+    windowMs: 60_000
+  });
   if (limited) {
     return limited;
   }
@@ -82,9 +88,31 @@ export async function POST(request: Request) {
   }
 
   if (!payload.fileUrl.startsWith(`${auth.session.userId}/`)) {
-    const response = apiError(ctx, { status: 400, code: "BAD_REQUEST", message: "Invalid fileUrl prefix" });
+    const response = apiError(ctx, {
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid fileUrl prefix"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
+  }
+
+  // C-01: Verify the file actually exists in storage before creating a DB record.
+  // Without this check a creator can skip the upload and register a phantom rush.
+  {
+    const supabase = createSupabaseServerClient();
+    const { error: storageError } = await supabase.storage
+      .from("rushes")
+      .createSignedUrl(payload.fileUrl, 10);
+    if (storageError) {
+      const response = apiError(ctx, {
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Uploaded file not found"
+      });
+      if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
+      return response;
+    }
   }
 
   try {
@@ -108,9 +136,12 @@ export async function POST(request: Request) {
       // ignore
     }
 
-    const response = apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to record rush upload" });
+    const response = apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to record rush upload"
+    });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 }
-

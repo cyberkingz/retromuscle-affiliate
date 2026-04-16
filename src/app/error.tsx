@@ -20,8 +20,10 @@ export default function GlobalError({
   return (
     <div className="container-wide py-12">
       <Card className="mx-auto max-w-xl space-y-4 border-line bg-white/95 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.14em] text-foreground/55">Erreur</p>
-        <h1 className="font-display text-4xl uppercase leading-none text-secondary">Oups, quelque chose a bugge</h1>
+        <p className="text-xs uppercase tracking-[0.14em] text-foreground/70">Erreur</p>
+        <h1 className="font-display text-4xl uppercase leading-none text-secondary">
+          Oups, quelque chose a bugge
+        </h1>
         <p className="text-sm text-foreground/75">
           Recharge la page ou retourne a l&apos;accueil. Si le probleme persiste, reconnecte-toi.
         </p>

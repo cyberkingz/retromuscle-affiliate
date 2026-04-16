@@ -1,8 +1,11 @@
 import { getOnboardingPageData } from "@/application/use-cases/get-onboarding-page-data";
 import { apiError, apiJson, createApiContext } from "@/lib/api-response";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
   const ctx = createApiContext(request);
+  const limited = await rateLimit({ ctx, request, key: "onboarding:options", limit: 120, windowMs: 60_000 });
+  if (limited) return limited;
   try {
     const data = await getOnboardingPageData();
     return apiJson(ctx, data, {
@@ -12,6 +15,10 @@ export async function GET(request: Request) {
       }
     });
   } catch {
-    return apiError(ctx, { status: 500, code: "INTERNAL", message: "Unable to load onboarding options" });
+    return apiError(ctx, {
+      status: 500,
+      code: "INTERNAL",
+      message: "Unable to load onboarding options"
+    });
   }
 }

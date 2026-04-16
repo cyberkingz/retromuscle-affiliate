@@ -19,13 +19,7 @@ interface LandingHeroProps {
   };
 }
 
-export function LandingHero({
-  kicker,
-  title,
-  subtitle,
-  primaryCta,
-  visuals
-}: LandingHeroProps) {
+export function LandingHero({ kicker, title, subtitle, primaryCta, visuals }: LandingHeroProps) {
   const { primaryImageUrl } = visuals;
 
   return (

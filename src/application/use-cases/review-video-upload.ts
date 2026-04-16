@@ -28,12 +28,22 @@ export async function reviewVideoUpload(input: {
 }) {
   const repository = getRepository();
 
+  // Guard against approved → rejected downgrade: an approved video has
+  // already been counted in delivered totals (and possibly paid), so
+  // changing it to rejected would silently corrupt those counts.
+  if (input.decision === "rejected") {
+    const current = await repository.getVideoById(input.videoId);
+    if (current?.status === "approved") {
+      throw new Error("Cannot reject an already approved video");
+    }
+  }
+
   try {
     // Prefer atomic RPC when available.
     return await repository.reviewVideoAndUpdateTracking({
       videoId: input.videoId,
       status: input.decision,
-      rejectionReason: input.decision === "rejected" ? input.rejectionReason ?? null : null,
+      rejectionReason: input.decision === "rejected" ? (input.rejectionReason ?? null) : null,
       reviewedBy: input.adminUserId
     });
   } catch (error) {
@@ -46,7 +56,7 @@ export async function reviewVideoUpload(input: {
     const video = await repository.reviewVideoAsset({
       videoId: input.videoId,
       status: input.decision,
-      rejectionReason: input.decision === "rejected" ? input.rejectionReason ?? null : null,
+      rejectionReason: input.decision === "rejected" ? (input.rejectionReason ?? null) : null,
       reviewedBy: input.adminUserId
     });
 

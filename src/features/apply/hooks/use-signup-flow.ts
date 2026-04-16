@@ -59,13 +59,14 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
         body: JSON.stringify({ email, password })
       });
 
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; needsEmailConfirmation?: boolean; message?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        needsEmailConfirmation?: boolean;
+        message?: string;
+      } | null;
 
       if (!response.ok) {
         throw new Error(data?.message ?? "Impossible de se connecter.");
@@ -73,14 +74,18 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
 
       if (data?.needsEmailConfirmation) {
         setNeedsEmailConfirmation(true);
-        setStatusMessage("Compte cree ! Verifie ton email et clique sur le lien — tu seras redirige automatiquement.");
+        setStatusMessage(
+          "Compte créé ! Vérifie ton email et clique sur le lien de confirmation (valable 24h) — tu seras redirigé automatiquement."
+        );
         return;
       }
 
       await auth.refreshSession();
       await auth.refreshRouting();
 
-      setStatusMessage(mode === "signup" ? "Compte cree. Tu peux continuer l'onboarding." : "Connexion reussie.");
+      setStatusMessage(
+        mode === "signup" ? "Compte créé. Tu peux continuer l'onboarding." : "Connexion réussie."
+      );
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Impossible de se connecter");
     } finally {
@@ -97,13 +102,13 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
         body: JSON.stringify({ email })
       });
 
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; message?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+      } | null;
 
       if (!response.ok) {
         throw new Error(data?.message ?? "Impossible de renvoyer l'email.");

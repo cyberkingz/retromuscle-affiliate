@@ -19,7 +19,8 @@ export default async function SettingsRoute() {
   const creatorId =
     authSession?.role === "admin"
       ? undefined
-      : (await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ?? undefined;
+      : ((await findCreatorIdForUser({ userId: authSession?.userId, email: authSession?.email })) ??
+        undefined);
 
   if (!creatorId) {
     redirect("/onboarding");

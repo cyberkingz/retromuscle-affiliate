@@ -22,7 +22,7 @@ export function LoginPage({ marketing }: LoginPageProps) {
   const reason = searchParams.get("reason");
   const { redirecting } = useAuthRedirect({
     hasSession: Boolean(flow.user),
-    loading: flow.loadingSession,
+    loading: flow.loadingSession
   });
 
   return (
@@ -33,16 +33,16 @@ export function LoginPage({ marketing }: LoginPageProps) {
             <SectionHeading
               eyebrow="Connexion"
               title="Connecte ton compte"
-              subtitle="Entre tes identifiants pour acceder a ton espace."
+              subtitle="Entre tes identifiants pour accéder a ton espace."
             />
 
             {reason ? (
               <div className="mt-5 rounded-2xl border border-secondary/20 bg-frost/60 p-4 text-sm text-foreground/75">
                 {reason === "expired"
-                  ? "Ta session a expire. Reconnecte-toi pour continuer."
+                  ? "Ta session a expiré. Reconnecte-toi pour continuer."
                   : reason === "unauthorized"
-                    ? "Tu n'as pas acces a cette page. Connecte-toi avec le bon compte."
-                    : "Connecte-toi pour acceder a cette page."}
+                    ? "Tu n'as pas accès à cette page. Connecte-toi avec le bon compte."
+                    : "Connecte-toi pour accéder à cette page."}
               </div>
             ) : null}
 
@@ -73,7 +73,10 @@ export function LoginPage({ marketing }: LoginPageProps) {
 
             <p className="mt-5 text-center text-sm text-foreground/70 sm:text-left">
               Pas encore de compte ?{" "}
-              <Link href="/apply" className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80">
+              <Link
+                href="/apply"
+                className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80"
+              >
                 S&apos;inscrire
               </Link>
             </p>

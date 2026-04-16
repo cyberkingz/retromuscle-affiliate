@@ -1,9 +1,4 @@
-import type {
-  CreatorStatus,
-  PaymentStatus,
-  VideoStatus,
-  VideoType
-} from "@/domain/types";
+import type { CreatorStatus, PaymentStatus, VideoStatus, VideoType } from "@/domain/types";
 
 export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
   OOTD: "OOTD",

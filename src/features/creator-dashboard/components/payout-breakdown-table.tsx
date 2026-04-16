@@ -37,7 +37,9 @@ export function PayoutBreakdownTable({ items }: PayoutBreakdownTableProps) {
               <TableCell className="font-semibold">{item.label}</TableCell>
               <TableCell>{item.delivered}</TableCell>
               <TableCell>{formatCurrency(item.rate)}</TableCell>
-              <TableCell className="font-semibold text-secondary">{formatCurrency(item.subtotal)}</TableCell>
+              <TableCell className="font-semibold text-secondary">
+                {formatCurrency(item.subtotal)}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

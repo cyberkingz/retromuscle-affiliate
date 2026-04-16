@@ -50,27 +50,36 @@ export function MonthlyTrackingTable({ rows }: MonthlyTrackingTableProps) {
         header: "Paiement",
         accessorFn: (row) => row.paymentStatus,
         cell: ({ row }) => (
-          <StatusBadge label={row.original.paymentStatus} tone={paymentStatusTone(row.original.paymentStatus)} />
+          <StatusBadge
+            label={row.original.paymentStatus}
+            tone={paymentStatusTone(row.original.paymentStatus)}
+          />
         )
       },
       {
         id: "amount",
         header: "Montant",
         accessorFn: (row) => row.payoutAmount,
-        cell: ({ row }) => <span className="font-medium">{formatCurrency(row.original.payoutAmount)}</span>
+        cell: ({ row }) => (
+          <span className="font-medium">{formatCurrency(row.original.payoutAmount)}</span>
+        )
       }
     ],
     []
   );
 
   return (
-    <DataTableCard title="Suivi mensuel detaille" subtitle="Vue synthese par createur pour le mois actif.">
+    <DataTableCard
+      title="Suivi mensuel détaillé"
+      subtitle="Vue synthèse par créateur pour le mois actif."
+    >
       <div className="p-5">
         <DataTable
           data={rows}
           columns={columns}
           pageSize={10}
           emptyMessage="Aucun tracking."
+          aria-label="Suivi mensuel par créateur"
           getRowId={(row) => row.monthlyTrackingId}
           renderMobileRow={(row) => (
             <div className="rounded-2xl border border-line bg-white/95 p-4 space-y-3">
@@ -81,7 +90,10 @@ export function MonthlyTrackingTable({ rows }: MonthlyTrackingTableProps) {
                 >
                   {row.handle}
                 </Link>
-                <StatusBadge label={row.paymentStatus} tone={paymentStatusTone(row.paymentStatus)} />
+                <StatusBadge
+                  label={row.paymentStatus}
+                  tone={paymentStatusTone(row.paymentStatus)}
+                />
               </div>
               <div className="flex items-center justify-between text-sm text-foreground/75">
                 <span>Livre</span>

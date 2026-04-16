@@ -5,7 +5,8 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Signature du contrat RetroMuscle",
-  description: "Lis et signe le contrat pour activer ton acces createur et la cession des droits d'utilisation.",
+  description:
+    "Lis et signe le contrat pour activer ton accès créateur et la cession des droits d'utilisation.",
   path: "/contract"
 });
 

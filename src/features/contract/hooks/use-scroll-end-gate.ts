@@ -42,4 +42,3 @@ export function useScrollEndGate(options?: { thresholdPx?: number }) {
     checkReachedEnd
   };
 }
-

@@ -257,12 +257,22 @@ export async function getCreatorDashboardData(input: {
       ],
       tips: {
         OOTD: ["Plan stable miroir ou face cam", "Lumi\u00e8re naturelle de pr\u00e9f\u00e9rence"],
-        TRAINING: ["Angle qui montre le mouvement complet", "Son ambiant OK, on g\u00e8re le montage"],
-        BEFORE_AFTER: ["\u00c9tat initial clair et bien \u00e9clair\u00e9", "Transition nette entre avant et apr\u00e8s"],
+        TRAINING: [
+          "Angle qui montre le mouvement complet",
+          "Son ambiant OK, on g\u00e8re le montage"
+        ],
+        BEFORE_AFTER: [
+          "\u00c9tat initial clair et bien \u00e9clair\u00e9",
+          "Transition nette entre avant et apr\u00e8s"
+        ],
         SPORTS_80S: ["Styling r\u00e9tro muscle", "Background gym old-school"],
-        CINEMATIC: ["Cadrage soign\u00e9, lumi\u00e8re travaill\u00e9e", "Ambiance forte, on s\u2019occupe du reste"]
+        CINEMATIC: [
+          "Cadrage soign\u00e9, lumi\u00e8re travaill\u00e9e",
+          "Ambiance forte, on s\u2019occupe du reste"
+        ]
       },
-      pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review").length,
+      pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review")
+        .length,
       rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
       recentVideos: uploadedVideos.slice(0, 8).map((video) => ({
         id: video.id,

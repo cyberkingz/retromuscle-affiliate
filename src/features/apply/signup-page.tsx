@@ -20,7 +20,7 @@ export function SignupPage({ marketing }: SignupPageProps) {
   const flow = useSignupFlow("signup");
   const { redirecting } = useAuthRedirect({
     hasSession: Boolean(flow.user),
-    loading: flow.loadingSession,
+    loading: flow.loadingSession
   });
 
   return (
@@ -31,7 +31,7 @@ export function SignupPage({ marketing }: SignupPageProps) {
           <CardSection padding="lg">
             <SectionHeading
               eyebrow="Inscription"
-              title="Cree ton compte createur"
+              title="Crée ton compte créateur"
               subtitle="Inscris-toi avec email + mot de passe pour rejoindre le programme."
             />
 
@@ -42,7 +42,9 @@ export function SignupPage({ marketing }: SignupPageProps) {
                 </div>
               ) : flow.user && redirecting ? (
                 <div className="flex h-40 items-center justify-center">
-                  <p className="text-sm animate-pulse text-foreground/70">Redirection en cours...</p>
+                  <p className="text-sm animate-pulse text-foreground/70">
+                    Redirection en cours...
+                  </p>
                 </div>
               ) : flow.user ? (
                 <div className="space-y-4 py-4">
@@ -54,7 +56,7 @@ export function SignupPage({ marketing }: SignupPageProps) {
                       <Link href="/onboarding">Continuer l&apos;onboarding</Link>
                     </Button>
                     <Button type="button" variant="outline" size="pill" onClick={flow.signOut}>
-                      Se deconnecter
+                      Se déconnecter
                     </Button>
                   </div>
                 </div>
@@ -79,7 +81,10 @@ export function SignupPage({ marketing }: SignupPageProps) {
             {!flow.loadingSession && !flow.user ? (
               <p className="mt-5 text-center text-sm text-foreground/70 sm:text-left">
                 Deja inscrit ?{" "}
-                <Link href="/login" className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80">
+                <Link
+                  href="/login"
+                  className="font-semibold text-secondary underline underline-offset-4 hover:text-secondary/80"
+                >
                   Se connecter
                 </Link>
               </p>
@@ -91,7 +96,8 @@ export function SignupPage({ marketing }: SignupPageProps) {
           {flow.needsEmailConfirmation ? (
             <div className="rounded-2xl border border-line bg-frost/70 p-4 sm:p-5">
               <p className="text-sm text-foreground/75">
-                Tu n&apos;as pas recu l&apos;email ? Verifie tes spams ou clique ci-dessous pour en recevoir un nouveau.
+                Tu n&apos;as pas reçu l&apos;email ? Vérifie tes spams. Le lien est valable 24h,
+                clique ci-dessous pour en recevoir un nouveau.
               </p>
               <Button
                 type="button"

@@ -11,6 +11,7 @@ import { resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminDashboardData {
   month: string;
+  availableMonths: string[];
   metrics: {
     creatorsActive: number;
     validationTodo: number;
@@ -56,35 +57,22 @@ export interface AdminDashboardData {
   }>;
 }
 
-export async function getAdminDashboardData(input?: { month?: string }): Promise<AdminDashboardData> {
+export async function getAdminDashboardData(input?: {
+  month?: string;
+}): Promise<AdminDashboardData> {
   const repository = getRepository();
-  const [creators, rates, pendingVideos] = await Promise.all([
+  const [creators, rates, pendingVideos, allTrackings] = await Promise.all([
     repository.listCreators(),
     repository.listRates(),
-    repository.listVideosByStatus("pending_review")
+    repository.listVideosByStatus("pending_review"),
+    repository.listMonthlyTrackings()
   ]);
 
-  let targetMonth: string;
-  let monthTrackings = [] as Awaited<ReturnType<typeof repository.listMonthlyTrackings>>;
-
-  if (input?.month) {
-    const trackings = await repository.listMonthlyTrackings(input.month);
-    targetMonth = resolveMonth(input.month, Array.from(new Set(trackings.map((tracking) => tracking.month))));
-    monthTrackings = trackings;
-  } else {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const current = await repository.listMonthlyTrackings(currentMonth);
-
-    if (current.length > 0) {
-      targetMonth = currentMonth;
-      monthTrackings = current;
-    } else {
-      const allTrackings = await repository.listMonthlyTrackings();
-      targetMonth = resolveMonth(undefined, Array.from(new Set(allTrackings.map((tracking) => tracking.month))));
-      monthTrackings = allTrackings.filter((tracking) => tracking.month === targetMonth);
-    }
-  }
+  const availableMonths = [...new Set(allTrackings.map((t) => t.month))].sort((a, b) =>
+    b.localeCompare(a)
+  );
+  const targetMonth = resolveMonth(input?.month, availableMonths);
+  const monthTrackings = allTrackings.filter((t) => t.month === targetMonth);
   const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
 
   const monthlyRows = monthTrackings.map((tracking) => {
@@ -102,7 +90,10 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
       creatorId: creator.id,
       handle: creator.handle,
       delivered: Object.fromEntries(
-        VIDEO_TYPES.map((videoType) => [VIDEO_TYPE_LABELS[videoType], tracking.delivered[videoType]])
+        VIDEO_TYPES.map((videoType) => [
+          VIDEO_TYPE_LABELS[videoType],
+          tracking.delivered[videoType]
+        ])
       ),
       deliveredTotal: summary.deliveredTotal,
       paymentStatus: PAYMENT_STATUS_LABELS[tracking.paymentStatus],
@@ -122,6 +113,7 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
 
   return {
     month: targetMonth,
+    availableMonths,
     metrics,
     creatorsMaster: creators.map((creator) => ({
       creatorId: creator.id,
@@ -151,7 +143,6 @@ export async function getAdminDashboardData(input?: { month?: string }): Promise
           .filter((p) => {
             if (p.method === "iban" && !p.iban) return false;
             if (p.method === "paypal" && !p.paypalEmail) return false;
-            if (p.method === "stripe" && !p.stripeAccount) return false;
             return true;
           })
           .map((p) => p.creatorId)

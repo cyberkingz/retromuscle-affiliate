@@ -13,7 +13,7 @@ interface LandingPageProps {
 export function LandingPage({ data }: LandingPageProps) {
   return (
     <div className="space-y-10 sm:space-y-12">
-      <HeroSection {...data.hero} />
+      <HeroSection {...data.hero} videoRates={data.videoRates} />
 
       <GoalsStrip items={data.goals} />
 

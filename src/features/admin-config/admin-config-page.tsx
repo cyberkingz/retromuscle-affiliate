@@ -13,7 +13,7 @@ export function AdminConfigPage({ data }: AdminConfigPageProps) {
           Configuration des tarifs
         </h1>
         <p className="mt-2 text-sm text-foreground/70">
-          Gere les tarifs par type de video du programme createur.
+          Gère les tarifs par type de vidéo du programme créateur.
         </p>
       </div>
 

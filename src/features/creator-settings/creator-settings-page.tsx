@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type { CreatorSettingsData } from "@/application/use-cases/get-creator-settings-data";
 import { CardSection } from "@/components/layout/card-section";
@@ -37,6 +38,7 @@ interface CreatorSettingsPageProps {
 }
 
 export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
+  const router = useRouter();
   const existing = data.payoutProfile;
 
   const [method, setMethod] = useState<PayoutMethod>(existing?.method ?? "iban");
@@ -81,7 +83,9 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
         }
 
         if (ibanTrimmed && !isLikelyIban(ibanTrimmed)) {
-          throw new Error("IBAN invalide. Verifie le format. Exemple: FR76 3000 6000 0112 3456 7890 189");
+          throw new Error(
+            "IBAN invalide. Verifie le format. Exemple: FR76 3000 6000 0112 3456 7890 189"
+          );
         }
       }
 
@@ -94,7 +98,6 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
       const response = await fetch("/api/creator/payout-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
         body: JSON.stringify({
           method,
           accountHolderName: accountHolderName.trim() || null,
@@ -103,16 +106,24 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
         })
       });
 
-      const payload = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+      } | null;
       if (!response.ok) {
         throw new Error(payload?.message ?? "Impossible d'enregistrer tes informations.");
       }
 
       setIban("");
       setTouched({});
-      setStatusMessage("Informations de paiement enregistrees avec succes. Tes prochains paiements utiliseront ces coordonnees.");
+      setStatusMessage(
+        "Informations de paiement enregistrées avec succès. Tes prochains paiements utiliseront ces coordonnées."
+      );
+      router.refresh();
     } catch (caught) {
-      setErrorMessage(caught instanceof Error ? caught.message : "Impossible d'enregistrer tes informations.");
+      setErrorMessage(
+        caught instanceof Error ? caught.message : "Impossible d'enregistrer tes informations."
+      );
     } finally {
       setSaving(false);
     }
@@ -121,48 +132,47 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
   return (
     <div className="space-y-6">
       <SectionHeading
-        eyebrow="Parametres"
-        title="Parametres du compte"
-        subtitle="Mets a jour tes informations de paiement pour recevoir tes virements."
+        eyebrow="Paramètres"
+        title="Paramètres du compte"
+        subtitle="Mets à jour tes informations de paiement pour recevoir tes virements."
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <CardSection>
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Profil</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">Profil</p>
           <div className="mt-4 space-y-2 text-sm text-foreground/80">
             <p>
-              <span className="text-foreground/55">Handle:</span>{" "}
+              <span className="text-foreground/70">Handle:</span>{" "}
               <span className="font-semibold">{data.creator.handle}</span>
             </p>
             <p>
-              <span className="text-foreground/55">Nom:</span>{" "}
+              <span className="text-foreground/70">Nom:</span>{" "}
               <span className="font-semibold">{data.creator.displayName}</span>
             </p>
             <p>
-              <span className="text-foreground/55">Email:</span>{" "}
+              <span className="text-foreground/70">Email:</span>{" "}
               <span className="font-semibold">{data.creator.email}</span>
             </p>
             <p>
-              <span className="text-foreground/55">Pays:</span>{" "}
+              <span className="text-foreground/70">Pays:</span>{" "}
               <span className="font-semibold">{data.creator.country}</span>
             </p>
           </div>
-          <p className="mt-4 text-xs text-foreground/60">
-            Pour modifier ton profil, contacte le support (edition self-serve a venir).
-          </p>
         </CardSection>
 
         <CardSection>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.15em] text-foreground/55">Informations de paiement</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">
+                Informations de paiement
+              </p>
               <p className="mt-2 text-sm text-foreground/75">
-                Renseigne tes coordonnees pour recevoir tes paiements mensuels.
+                Renseigne tes coordonnées pour recevoir tes paiements mensuels.
               </p>
             </div>
             {existing ? (
               <div className="rounded-full border border-line bg-frost/70 px-3 py-1 text-xs text-foreground/70">
-                Mis a jour {new Date(existing.updatedAt).toLocaleDateString("fr-FR")}
+                Mis à jour {new Date(existing.updatedAt).toLocaleDateString("fr-FR")}
               </div>
             ) : null}
           </div>
@@ -170,7 +180,7 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
           <div className="mt-5 space-y-4">
             <label className="block space-y-2 text-sm">
               <span className="font-medium">
-                Methode de paiement <span className="text-destructive">*</span>
+                Méthode de paiement <span className="text-destructive">*</span>
               </span>
               <select
                 value={method}
@@ -220,7 +230,11 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
                     value={iban}
                     onChange={(event) => setIban(event.target.value)}
                     onBlur={() => markTouched("iban")}
-                    placeholder={existingIbanLast4 ? `IBAN deja enregistre (fin ${existingIbanLast4})` : "FR76 3000 6000 0112 3456 7890 189"}
+                    placeholder={
+                      existingIbanLast4
+                        ? `IBAN deja enregistre (fin ${existingIbanLast4})`
+                        : "FR76 3000 6000 0112 3456 7890 189"
+                    }
                     autoComplete="off"
                     className={
                       touched.iban && ibanTrimmed && !ibanValid
@@ -229,13 +243,12 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
                     }
                   />
                   {ibanTrimmed && ibanValid ? (
-                    <p className="text-xs text-mint">
-                      Format valide: {ibanFormatted}
-                    </p>
+                    <p className="text-xs text-mint">Format valide: {ibanFormatted}</p>
                   ) : null}
                   {touched.iban && ibanTrimmed && !ibanValid ? (
                     <p className="text-xs text-destructive">
-                      Format IBAN invalide. Verifie le code pays (2 lettres), la cle (2 chiffres), puis le numero de compte. Exemple: FR76 3000 6000 0112 3456 7890 189
+                      Format IBAN invalide. Verifie le code pays (2 lettres), la cle (2 chiffres),
+                      puis le numero de compte. Exemple: FR76 3000 6000 0112 3456 7890 189
                     </p>
                   ) : null}
                   {!ibanTrimmed ? (
@@ -273,16 +286,17 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
                     </p>
                   ) : null}
                   {paypalEmail.trim() && paypalEmailValid ? (
-                    <p className="text-xs text-mint">
-                      Format email valide.
-                    </p>
+                    <p className="text-xs text-mint">Format email valide.</p>
                   ) : null}
                 </label>
               </div>
             ) : null}
 
             {errorMessage ? (
-              <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+              <p
+                className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                role="alert"
+              >
                 {errorMessage}
               </p>
             ) : null}
@@ -292,12 +306,18 @@ export function CreatorSettingsPage({ data }: CreatorSettingsPageProps) {
               </div>
             ) : null}
 
-            <Button type="button" size="pill" onClick={() => void savePayoutProfile()} disabled={saving}>
+            <Button
+              type="button"
+              size="pill"
+              onClick={() => void savePayoutProfile()}
+              disabled={saving}
+            >
               {saving ? "Enregistrement..." : "Enregistrer les informations"}
             </Button>
 
             <p className="text-xs text-foreground/60">
-              Les champs marques d&apos;un <span className="text-destructive">*</span> sont obligatoires. Besoin d&apos;aide ? Ecris-nous, on peut verifier tes infos de paiement.
+              Les champs marques d&apos;un <span className="text-destructive">*</span> sont
+              obligatoires. Besoin d&apos;aide ? Ecris-nous, on peut verifier tes infos de paiement.
             </p>
           </div>
         </CardSection>

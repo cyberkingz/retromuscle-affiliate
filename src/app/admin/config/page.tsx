@@ -5,7 +5,7 @@ import { createPageMetadata } from "@/app/_lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Configuration tarifs - Admin RetroMuscle",
-  description: "Gestion des tarifs par type de video du programme createur.",
+  description: "Gestion des tarifs par type de vidéo du programme créateur.",
   path: "/admin/config",
   noIndex: true
 });
@@ -15,7 +15,5 @@ export default async function AdminConfigRoute() {
 
   const data = await getAdminConfigData();
 
-  return (
-    <AdminConfigPage data={data} />
-  );
+  return <AdminConfigPage data={data} />;
 }

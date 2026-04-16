@@ -11,9 +11,7 @@ export function FlowSection({ flow }: FlowSectionProps) {
         <h2 className="font-display text-4xl uppercase tracking-tight text-secondary sm:text-5xl">
           {flow.title}
         </h2>
-        <p className="mt-2 text-foreground/70">
-          {flow.subtitle}
-        </p>
+        <p className="mt-2 text-foreground/70">{flow.subtitle}</p>
       </div>
 
       <div className="relative mt-10 grid gap-0 md:grid-cols-3">
@@ -21,7 +19,10 @@ export function FlowSection({ flow }: FlowSectionProps) {
         <div className="absolute left-[16.67%] right-[16.67%] top-[calc(2rem+1.75rem)] hidden h-px bg-foreground/15 md:block" />
 
         {flow.steps.map((step, index) => (
-          <div key={step.step} className="relative flex flex-col items-center text-center px-6 py-8">
+          <div
+            key={step.step}
+            className="relative flex flex-col items-center text-center px-6 py-8"
+          >
             <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-foreground bg-primary text-xl font-bold text-foreground">
               {step.step}
             </div>

@@ -1,10 +1,6 @@
 import type { ApplicationFieldUpdater, ApplicationFormState } from "@/features/apply/types";
 import { Input } from "@/components/ui/input";
-import {
-  isValidInstagramUrl,
-  isValidTiktokUrl,
-  normalizeHttpUrl
-} from "@/lib/validation";
+import { isValidInstagramUrl, isValidTiktokUrl, normalizeHttpUrl } from "@/lib/validation";
 
 interface StepProfileFormProps {
   form: ApplicationFormState;
@@ -15,7 +11,14 @@ interface StepProfileFormProps {
   errorMessage?: string | null;
 }
 
-export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, errorField, errorMessage }: StepProfileFormProps) {
+export function StepProfileForm({
+  form,
+  disabled,
+  onFieldChange,
+  onBlurField,
+  errorField,
+  errorMessage
+}: StepProfileFormProps) {
   function inlineError(field: keyof ApplicationFormState) {
     return errorField === field ? errorMessage : null;
   }
@@ -30,7 +33,9 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
       : null;
 
   const instagramFollowersDigits = form.followersInstagram.replace(/[^\d]/g, "");
-  const instagramFollowersValue = instagramFollowersDigits ? Number(instagramFollowersDigits) : null;
+  const instagramFollowersValue = instagramFollowersDigits
+    ? Number(instagramFollowersDigits)
+    : null;
   const instagramFollowersFormatted =
     instagramFollowersValue !== null && Number.isFinite(instagramFollowersValue)
       ? new Intl.NumberFormat("fr-FR").format(instagramFollowersValue)
@@ -56,7 +61,9 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
 
   return (
     <fieldset className="space-y-3" disabled={disabled}>
-      <legend className="text-xs uppercase tracking-[0.12em] text-foreground/55">Etape 2 - Profil createur</legend>
+      <legend className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+        Étape 2 - Profil créateur
+      </legend>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-3">
           <label className="space-y-2 text-sm">
@@ -74,13 +81,22 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
               }}
               disabled={disabled}
               placeholder="https://www.tiktok.com/@..."
+              aria-invalid={tiktokError}
+              aria-describedby="socialTiktok-hint"
+              className="text-base md:text-sm"
             />
             {tiktokError ? (
-              <span className="block text-xs leading-relaxed text-destructive">
+              <span
+                id="socialTiktok-hint"
+                className="block text-xs leading-relaxed text-destructive"
+              >
                 Colle un lien TikTok valide (ex: https://www.tiktok.com/@toncompte).
               </span>
             ) : (
-              <span className="block text-xs leading-relaxed text-foreground/55">
+              <span
+                id="socialTiktok-hint"
+                className="block text-xs leading-relaxed text-foreground/70"
+              >
                 Ton profil TikTok (lien public).
               </span>
             )}
@@ -92,17 +108,29 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
               name="followersTiktok"
               inputMode="numeric"
               value={tiktokFollowersDigits}
-              onChange={(event) => onFieldChange("followersTiktok", event.target.value.replace(/[^\d]/g, ""))}
+              onChange={(event) =>
+                onFieldChange("followersTiktok", event.target.value.replace(/[^\d]/g, ""))
+              }
               onBlur={() => onBlurField?.("followersTiktok")}
               disabled={disabled}
               placeholder="10000"
-              className={inlineError("followersTiktok") ? "border-destructive" : ""}
+              aria-invalid={!!inlineError("followersTiktok")}
+              aria-describedby={
+                inlineError("followersTiktok") ? "followersTiktok-error" : "followersTiktok-hint"
+              }
+              className={inlineError("followersTiktok") ? "border-destructive text-base md:text-sm" : "text-base md:text-sm"}
             />
             {inlineError("followersTiktok") ? (
-              <p className="text-xs text-destructive">{inlineError("followersTiktok")}</p>
+              <p id="followersTiktok-error" className="text-xs text-destructive">
+                {inlineError("followersTiktok")}
+              </p>
             ) : (
-              <span className="block text-xs leading-relaxed text-foreground/55">
-                Nombre d&apos;abonnes sur TikTok{tiktokFollowersFormatted ? ` (soit ${tiktokFollowersFormatted})` : ""}
+              <span
+                id="followersTiktok-hint"
+                className="block text-xs leading-relaxed text-foreground/70"
+              >
+                Nombre d&apos;abonnes sur TikTok
+                {tiktokFollowersFormatted ? ` (soit ${tiktokFollowersFormatted})` : ""}
               </span>
             )}
           </label>
@@ -123,13 +151,22 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
               }}
               disabled={disabled}
               placeholder="https://www.instagram.com/..."
+              aria-invalid={instagramError}
+              aria-describedby="socialInstagram-hint"
+              className="text-base md:text-sm"
             />
             {instagramError ? (
-              <span className="block text-xs leading-relaxed text-destructive">
+              <span
+                id="socialInstagram-hint"
+                className="block text-xs leading-relaxed text-destructive"
+              >
                 Colle un lien Instagram valide (ex: https://www.instagram.com/toncompte).
               </span>
             ) : (
-              <span className="block text-xs leading-relaxed text-foreground/55">
+              <span
+                id="socialInstagram-hint"
+                className="block text-xs leading-relaxed text-foreground/70"
+              >
                 Ton profil Instagram (lien public).
               </span>
             )}
@@ -141,17 +178,31 @@ export function StepProfileForm({ form, disabled, onFieldChange, onBlurField, er
               name="followersInstagram"
               inputMode="numeric"
               value={instagramFollowersDigits}
-              onChange={(event) => onFieldChange("followersInstagram", event.target.value.replace(/[^\d]/g, ""))}
+              onChange={(event) =>
+                onFieldChange("followersInstagram", event.target.value.replace(/[^\d]/g, ""))
+              }
               onBlur={() => onBlurField?.("followersInstagram")}
               disabled={disabled}
               placeholder="10000"
-              className={inlineError("followersInstagram") ? "border-destructive" : ""}
+              aria-invalid={!!inlineError("followersInstagram")}
+              aria-describedby={
+                inlineError("followersInstagram")
+                  ? "followersInstagram-error"
+                  : "followersInstagram-hint"
+              }
+              className={inlineError("followersInstagram") ? "border-destructive text-base md:text-sm" : "text-base md:text-sm"}
             />
             {inlineError("followersInstagram") ? (
-              <p className="text-xs text-destructive">{inlineError("followersInstagram")}</p>
+              <p id="followersInstagram-error" className="text-xs text-destructive">
+                {inlineError("followersInstagram")}
+              </p>
             ) : (
-              <span className="block text-xs leading-relaxed text-foreground/55">
-                Nombre d&apos;abonnes sur Instagram{instagramFollowersFormatted ? ` (soit ${instagramFollowersFormatted})` : ""}
+              <span
+                id="followersInstagram-hint"
+                className="block text-xs leading-relaxed text-foreground/70"
+              >
+                Nombre d&apos;abonnes sur Instagram
+                {instagramFollowersFormatted ? ` (soit ${instagramFollowersFormatted})` : ""}
               </span>
             )}
           </label>

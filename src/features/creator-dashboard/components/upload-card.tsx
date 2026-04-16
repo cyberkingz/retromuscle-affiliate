@@ -6,6 +6,13 @@ import { ExternalLink, UploadCloud } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CardSection } from "@/components/layout/card-section";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { VIDEO_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { type VideoAsset, type VideoType } from "@/domain/types";
@@ -47,7 +54,9 @@ function sanitizeFilename(value: string): string {
   return trimmed.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 96);
 }
 
-async function readVideoMetadata(file: File): Promise<{ durationSeconds: number; width: number; height: number }> {
+async function readVideoMetadata(
+  file: File
+): Promise<{ durationSeconds: number; width: number; height: number }> {
   const objectUrl = URL.createObjectURL(file);
 
   try {
@@ -59,7 +68,11 @@ async function readVideoMetadata(file: File): Promise<{ durationSeconds: number;
 
     await new Promise<void>((resolve, reject) => {
       const timeoutId = window.setTimeout(() => {
-        reject(new Error("Impossible de lire les metadonnees (timeout). Verifie que le fichier est un MP4/MOV valide."));
+        reject(
+          new Error(
+            "Impossible de lire les métadonnées (timeout). Vérifie que le fichier est un MP4/MOV valide."
+          )
+        );
       }, VIDEO_METADATA_TIMEOUT_MS);
 
       function cleanup() {
@@ -75,7 +88,9 @@ async function readVideoMetadata(file: File): Promise<{ durationSeconds: number;
 
       video.onerror = () => {
         cleanup();
-        reject(new Error("Impossible de lire la video. Verifie que le fichier est un MP4/MOV valide."));
+        reject(
+          new Error("Impossible de lire la vidéo. Vérifie que le fichier est un MP4/MOV valide.")
+        );
       };
     });
 
@@ -141,6 +156,7 @@ export function UploadCard({
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const hasActiveVideoTypes = ratesByType.length > 0;
   const canUpload = Boolean(auth.user && !uploading && hasActiveVideoTypes && activeType);
@@ -178,15 +194,22 @@ export function UploadCard({
   async function previewVideo(fileUrl: string) {
     setErrorMessage(null);
     try {
-      const response = await fetch(`/api/videos/preview?fileUrl=${encodeURIComponent(fileUrl)}`, { cache: "no-store" });
-      const data = (await response.json().catch(() => null)) as { signedUrl?: string; message?: string } | null;
+      const response = await fetch(`/api/videos/preview?fileUrl=${encodeURIComponent(fileUrl)}`, {
+        cache: "no-store"
+      });
+      const data = (await response.json().catch(() => null)) as {
+        signedUrl?: string;
+        message?: string;
+      } | null;
       if (!response.ok || !data?.signedUrl) {
-        throw new Error(data?.message ?? "Impossible de generer un lien de preview.");
+        throw new Error(data?.message ?? "Impossible de générer un lien de preview.");
       }
 
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (caught) {
-      setErrorMessage(caught instanceof Error ? caught.message : "Impossible de generer un lien de preview.");
+      setErrorMessage(
+        caught instanceof Error ? caught.message : "Impossible de générer un lien de preview."
+      );
     }
   }
 
@@ -196,7 +219,7 @@ export function UploadCard({
       return;
     }
     if (!activeType) {
-      setErrorMessage("Aucun type de video actif. Contacte un administrateur.");
+      setErrorMessage("Aucun type de vidéo actif. Contacte un administrateur.");
       return;
     }
 
@@ -210,11 +233,15 @@ export function UploadCard({
       const warnings: string[] = [];
 
       if (file.size > RECOMMENDED_MAX_VIDEO_BYTES) {
-        warnings.push("Le fichier depasse 500MB (recommande). Upload accepte, mais le traitement peut etre plus lent.");
+        warnings.push(
+          "Le fichier dépasse 500 MB (recommandé). Upload accepté, mais le traitement peut être plus lent."
+        );
       }
 
       if (!isPreferredVideoFile(file)) {
-        warnings.push("Format non prefere detecte. MP4/MOV sont recommandes, mais l'upload est accepte.");
+        warnings.push(
+          "Format non préféré détecté. MP4/MOV sont recommandés, mais l'upload est accepté."
+        );
       }
 
       let durationSeconds = 30;
@@ -226,7 +253,7 @@ export function UploadCard({
           resolution = resolvedResolution;
         } else {
           warnings.push(
-            `Resolution ${meta.width}x${meta.height} hors recommandation (1080x1920 ou 1080x1080). Valeur par defaut appliquee.`
+            `Resolution ${meta.width}x${meta.height} hors recommandation (1080x1920 ou 1080x1080). Valeur par défaut appliquée.`
           );
         }
 
@@ -234,14 +261,14 @@ export function UploadCard({
           durationSeconds = meta.durationSeconds;
         } else {
           warnings.push(
-            `Duree hors recommandation (${meta.durationSeconds}s). Cible: 15 a 60 secondes. Valeur par defaut appliquee.`
+            `Durée hors recommandation (${meta.durationSeconds}s). Cible : 15 à 60 secondes. Valeur par défaut appliquée.`
           );
         }
       } catch (metadataError) {
         warnings.push(
           metadataError instanceof Error
-            ? `${metadataError.message} Upload continue avec valeurs par defaut (30s, 1080x1920).`
-            : "Metadata non lues. Upload continue avec valeurs par defaut (30s, 1080x1920)."
+            ? `${metadataError.message} Upload continué avec valeurs par défaut (30s, 1080x1920).`
+            : "Métadonnées non lues. Upload continué avec valeurs par défaut (30s, 1080x1920)."
         );
       }
 
@@ -256,7 +283,6 @@ export function UploadCard({
       const signed = await fetch("/api/creator/uploads/video/signed-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
         body: JSON.stringify({
           monthlyTrackingId: resolvedTrackingId,
           videoType: activeType,
@@ -264,12 +290,15 @@ export function UploadCard({
         })
       });
 
-      const signedPayload = (await signed.json().catch(() => null)) as
-        | { key?: string; signedUrl?: string; monthlyTrackingId?: string; message?: string }
-        | null;
+      const signedPayload = (await signed.json().catch(() => null)) as {
+        key?: string;
+        signedUrl?: string;
+        monthlyTrackingId?: string;
+        message?: string;
+      } | null;
 
       if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
-        throw new Error(signedPayload?.message ?? "Impossible de preparer l'upload.");
+        throw new Error(signedPayload?.message ?? "Impossible de préparer l'upload.");
       }
 
       const trackingIdForUpload = signedPayload.monthlyTrackingId ?? resolvedTrackingId;
@@ -298,10 +327,12 @@ export function UploadCard({
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error("Upload impossible. Reessaie dans quelques instants."));
+            reject(new Error("Upload impossible. Réessaie dans quelques instants."));
           }
         });
-        xhr.addEventListener("error", () => reject(new Error("Upload impossible. Reessaie dans quelques instants.")));
+        xhr.addEventListener("error", () =>
+          reject(new Error("Upload impossible. Réessaie dans quelques instants."))
+        );
         xhr.send(uploadForm);
       });
 
@@ -317,16 +348,15 @@ export function UploadCard({
           durationSeconds,
           resolution,
           fileSizeMb
-        }),
-        cache: "no-store"
+        })
       });
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(data?.message ?? "Impossible d'enregistrer la video.");
+        throw new Error(data?.message ?? "Impossible d'enregistrer la vidéo.");
       }
 
-      setStatusMessage("Video envoyee. En attente de validation.");
+      setStatusMessage("Vidéo envoyée. En attente de validation.");
       router.refresh();
     } catch (caught) {
       setErrorMessage(caught instanceof Error ? caught.message : "Upload impossible.");
@@ -340,7 +370,9 @@ export function UploadCard({
 
   return (
     <CardSection className="space-y-4">
-      <p className="text-xs uppercase tracking-[0.15em] text-foreground/50">Upload categorie active</p>
+      <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">
+        Upload catégorie active
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {ratesByType.map((rate) => (
@@ -357,34 +389,49 @@ export function UploadCard({
           ))}
         </div>
         <StatusBadge
-          label={`${pendingReviewCount} a valider · ${rejectedCount} rejetees`}
+          label={`${pendingReviewCount} à valider · ${rejectedCount} rejetées`}
           tone={rejectedCount > 0 ? "warning" : "neutral"}
         />
       </div>
       {!hasActiveVideoTypes ? (
-        <div className="rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
-          Aucun type de video actif pour le moment. Contacte l&apos;equipe RetroMuscle.
+        <div
+          className="rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="alert"
+        >
+          Aucun type de vidéo actif pour le moment. Contacte l&apos;équipe RetroMuscle.
         </div>
       ) : null}
 
       {statusMessage ? (
-        <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/75">{statusMessage}</div>
+        <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/75">
+          {statusMessage}
+        </div>
       ) : null}
       {warningMessage ? (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
-          <span className="mt-0.5 shrink-0 text-lg leading-none" aria-hidden="true">&#9888;</span>
+        <div
+          className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="alert"
+        >
+          <span className="mt-0.5 shrink-0 text-lg leading-none" aria-hidden="true">
+            &#9888;
+          </span>
           <span>{warningMessage}</span>
         </div>
       ) : null}
       {errorMessage ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+        <div
+          className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
           {errorMessage}
         </div>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">Specs conseillees</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/75">
+            Specs conseillees
+          </p>
           <ul className="space-y-1 text-sm text-foreground/70">
             {specs.map((spec) => (
               <li key={spec}>- {spec}</li>
@@ -392,7 +439,7 @@ export function UploadCard({
           </ul>
         </div>
         <div>
-          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/50">
+          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-foreground/75">
             Tips {activeType ? VIDEO_TYPE_LABELS[activeType] : "type inactif"}
           </p>
           <ul className="space-y-1 text-sm text-foreground/70">
@@ -405,10 +452,16 @@ export function UploadCard({
 
       <div className="rounded-2xl border border-line bg-white/85 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">Tarif du type selectionne</p>
-          <p className="font-display text-2xl uppercase leading-none text-secondary">{activeRateLabel}</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+            Tarif du type sélectionné
+          </p>
+          <p className="font-display text-2xl uppercase leading-none text-secondary">
+            {activeRateLabel}
+          </p>
         </div>
-        <p className="mt-1 text-xs text-foreground/60">Paiement declenche uniquement apres validation de la video.</p>
+        <p className="mt-1 text-xs text-foreground/60">
+          Paiement déclenché uniquement après validation de la vidéo.
+        </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {ratesByType.map((rate) => (
             <span
@@ -435,7 +488,7 @@ export function UploadCard({
           const file = event.target.files?.[0];
           event.target.value = "";
           if (file) {
-            void handleFile(file);
+            setPendingFile(file);
           }
         }}
       />
@@ -467,7 +520,7 @@ export function UploadCard({
           if (!canUpload) return;
           const file = event.dataTransfer.files?.[0];
           if (file) {
-            void handleFile(file);
+            setPendingFile(file);
           }
         }}
         role="button"
@@ -481,11 +534,21 @@ export function UploadCard({
         }}
       >
         <UploadCloud className="mx-auto mb-3 h-10 w-10 text-secondary" />
-        <p className="font-medium text-foreground">
-          {uploading ? `Upload en cours... ${uploadProgress}%` : "Glisse-depose ta video ici"}
+        <p className="font-medium text-foreground" aria-live="polite" aria-atomic="true">
+          {uploading ? `Upload en cours... ${uploadProgress}%` : "Glisse-dépose ta vidéo ici"}
         </p>
+        {uploading ? (
+          <progress
+            className="sr-only"
+            value={uploadProgress}
+            max={100}
+            aria-label={`Progression de l'upload : ${uploadProgress}%`}
+          />
+        ) : null}
         {!uploading ? (
-          <p className="mt-1 text-xs text-foreground/65">ou clique pour parcourir (tout format video, MP4/MOV recommandes)</p>
+          <p className="mt-1 text-xs text-foreground/65">
+            ou clique pour parcourir (tout format vidéo, MP4/MOV recommandés)
+          </p>
         ) : null}
         <div className="mt-4 flex justify-center">
           <Button
@@ -503,8 +566,65 @@ export function UploadCard({
         </div>
       </div>
 
+      <Dialog
+        open={pendingFile !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingFile(null);
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirmer le type de contenu</DialogTitle>
+            <DialogDescription>
+              Vérifie que le type sélectionné correspond bien à ton contenu avant de lancer
+              l&apos;upload.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 px-6 pb-6">
+            <div className="rounded-2xl border border-line bg-frost/70 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+                Type sélectionné
+              </p>
+              <p className="mt-1 font-display text-xl uppercase text-secondary">
+                {activeType ? VIDEO_TYPE_LABELS[activeType] : "—"}
+              </p>
+              <p className="mt-1 text-xs text-foreground/60">
+                Tarif&nbsp;: {activeRateLabel} par vidéo validée
+              </p>
+            </div>
+            {pendingFile ? (
+              <div className="rounded-2xl border border-line bg-frost/70 p-4">
+                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Fichier</p>
+                <p className="mt-1 truncate text-sm text-foreground/80">{pendingFile.name}</p>
+              </div>
+            ) : null}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setPendingFile(null)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  const file = pendingFile;
+                  setPendingFile(null);
+                  if (file) void handleFile(file);
+                }}
+              >
+                Lancer l&apos;upload
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.12em] text-foreground/50">Derniers uploads</p>
+        <p className="text-xs uppercase tracking-[0.12em] text-foreground/75">Derniers uploads</p>
         {recentVideos.length === 0 ? (
           <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-sm text-foreground/70">
             Aucun upload pour ce mois.
@@ -512,27 +632,45 @@ export function UploadCard({
         ) : (
           <div className="space-y-2">
             {recentVideos.map((video) => (
-              <div key={video.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-line bg-frost/70 px-4 py-3">
+              <div
+                key={video.id}
+                className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-line bg-frost/70 px-4 py-3"
+              >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{VIDEO_TYPE_LABELS[video.videoType]}</p>
-                  <p className="mt-1 text-xs text-foreground/65">{new Date(video.createdAt).toLocaleString("fr-FR")}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {VIDEO_TYPE_LABELS[video.videoType]}
+                  </p>
+                  <p className="mt-1 text-xs text-foreground/65">
+                    {new Date(video.createdAt).toLocaleString("fr-FR")}
+                  </p>
                   {video.rejectionReason ? (
                     <p className="mt-2 text-xs text-destructive">Rejet: {video.rejectionReason}</p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge
-                    label={VIDEO_STATUS_LABELS[video.status as keyof typeof VIDEO_STATUS_LABELS] ?? video.status}
-                    tone={video.status === "approved" ? "success" : video.status === "rejected" ? "warning" : "neutral"}
+                    label={
+                      VIDEO_STATUS_LABELS[video.status as keyof typeof VIDEO_STATUS_LABELS] ??
+                      video.status
+                    }
+                    tone={
+                      video.status === "approved"
+                        ? "success"
+                        : video.status === "rejected"
+                          ? "warning"
+                          : "neutral"
+                    }
                   />
                   {video.status === "rejected" ? (
                     <Button
                       type="button"
                       size="sm"
                       onClick={() => {
-                        const canReuploadThisType = ratesByType.some((rate) => rate.videoType === video.videoType);
+                        const canReuploadThisType = ratesByType.some(
+                          (rate) => rate.videoType === video.videoType
+                        );
                         if (!canReuploadThisType) {
-                          setErrorMessage("Ce type de video est desactive par l'administration.");
+                          setErrorMessage("Ce type de vidéo est désactivé par l'administration.");
                           return;
                         }
                         setActiveType(video.videoType);

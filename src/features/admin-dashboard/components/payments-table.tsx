@@ -52,7 +52,6 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         const response = await fetch("/api/admin/payments/mark-paid", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          cache: "no-store",
           body: JSON.stringify({ monthlyTrackingId })
         });
 
@@ -63,7 +62,9 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
 
         router.refresh();
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Impossible de mettre a jour le statut.");
+        setError(
+          caught instanceof Error ? caught.message : "Impossible de mettre a jour le statut."
+        );
       } finally {
         setSubmittingId(null);
       }
@@ -80,7 +81,10 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         cell: ({ row }) => (
           <div className="min-w-[170px]">
             <p className="font-semibold">
-              <Link href={`/admin/creators/${row.original.creatorId}`} className="underline underline-offset-4 hover:text-secondary">
+              <Link
+                href={`/admin/creators/${row.original.creatorId}`}
+                className="underline underline-offset-4 hover:text-secondary"
+              >
                 {row.original.creatorHandle}
               </Link>
             </p>
@@ -96,14 +100,19 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         id: "amount",
         header: "Montant",
         accessorFn: (row) => row.amount,
-        cell: ({ row }) => <span className="font-medium tabular-nums">{formatCurrency(row.original.amount)}</span>
+        cell: ({ row }) => (
+          <span className="font-medium tabular-nums">{formatCurrency(row.original.amount)}</span>
+        )
       },
       {
         id: "status",
         header: "Statut",
         accessorFn: (row) => row.paymentStatus,
         cell: ({ row }) => (
-          <StatusBadge label={row.original.paymentStatus} tone={paymentStatusTone(row.original.paymentStatus)} />
+          <StatusBadge
+            label={row.original.paymentStatus}
+            tone={paymentStatusTone(row.original.paymentStatus)}
+          />
         )
       },
       {
@@ -131,7 +140,9 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
                 </Link>
               ) : isConfirming ? (
                 <div className="flex flex-col gap-2 rounded-xl border border-line bg-frost/70 px-3 py-2 text-sm">
-                  <span className="text-xs text-foreground/70 whitespace-nowrap">Action irreversible. Confirmer ?</span>
+                  <span className="text-xs text-foreground/70 whitespace-nowrap">
+                    Action irreversible. Confirmer ?
+                  </span>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
@@ -181,7 +192,9 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
       type="button"
       size="sm"
       variant="outline"
-      onClick={() => window.open(`/api/admin/payments/export?month=${encodeURIComponent(month)}`, "_blank")}
+      onClick={() =>
+        window.open(`/api/admin/payments/export?month=${encodeURIComponent(month)}`, "_blank")
+      }
       disabled={!auth.user}
     >
       <Download className="mr-2 h-4 w-4" />
@@ -197,7 +210,10 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
     >
       <div className="px-5 pb-4">
         {error ? (
-          <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+          <p
+            className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
@@ -208,19 +224,22 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
         columns={columns}
         pageSize={8}
         emptyMessage="Aucun paiement pour ce mois."
+        aria-label="Tableau des paiements"
         getRowId={(row) => row.monthlyTrackingId}
         renderMobileRow={(row) => (
           <div className="rounded-2xl border border-line bg-white/95 p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate font-semibold text-sm">{row.creatorHandle}</p>
-                <p className="truncate text-xs text-foreground/50">{row.email}</p>
+                <p className="truncate text-xs text-foreground/75">{row.email}</p>
               </div>
               <StatusBadge label={row.paymentStatus} tone={paymentStatusTone(row.paymentStatus)} />
             </div>
             <div className="flex items-center justify-between gap-2 text-xs text-foreground/65">
               <span>{row.deliveredSummary}</span>
-              <span className="font-semibold tabular-nums text-sm text-foreground">{formatCurrency(row.amount)}</span>
+              <span className="font-semibold tabular-nums text-sm text-foreground">
+                {formatCurrency(row.amount)}
+              </span>
             </div>
             {row.paymentStatusKey !== "paye" ? (
               !row.hasPayoutProfile ? (
@@ -232,7 +251,9 @@ export function PaymentsTable({ month, rows }: PaymentsTableProps) {
                 </Link>
               ) : confirmingId === row.monthlyTrackingId ? (
                 <div className="space-y-2 rounded-xl border border-line bg-frost/70 px-3 py-2">
-                  <p className="text-xs text-foreground/70">Confirmer le paiement de {formatCurrency(row.amount)}&nbsp;?</p>
+                  <p className="text-xs text-foreground/70">
+                    Confirmer le paiement de {formatCurrency(row.amount)}&nbsp;?
+                  </p>
                   <div className="flex gap-2">
                     <Button
                       type="button"

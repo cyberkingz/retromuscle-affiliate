@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Json } from "@/infrastructure/supabase/database.types";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
 function firstIp(value: string | null): string | null {
@@ -21,7 +22,8 @@ export async function writeAdminAuditLog(input: {
 }) {
   const client = createSupabaseServerClient();
 
-  const ip = firstIp(input.request.headers.get("x-forwarded-for")) ?? input.request.headers.get("x-real-ip");
+  const ip =
+    firstIp(input.request.headers.get("x-forwarded-for")) ?? input.request.headers.get("x-real-ip");
   const userAgent = input.request.headers.get("user-agent");
 
   const row = {
@@ -29,7 +31,7 @@ export async function writeAdminAuditLog(input: {
     action: input.action,
     entity_type: input.entityType,
     entity_id: input.entityId ?? null,
-    metadata: input.metadata ?? {},
+    metadata: (input.metadata ?? {}) as unknown as Json,
     request_id: input.requestId ?? null,
     ip: ip ?? null,
     user_agent: userAgent ?? null
@@ -38,4 +40,3 @@ export async function writeAdminAuditLog(input: {
   // Best-effort logging: do not break the user flow if audit insert fails.
   await client.from("admin_audit_log").insert(row);
 }
-

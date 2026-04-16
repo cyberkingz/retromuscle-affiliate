@@ -6,7 +6,7 @@ export const WIZARD_STEPS: Array<{ title: string; description: string }> = [
     description: "Identite, contact et adresse"
   },
   {
-    title: "Profil createur",
+    title: "Profil créateur",
     description: "Reseaux et audience"
   }
 ];

@@ -10,7 +10,10 @@ export default function UploadsLoading() {
       {/* Status summary row */}
       <div className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="h-20 animate-pulse rounded-2xl border border-line bg-white/75" />
+          <div
+            key={index}
+            className="h-20 animate-pulse rounded-2xl border border-line bg-white/75"
+          />
         ))}
       </div>
       {/* Upload card skeleton */}

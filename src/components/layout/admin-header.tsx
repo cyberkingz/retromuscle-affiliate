@@ -30,7 +30,9 @@ export function AdminHeader() {
               href={link.href}
               className={cn(
                 "text-sm uppercase tracking-[0.08em] transition-colors",
-                (link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href)) ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                (link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href))
+                  ? "text-foreground"
+                  : "text-foreground/70 hover:text-foreground"
               )}
             >
               {link.label}
@@ -65,15 +67,19 @@ export function AdminHeader() {
               void auth.signOut();
             }}
           >
-            Deconnexion
+            Déconnexion
           </Button>
         </div>
       </div>
 
       <div className="md:hidden">
-        <nav aria-label="Navigation administration mobile" className="container-wide flex gap-2 py-2">
+        <nav
+          aria-label="Navigation administration mobile"
+          className="container-wide flex gap-2 py-2"
+        >
           {adminLinks.map((link) => {
-            const isActive = link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
+            const isActive =
+              link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}

@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "RetroMuscle Programme Affilie",
+    name: "RetroMuscle Programme Créateur",
     short_name: "RetroMuscle",
-    description: "Programme d'affiliation RetroMuscle pour createurs",
+    description: "Programme créateur RetroMuscle pour créateurs de contenu",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#ffffff",

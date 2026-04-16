@@ -20,8 +20,10 @@ export function QuotasGrid({ items }: QuotasGridProps) {
                 {item.delivered}
               </p>
             </div>
-            <p className="text-xs uppercase tracking-[0.12em] text-foreground/55">
-              {item.delivered === 0 ? "Aucune video livree" : `${item.delivered} video${item.delivered > 1 ? "s" : ""} livree${item.delivered > 1 ? "s" : ""}`}
+            <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
+              {item.delivered === 0
+                ? "Aucune video livree"
+                : `${item.delivered} video${item.delivered > 1 ? "s" : ""} livree${item.delivered > 1 ? "s" : ""}`}
             </p>
           </CardSection>
         ))}

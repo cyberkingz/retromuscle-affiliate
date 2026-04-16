@@ -14,20 +14,20 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     id: "parties",
     title: "1. Parties et objet",
     paragraphs: [
-      "Ce contrat (le \"Contrat\") encadre la collaboration entre RetroMuscle (la \"Marque\") et toi (le \"Createur\").",
-      "L'objet est de produire et livrer des contenus video et/ou photo (les \"Contenus\") pour les besoins marketing de la Marque, selon des briefs et les tarifs par type de contenu communiques via la plateforme.",
+      'Ce contrat (le "Contrat") encadre la collaboration entre RetroMuscle (la "Marque") et toi (le "Créateur").',
+      'L\'objet est de produire et livrer des contenus video et/ou photo (les "Contenus") pour les besoins marketing de la Marque, selon des briefs et les tarifs par type de contenu communiques via la plateforme.',
       "La collaboration est non exclusive: tu restes libre de collaborer avec d'autres marques, sous reserve de respecter les obligations de confidentialite, de conformite publicitaire, et les droits accordes a la Marque dans le present Contrat.",
-      "Le Createur agit en tant que prestataire independant. Rien dans le Contrat ne cree une relation de salariat, d'agence, de partenariat ou de representation."
+      "Le Créateur agit en tant que prestataire independant. Rien dans le Contrat ne cree une relation de salariat, d'agence, de partenariat ou de representation."
     ]
   },
   {
     id: "definitions",
     title: "2. Definitions",
     paragraphs: [
-      "\"Brief\" designe les consignes communiquees par la Marque (formats, angles, scripts, contraintes, dates, elements de marque, claims interdits, etc.), notamment via le dashboard.",
-      "\"Contenu\" designe toute creation (video, photo, audio, texte associe, hooks, sous-titres, variantes, thumbnails, exports) livree par le Createur dans le cadre du Programme.",
-      "\"Livrables\" designe les fichiers effectivement remis via la plateforme (uploads) et/ou tout support convenu par ecrit.",
-      "\"Valide\" designe un Livrable accepte par la Marque a l'issue du processus de review."
+      '"Brief" designe les consignes communiquees par la Marque (formats, angles, scripts, contraintes, dates, elements de marque, claims interdits, etc.), notamment via le dashboard.',
+      '"Contenu" designe toute creation (video, photo, audio, texte associe, hooks, sous-titres, variantes, thumbnails, exports) livree par le Créateur dans le cadre du Programme.',
+      '"Livrables" designe les fichiers effectivement remis via la plateforme (uploads) et/ou tout support convenu par ecrit.',
+      '"Valide" designe un Livrable accepte par la Marque a l\'issue du processus de review.'
     ]
   },
   {
@@ -49,21 +49,21 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     id: "submission",
     title: "4. Livraison, validation et rejets",
     paragraphs: [
-      "Tu livres les fichiers via la plateforme RetroMuscle. La Marque review les Livrables et les marque \"Valide\" ou \"Rejete\" avec une raison.",
+      'Tu livres les fichiers via la plateforme RetroMuscle. La Marque review les Livrables et les marque "Valide" ou "Rejete" avec une raison.',
       "Un Livrable peut etre rejete s'il ne respecte pas le Brief, les specs techniques, ou les exigences de qualite.",
       "En cas de rejet, tu peux re-uploader une version corrigee. La Marque n'est pas tenue de valider un Livrable non conforme.",
-      "Les Livrables \"Valides\" peuvent ensuite etre recoupes, re-montes, sous-titres, ou adaptes pour la diffusion et la publicite."
+      'Les Livrables "Valides" peuvent ensuite etre recoupes, re-montes, sous-titres, ou adaptes pour la diffusion et la publicite.'
     ]
   },
   {
     id: "payment",
     title: "5. Remuneration, paiement et taxes",
     paragraphs: [
-      "La remuneration est calculee selon les tarifs par type de contenu communiques dans la plateforme. Chaque Livrable \"Valide\" declenche le paiement au tarif correspondant a son type.",
+      'La remuneration est calculee selon les tarifs par type de contenu communiques dans la plateforme. Chaque Livrable "Valide" declenche le paiement au tarif correspondant a son type.',
       "Principe general: seuls les Livrables \"Valides\" declenchent la remuneration correspondante. Il n'y a pas de quota ni d'engagement de volume minimum.",
       "Les paiements sont prepares et effectues mensuellement, apres la validation des Livrables. Des delais bancaires peuvent s'appliquer.",
       "Tu es responsable de tes obligations fiscales et sociales (statut, declarations, TVA le cas echeant).",
-      "En cas de contestation d'un montant, le Createur doit signaler le sujet dans un delai raisonnable (30 jours) apres publication du recapitulatif du Cycle."
+      "En cas de contestation d'un montant, le Créateur doit signaler le sujet dans un delai raisonnable (30 jours) apres publication du recapitulatif du Cycle."
     ]
   },
   {
@@ -76,7 +76,7 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     ],
     bullets: [
       "Reproduire, copier, stocker, distribuer, diffuser, communiquer au public, afficher publiquement",
-      "Adapter, modifier, editer, recadrer, compresser, re-monter, sous-titrer, traduire, extraire des passages, creer des versions/derives (hooks, cutdowns, variations, thumbnails)",
+      "Adapter, modifier, editer, recadrer, compresser, re-monter, sous-titrer, traduire, extraire des passages, créer des versions/derives (hooks, cutdowns, variations, thumbnails)",
       "Combiner le Contenu avec d'autres elements (graphismes, musique, voix-off, captures produit, offres, CTA) et l'integrer dans des campagnes",
       "Exploiter les Contenus sous forme de publicites (ads) et optimiser (A/B tests, variations creatifs, recadrages, re-encodage)"
     ]
@@ -108,8 +108,8 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     id: "brand-safety",
     title: "9. Brand safety (clauses de protection Marque)",
     paragraphs: [
-      "Le Createur s'engage a ne pas publier, dans le cadre de la collaboration, de contenu susceptible de nuire a l'image de RetroMuscle (contenu haineux, illegal, trompeur, ou contraire aux valeurs de la Marque).",
-      "Le Createur s'interdit d'utiliser des visuels, musiques ou assets susceptibles de declencher des reclamations (copyright/DMCA) dans les campagnes de la Marque.",
+      "Le Créateur s'engage a ne pas publier, dans le cadre de la collaboration, de contenu susceptible de nuire a l'image de RetroMuscle (contenu haineux, illegal, trompeur, ou contraire aux valeurs de la Marque).",
+      "Le Créateur s'interdit d'utiliser des visuels, musiques ou assets susceptibles de declencher des reclamations (copyright/DMCA) dans les campagnes de la Marque.",
       "En cas d'incident (claim, plainte, contenu litigieux), la Marque peut suspendre l'exploitation et demander des modifications ou un retrait."
     ]
   },
@@ -120,7 +120,7 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
       "Tu garantis que tu es titulaire de tous les droits necessaires sur les Contenus fournis (ou que tu disposes des autorisations requises), et que l'exploitation par la Marque ne violera pas les droits de tiers.",
       "Tu garantis l'absence de logiciels malveillants dans les fichiers livres.",
       "Tu indemniseras la Marque en cas de reclamation d'un tiers liee a un manquement de ta part (ex: violation de droits, absence de consentement, contenu illicite).",
-      "La responsabilite totale de la Marque, toutes causes confondues, est limitee (dans la mesure permise) aux sommes effectivement payees au Createur au cours des 3 derniers mois precedant l'evenement."
+      "La responsabilite totale de la Marque, toutes causes confondues, est limitee (dans la mesure permise) aux sommes effectivement payees au Créateur au cours des 3 derniers mois precedant l'evenement."
     ]
   },
   {
@@ -137,8 +137,8 @@ export const AFFILIATE_CONTRACT_SECTIONS: ContractSection[] = [
     id: "independent",
     title: "12. Independants / absence d'exclusivite",
     paragraphs: [
-      "Le Createur organise librement son temps, ses moyens et sa methode de travail. La Marque fixe les objectifs (Brief, specs, deadlines) mais ne controle pas la maniere de filmer au quotidien.",
-      "La collaboration est non exclusive. Toutefois, pendant un Cycle, le Createur evite les contenus qui creeraient une confusion manifeste (ex: campagne concurrente directe) si cela a ete precise dans un Brief."
+      "Le Créateur organise librement son temps, ses moyens et sa methode de travail. La Marque fixe les objectifs (Brief, specs, deadlines) mais ne controle pas la maniere de filmer au quotidien.",
+      "La collaboration est non exclusive. Toutefois, pendant un Cycle, le Créateur evite les contenus qui creeraient une confusion manifeste (ex: campagne concurrente directe) si cela a ete precise dans un Brief."
     ]
   },
   {
