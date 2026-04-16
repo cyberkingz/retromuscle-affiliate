@@ -102,7 +102,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {/* ── Meta Pixel ── */}
         {FB_PIXEL_ID ? (
           <>
-            <Script id="fb-pixel" strategy="afterInteractive">
+            <Script id="fb-pixel" strategy="afterInteractive" nonce={nonce}>
               {`!function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};

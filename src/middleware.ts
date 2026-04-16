@@ -25,12 +25,12 @@ function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
     // 'strict-dynamic' is used by CSP3 browsers; https: is the CSP2 fallback.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isProd ? "" : "'unsafe-eval'"}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://connect.facebook.net ${isProd ? "" : "'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     // H-07: Explicit allowlist — no blanket https: so data cannot be exfiltrated to arbitrary origins on XSS.
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel-insights.com https://vitals.vercel-insights.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel-insights.com https://vitals.vercel-insights.com https://www.facebook.com https://connect.facebook.net",
     "media-src 'self' https://*.supabase.co blob:",
     "frame-src 'self'",
     "base-uri 'self'",
