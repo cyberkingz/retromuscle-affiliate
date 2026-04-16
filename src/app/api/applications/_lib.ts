@@ -104,13 +104,10 @@ export function parsePayload(
     (socialTiktok ? extractTiktokProfileHandle(socialTiktok) : null) ??
     (socialInstagram ? extractInstagramProfileHandle(socialInstagram) : null);
 
-  const handle = derivedHandle ?? "";
-
-  if (!handle) {
-    throw new Error(
-      "Ajoute un lien TikTok ou Instagram valide (profil public) pour detecter ton handle."
-    );
-  }
+  // Step 2 is optional — fall back to the email prefix so the DB handle
+  // column is always populated even when no social profile is provided.
+  const emailPrefix = email.split("@")[0]?.replace(/[^a-zA-Z0-9_.-]/g, "") ?? "";
+  const handle = derivedHandle ?? emailPrefix;
 
   return {
     handle,
