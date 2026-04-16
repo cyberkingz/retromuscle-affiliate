@@ -154,9 +154,9 @@ function validateStep1(form: ApplicationFormState): StepValidationResult {
   const tiktok = form.socialTiktok.trim();
   const instagram = form.socialInstagram.trim();
 
-  if (!tiktok && !instagram) {
-    return fail("socialTiktok", "Ajoute au moins un reseau social (TikTok ou Instagram).");
-  }
+  // Step 2 is fully optional — pass immediately if both are empty.
+  if (!tiktok && !instagram) return { ok: true };
+
   if (tiktok && !isValidTiktokUrl(tiktok)) {
     return fail("socialTiktok", "Lien TikTok invalide. Exemple: https://www.tiktok.com/@toncompte");
   }
@@ -170,14 +170,14 @@ function validateStep1(form: ApplicationFormState): StepValidationResult {
   if (tiktok) {
     const tiktokFollowers = parseFollowers(form.followersTiktok);
     if (tiktokFollowers === null) {
-      return fail("followersTiktok", "Le nombre d'abonnes TikTok est invalide.");
+      return fail("followersTiktok", "Indique le nombre d'abonnés TikTok.");
     }
   }
 
   if (instagram) {
     const instagramFollowers = parseFollowers(form.followersInstagram);
     if (instagramFollowers === null) {
-      return fail("followersInstagram", "Le nombre d'abonnes Instagram est invalide.");
+      return fail("followersInstagram", "Indique le nombre d'abonnés Instagram.");
     }
   }
 
