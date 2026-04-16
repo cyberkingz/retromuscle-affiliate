@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/features/auth/context/auth-context";
+import { lead as fbLead } from "@/lib/facebook-pixel";
 import { INITIAL_FORM, mapRecordToForm } from "@/features/apply/state";
 import type {
   ApplicationFormState,
@@ -431,6 +432,7 @@ export function useOnboardingFlow(): UseOnboardingFlowResult {
 
       setApplication(data.application);
       void deleteDraftFromServer();
+      fbLead(); // Meta Pixel: Lead event — creator application submitted
       setStatusMessage("Dossier soumis. Tu recevras un retour apres revue de l'equipe.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Erreur sauvegarde dossier");

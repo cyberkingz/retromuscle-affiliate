@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useAuth } from "@/features/auth/context/auth-context";
+import { completeRegistration as fbCompleteRegistration } from "@/lib/facebook-pixel";
 import { isValidEmail } from "@/lib/validation";
 
 interface UseSignupFlowResult {
@@ -74,6 +75,7 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
 
       if (data?.needsEmailConfirmation) {
         setNeedsEmailConfirmation(true);
+        if (mode === "signup") fbCompleteRegistration(); // Meta Pixel: account created
         setStatusMessage(
           "Compte créé ! Vérifie ton email et clique sur le lien de confirmation (valable 24h) — tu seras redirigé automatiquement."
         );
@@ -83,6 +85,7 @@ export function useSignupFlow(initialMode: "signup" | "signin" = "signup"): UseS
       await auth.refreshSession();
       await auth.refreshRouting();
 
+      if (mode === "signup") fbCompleteRegistration(); // Meta Pixel: account created
       setStatusMessage(
         mode === "signup" ? "Compte créé. Tu peux continuer l'onboarding." : "Connexion réussie."
       );
