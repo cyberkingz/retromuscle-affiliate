@@ -221,4 +221,40 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   }): Promise<MonthlyTracking> {
     throw new Error("Tracking provisioning is not available in offline mode");
   }
+
+  async getCreatorByKitPromoCode(code: string): Promise<Creator | null> {
+    const normalized = code.trim().toUpperCase();
+    return (
+      creators.find((creator) => creator.kitPromoCode?.toUpperCase() === normalized) ?? null
+    );
+  }
+
+  async updateKitPromoCode(_input: {
+    creatorId: string;
+    kitPromoCode: string;
+    shopifyDiscountId: string;
+  }): Promise<Creator> {
+    throw new Error("Kit promo code updates are not available in offline mode");
+  }
+
+  async markKitOrdered(_input: {
+    creatorId: string;
+    kitOrderPlacedAt: string;
+    shopifyKitOrderId: string;
+  }): Promise<Creator> {
+    throw new Error("Kit order updates are not available in offline mode");
+  }
+
+  async recordShopifyWebhookOnce(_input: {
+    webhookId: string;
+    topic: string;
+    shopDomain?: string | null;
+    creatorId?: string | null;
+  }): Promise<boolean> {
+    throw new Error("Shopify webhooks are not available in offline mode");
+  }
+
+  async rollbackShopifyWebhook(_webhookId: string): Promise<void> {
+    throw new Error("Shopify webhooks are not available in offline mode");
+  }
 }

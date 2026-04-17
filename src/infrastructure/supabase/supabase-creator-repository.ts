@@ -115,7 +115,11 @@ function mapCreator(row: CreatorRow): Creator {
     status: toCreatorStatus(row.status),
     startDate: row.start_date,
     contractSignedAt: row.contract_signed_at ?? undefined,
-    notes: row.notes ?? undefined
+    notes: row.notes ?? undefined,
+    kitPromoCode: row.kit_promo_code ?? undefined,
+    shopifyDiscountId: row.shopify_discount_id ?? undefined,
+    kitOrderPlacedAt: row.kit_order_placed_at ?? undefined,
+    shopifyKitOrderId: row.shopify_kit_order_id ?? undefined
   };
 }
 
@@ -226,7 +230,7 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
 
 // Explicit column selections to avoid select("*") over-fetching (H-03).
 const CREATOR_COLS =
-  "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes" as const;
+  "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id" as const;
 const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
 const VIDEO_COLS =
   "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
@@ -961,5 +965,103 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return mapMonthlyTracking(data as MonthlyTrackingRow);
+  }
+
+  async getCreatorByKitPromoCode(code: string): Promise<Creator | null> {
+    const normalized = code.trim().toUpperCase();
+    if (!normalized) return null;
+
+    const { data, error } = await this.client
+      .from("creators")
+      .select(CREATOR_COLS)
+      .ilike("kit_promo_code", normalized)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to get creator by kit promo code: ${error.message}`);
+    }
+
+    return data ? mapCreator(data as CreatorRow) : null;
+  }
+
+  async updateKitPromoCode(input: {
+    creatorId: string;
+    kitPromoCode: string;
+    shopifyDiscountId: string;
+  }): Promise<Creator> {
+    const { data, error } = await this.client
+      .from("creators")
+      .update({
+        kit_promo_code: input.kitPromoCode,
+        shopify_discount_id: input.shopifyDiscountId
+      })
+      .eq("id", input.creatorId)
+      .select(CREATOR_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to update kit promo code for ${input.creatorId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapCreator(data as CreatorRow);
+  }
+
+  async markKitOrdered(input: {
+    creatorId: string;
+    kitOrderPlacedAt: string;
+    shopifyKitOrderId: string;
+  }): Promise<Creator> {
+    const { data, error } = await this.client
+      .from("creators")
+      .update({
+        kit_order_placed_at: input.kitOrderPlacedAt,
+        shopify_kit_order_id: input.shopifyKitOrderId
+      })
+      .eq("id", input.creatorId)
+      .select(CREATOR_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to mark kit ordered for ${input.creatorId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapCreator(data as CreatorRow);
+  }
+
+  async recordShopifyWebhookOnce(input: {
+    webhookId: string;
+    topic: string;
+    shopDomain?: string | null;
+    creatorId?: string | null;
+  }): Promise<boolean> {
+    const { error } = await this.client.from("shopify_webhook_events").insert({
+      webhook_id: input.webhookId,
+      topic: input.topic,
+      shop_domain: input.shopDomain ?? null,
+      creator_id: input.creatorId ?? null
+    });
+
+    if (!error) return true;
+
+    // PostgreSQL unique violation code = 23505.
+    const code = (error as { code?: string }).code;
+    if (code === "23505") return false;
+
+    throw new Error(`Failed to record Shopify webhook: ${error.message}`);
+  }
+
+  async rollbackShopifyWebhook(webhookId: string): Promise<void> {
+    const { error } = await this.client
+      .from("shopify_webhook_events")
+      .delete()
+      .eq("webhook_id", webhookId);
+
+    if (error) {
+      throw new Error(`Failed to rollback Shopify webhook ${webhookId}: ${error.message}`);
+    }
   }
 }

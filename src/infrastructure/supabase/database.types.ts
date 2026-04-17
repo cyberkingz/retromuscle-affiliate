@@ -216,7 +216,11 @@ export type Database = {
           followers_tiktok: number;
           handle: string;
           id: string;
+          kit_order_placed_at: string | null;
+          kit_promo_code: string | null;
           notes: string | null;
+          shopify_discount_id: string | null;
+          shopify_kit_order_id: string | null;
           social_links: Json;
           start_date: string;
           status: string;
@@ -235,7 +239,11 @@ export type Database = {
           followers_tiktok?: number;
           handle: string;
           id?: string;
+          kit_order_placed_at?: string | null;
+          kit_promo_code?: string | null;
           notes?: string | null;
+          shopify_discount_id?: string | null;
+          shopify_kit_order_id?: string | null;
           social_links?: Json;
           start_date: string;
           status: string;
@@ -254,7 +262,11 @@ export type Database = {
           followers_tiktok?: number;
           handle?: string;
           id?: string;
+          kit_order_placed_at?: string | null;
+          kit_promo_code?: string | null;
           notes?: string | null;
+          shopify_discount_id?: string | null;
+          shopify_kit_order_id?: string | null;
           social_links?: Json;
           start_date?: string;
           status?: string;
@@ -376,6 +388,41 @@ export type Database = {
             columns: ["monthly_tracking_id"];
             isOneToOne: false;
             referencedRelation: "monthly_tracking";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      shopify_webhook_events: {
+        Row: {
+          creator_id: string | null;
+          processed_at: string | null;
+          received_at: string;
+          shop_domain: string | null;
+          topic: string;
+          webhook_id: string;
+        };
+        Insert: {
+          creator_id?: string | null;
+          processed_at?: string | null;
+          received_at?: string;
+          shop_domain?: string | null;
+          topic: string;
+          webhook_id: string;
+        };
+        Update: {
+          creator_id?: string | null;
+          processed_at?: string | null;
+          received_at?: string;
+          shop_domain?: string | null;
+          topic?: string;
+          webhook_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "shopify_webhook_events_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
             referencedColumns: ["id"];
           }
         ];
