@@ -632,7 +632,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         </DataTableCard>
 
         {/* ── Detail panel ── */}
-        <Card className="overflow-hidden bg-white/95">
+        <Card className="overflow-hidden bg-white/95 lg:self-start lg:sticky lg:top-24">
           {!selected ? (
             <div className="flex h-52 flex-col items-center justify-center gap-2 p-6 text-center">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/35">

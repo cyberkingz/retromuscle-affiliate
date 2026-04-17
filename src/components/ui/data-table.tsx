@@ -75,7 +75,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-3">
       {renderMobileRow ? (
-        <div className="space-y-3 px-4 pb-4 sm:hidden">
+        <div className="space-y-3 px-4 pb-4 pt-4 sm:hidden">
           {rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-foreground/60">{emptyMessage}</p>
           ) : null}
