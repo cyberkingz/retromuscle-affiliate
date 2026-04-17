@@ -1064,4 +1064,124 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to rollback Shopify webhook ${webhookId}: ${error.message}`);
     }
   }
+
+  async signContract(input: {
+    creatorId: string;
+    userId: string;
+    contractVersion: string;
+    contractChecksum: string;
+    contractText: string;
+    signerName: string;
+    acceptance: Record<string, boolean>;
+    ip: string | null;
+    userAgent: string | null;
+    signedAt: string;
+  }): Promise<{
+    signatureId: string;
+    signedAt: string;
+    contractSignedAt: string;
+    wasFirstTimeSigning: boolean;
+  }> {
+    // Snapshot previous contract_signed_at to know whether this signing is a first-time.
+    const before = await this.client
+      .from("creators")
+      .select("contract_signed_at")
+      .eq("id", input.creatorId)
+      .maybeSingle();
+
+    if (before.error) {
+      throw new Error(`Failed to load creator before signing: ${before.error.message}`);
+    }
+    const wasFirstTimeSigning = !before.data?.contract_signed_at;
+
+    const upsert = await this.client
+      .from("creator_contract_signatures")
+      .upsert(
+        {
+          creator_id: input.creatorId,
+          user_id: input.userId,
+          contract_version: input.contractVersion,
+          contract_checksum: input.contractChecksum,
+          contract_text: input.contractText,
+          signer_name: input.signerName,
+          acceptance: input.acceptance,
+          ip: input.ip,
+          user_agent: input.userAgent,
+          signed_at: input.signedAt
+        },
+        { onConflict: "user_id,contract_checksum", ignoreDuplicates: true }
+      )
+      .select("id, signed_at")
+      .maybeSingle();
+
+    if (upsert.error) {
+      throw new Error(`Failed to record contract signature: ${upsert.error.message}`);
+    }
+
+    let signatureId = upsert.data?.id ?? null;
+    let signedAt = upsert.data?.signed_at ?? input.signedAt;
+
+    if (!signatureId) {
+      const existing = await this.client
+        .from("creator_contract_signatures")
+        .select("id, signed_at")
+        .eq("user_id", input.userId)
+        .eq("contract_checksum", input.contractChecksum)
+        .order("signed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing.error) {
+        throw new Error(
+          `Failed to reload existing contract signature: ${existing.error.message}`
+        );
+      }
+      signatureId = existing.data?.id ?? null;
+      signedAt = existing.data?.signed_at ?? signedAt;
+    }
+
+    if (!signatureId) {
+      throw new Error("Contract signature row missing after upsert");
+    }
+
+    const updateCreator = await this.client
+      .from("creators")
+      .update({ contract_signed_at: signedAt })
+      .eq("id", input.creatorId)
+      .select("contract_signed_at")
+      .maybeSingle();
+
+    if (updateCreator.error || !updateCreator.data) {
+      throw new Error(
+        `Failed to finalize contract signature: ${updateCreator.error?.message ?? "missing row"}`
+      );
+    }
+
+    return {
+      signatureId,
+      signedAt,
+      contractSignedAt: updateCreator.data.contract_signed_at ?? signedAt,
+      wasFirstTimeSigning
+    };
+  }
+
+  async clearKitPromoCode(creatorId: string): Promise<Creator> {
+    const { data, error } = await this.client
+      .from("creators")
+      .update({
+        kit_promo_code: null,
+        shopify_discount_id: null
+      })
+      .eq("id", creatorId)
+      .select(CREATOR_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to clear kit promo code for ${creatorId}: ${error?.message ?? "missing row"}`
+      );
+    }
+
+    return mapCreator(data as CreatorRow);
+  }
 }

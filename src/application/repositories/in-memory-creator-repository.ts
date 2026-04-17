@@ -257,4 +257,28 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   async rollbackShopifyWebhook(_webhookId: string): Promise<void> {
     throw new Error("Shopify webhooks are not available in offline mode");
   }
+
+  async signContract(_input: {
+    creatorId: string;
+    userId: string;
+    contractVersion: string;
+    contractChecksum: string;
+    contractText: string;
+    signerName: string;
+    acceptance: Record<string, boolean>;
+    ip: string | null;
+    userAgent: string | null;
+    signedAt: string;
+  }): Promise<{
+    signatureId: string;
+    signedAt: string;
+    contractSignedAt: string;
+    wasFirstTimeSigning: boolean;
+  }> {
+    throw new Error("Contract signing is not available in offline mode");
+  }
+
+  async clearKitPromoCode(_creatorId: string): Promise<Creator> {
+    throw new Error("Kit promo code updates are not available in offline mode");
+  }
 }
