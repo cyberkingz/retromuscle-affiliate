@@ -24,25 +24,55 @@ export async function sendApplicationApprovedEmail(input: {
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;padding:0 20px;">
     <tr><td>
       <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px 36px;">
+
+        <!-- Eyebrow -->
+        <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#d4006a;text-transform:uppercase;letter-spacing:0.12em;">
+          Programme d'affiliation RetroMuscle
+        </p>
+
+        <!-- Headline -->
         <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
-          Bienvenue dans le programme, ${input.fullName} 🔥
+          Bienvenue dans l'équipe, ${input.fullName} 🔥
         </p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#aaa;">
-          Ta candidature a été <strong style="color:#22c55e;">acceptée</strong>. Tu rejoins officiellement le programme d'affiliation RetroMuscle.
+
+        <!-- Body -->
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#aaa;">
+          Ta candidature a été <strong style="color:#d4006a;">acceptée</strong>.
+          Tu rejoins officiellement le programme créateur RetroMuscle.
         </p>
-        <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#aaa;">
-          Prochaine étape : signe ton contrat pour commencer à uploader tes vidéos et générer tes revenus.
-        </p>
+
+        <!-- Next step block -->
+        <div style="background:#1a0a12;border:1px solid #d4006a44;border-radius:10px;padding:24px 28px;margin:0 0 28px;text-align:center;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#d4006a;text-transform:uppercase;letter-spacing:0.12em;">
+            Prochaine étape
+          </p>
+          <p style="margin:0 0 4px;font-size:20px;font-weight:900;color:#fff;letter-spacing:0.02em;">
+            Signe ton contrat
+          </p>
+          <p style="margin:0;font-size:12px;color:#666;">
+            Accède à ton espace · signe · commence à uploader
+          </p>
+        </div>
+
+        <!-- CTA -->
         <a href="${APP_URL}/contract"
-           style="display:inline-block;background:#ef4444;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+           style="display:block;background:#d4006a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;text-align:center;letter-spacing:0.04em;">
           Signer mon contrat →
         </a>
-        <p style="margin:32px 0 0;font-size:13px;color:#555;">
+
+        <!-- Footer note -->
+        <p style="margin:28px 0 0;font-size:14px;line-height:1.7;color:#777;">
+          Une fois ton contrat signé, tu recevras ton kit créateur avec ton code promo
+          pour commander ta première tenue de shoot.
+        </p>
+
+        <p style="margin:24px 0 0;font-size:13px;color:#555;">
           Des questions ? Réponds à cet email, on est là.
         </p>
       </div>
       <p style="margin:20px 0 0;text-align:center;font-size:12px;color:#444;">
-        © ${new Date().getFullYear()} RetroMuscle · <a href="${APP_URL}" style="color:#666;text-decoration:none;">${APP_URL}</a>
+        © ${new Date().getFullYear()} RetroMuscle ·
+        <a href="${APP_URL}" style="color:#666;text-decoration:none;">affiliate.retromuscle.net</a>
       </p>
     </td></tr>
   </table>
