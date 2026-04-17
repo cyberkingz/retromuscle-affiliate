@@ -5,8 +5,9 @@ import {
   VIDEO_TYPE_LABELS
 } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
+import { deriveKitStatusForCreator } from "@/domain/services/derive-kit-status";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
-import { VIDEO_TYPES, type PaymentStatus } from "@/domain/types";
+import { VIDEO_TYPES, type CreatorKitStatus, type PaymentStatus } from "@/domain/types";
 import { resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminDashboardData {
@@ -24,6 +25,7 @@ export interface AdminDashboardData {
     email: string;
     country: string;
     status: string;
+    kitStatus: CreatorKitStatus;
   }>;
   monthlyRows: Array<{
     monthlyTrackingId: string;
@@ -120,7 +122,8 @@ export async function getAdminDashboardData(input?: {
       handle: creator.handle,
       email: creator.email,
       country: creator.country,
-      status: CREATOR_STATUS_LABELS[creator.status]
+      status: CREATOR_STATUS_LABELS[creator.status],
+      kitStatus: deriveKitStatusForCreator(creator)
     })),
     monthlyRows,
     validationQueue: pendingVideos.map((video) => {
