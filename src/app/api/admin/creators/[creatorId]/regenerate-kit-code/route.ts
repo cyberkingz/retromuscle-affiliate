@@ -17,7 +17,7 @@ export const runtime = "nodejs";
  * calls Shopify to mint a fresh one. Used when initial generation failed at
  * contract-sign time, or when an admin needs to rotate a code.
  */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ creatorId: string }> }) {
   const ctx = createApiContext(request);
   if (!isAllowedOrigin(request)) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
@@ -35,7 +35,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const auth = await requireApiRole(request, "admin", { ctx });
   if (!auth.ok) return auth.response;
 
-  const { id } = await context.params;
+  const { creatorId: id } = await context.params;
   if (!id || !isUuid(id)) {
     const response = apiError(ctx, {
       status: 400,
