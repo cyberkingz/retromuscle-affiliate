@@ -119,7 +119,9 @@ function mapCreator(row: CreatorRow): Creator {
     kitPromoCode: row.kit_promo_code ?? undefined,
     shopifyDiscountId: row.shopify_discount_id ?? undefined,
     kitOrderPlacedAt: row.kit_order_placed_at ?? undefined,
-    shopifyKitOrderId: row.shopify_kit_order_id ?? undefined
+    shopifyKitOrderId: row.shopify_kit_order_id ?? undefined,
+    kitOrderAmount: row.kit_order_amount ?? null,
+    kitOrderCurrency: row.kit_order_currency ?? null
   };
 }
 
@@ -230,7 +232,7 @@ function mapContractSignature(row: ContractSignatureRow): CreatorContractSignatu
 
 // Explicit column selections to avoid select("*") over-fetching (H-03).
 const CREATOR_COLS =
-  "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id" as const;
+  "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id,kit_order_amount,kit_order_currency" as const;
 const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
 const VIDEO_COLS =
   "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
@@ -1012,12 +1014,16 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     creatorId: string;
     kitOrderPlacedAt: string;
     shopifyKitOrderId: string;
+    orderAmount?: number | null;
+    orderCurrency?: string | null;
   }): Promise<Creator> {
     const { data, error } = await this.client
       .from("creators")
       .update({
         kit_order_placed_at: input.kitOrderPlacedAt,
-        shopify_kit_order_id: input.shopifyKitOrderId
+        shopify_kit_order_id: input.shopifyKitOrderId,
+        kit_order_amount: input.orderAmount ?? null,
+        kit_order_currency: input.orderCurrency ?? null
       })
       .eq("id", input.creatorId)
       .select(CREATOR_COLS)

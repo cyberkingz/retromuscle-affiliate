@@ -169,6 +169,8 @@ export interface CreatorRepository {
     creatorId: string;
     kitOrderPlacedAt: string;
     shopifyKitOrderId: string;
+    orderAmount?: number | null;
+    orderCurrency?: string | null;
   }): Promise<Creator>;
   /**
    * Atomically record a Shopify webhook delivery for dedupe.

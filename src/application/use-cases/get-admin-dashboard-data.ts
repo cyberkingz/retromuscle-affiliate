@@ -57,6 +57,15 @@ export interface AdminDashboardData {
     paymentStatusKey: PaymentStatus;
     hasPayoutProfile: boolean;
   }>;
+  kitOrders: Array<{
+    creatorId: string;
+    handle: string;
+    promoCode: string;
+    orderedAt: string;
+    shopifyOrderId: string;
+    orderAmount: number | null;
+    orderCurrency: string | null;
+  }>;
 }
 
 export async function getAdminDashboardData(input?: {
@@ -161,6 +170,18 @@ export async function getAdminDashboardData(input?: {
         paymentStatusKey: row.paymentStatusKey,
         hasPayoutProfile: validProfileCreatorIds.has(row.creatorId)
       }));
-    })()
+    })(),
+    kitOrders: creators
+      .filter((c) => c.kitOrderPlacedAt)
+      .map((c) => ({
+        creatorId: c.id,
+        handle: c.handle,
+        promoCode: c.kitPromoCode ?? "",
+        orderedAt: c.kitOrderPlacedAt!,
+        shopifyOrderId: c.shopifyKitOrderId ?? "",
+        orderAmount: c.kitOrderAmount ?? null,
+        orderCurrency: c.kitOrderCurrency ?? null
+      }))
+      .sort((a, b) => b.orderedAt.localeCompare(a.orderedAt))
   };
 }

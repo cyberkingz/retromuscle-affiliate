@@ -77,7 +77,9 @@ export async function POST(request: Request) {
       orderGid: payload.orderGid,
       orderNumericId: payload.orderNumericId,
       appliedDiscountCodes: payload.appliedDiscountCodes,
-      orderCreatedAt: payload.orderCreatedAt
+      orderCreatedAt: payload.orderCreatedAt,
+      orderAmount: payload.orderAmount,
+      orderCurrency: payload.orderCurrency
     });
     return new NextResponse(null, { status: 200 });
   } catch (error) {
@@ -94,6 +96,8 @@ interface ShopifyOrderCreatePayload {
   orderNumericId: string | null;
   appliedDiscountCodes: string[];
   orderCreatedAt: string;
+  orderAmount: number | null;
+  orderCurrency: string | null;
 }
 
 function parseOrderCreatePayload(raw: unknown): ShopifyOrderCreatePayload {
@@ -140,10 +144,21 @@ function parseOrderCreatePayload(raw: unknown): ShopifyOrderCreatePayload {
     }
   }
 
+  const orderAmount =
+    typeof input.total_price === "string"
+      ? parseFloat(input.total_price)
+      : typeof input.total_price === "number"
+        ? input.total_price
+        : null;
+
+  const orderCurrency = typeof input.currency === "string" ? input.currency : null;
+
   return {
     orderGid,
     orderNumericId,
     appliedDiscountCodes: Array.from(codes),
-    orderCreatedAt
+    orderCreatedAt,
+    orderAmount: orderAmount !== null && Number.isFinite(orderAmount) ? orderAmount : null,
+    orderCurrency
   };
 }

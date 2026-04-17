@@ -19,6 +19,10 @@ export interface ShopifyOrderWebhookInput {
   appliedDiscountCodes: string[];
   /** ISO timestamp of when the order was created. */
   orderCreatedAt: string;
+  /** Total order amount (e.g. 89.99). */
+  orderAmount?: number | null;
+  /** Currency code (e.g. EUR). */
+  orderCurrency?: string | null;
 }
 
 export interface MarkKitOrderPlacedResult {
@@ -92,7 +96,9 @@ export async function markKitOrderPlaced(
     await repository.markKitOrdered({
       creatorId: matchedCreatorId,
       kitOrderPlacedAt: input.orderCreatedAt,
-      shopifyKitOrderId: input.orderGid
+      shopifyKitOrderId: input.orderGid,
+      orderAmount: input.orderAmount ?? null,
+      orderCurrency: input.orderCurrency ?? null
     });
 
     return {

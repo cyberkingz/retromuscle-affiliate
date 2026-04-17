@@ -6,6 +6,7 @@ import { ChevronDown, LayoutDashboard } from "lucide-react";
 import type { AdminDashboardData } from "@/application/use-cases/get-admin-dashboard-data";
 import { AdminMetricsStrip } from "@/features/admin-dashboard/components/admin-metrics-strip";
 import { CreatorsMasterTable } from "@/features/admin-dashboard/components/creators-master-table";
+import { KitOrdersTable } from "@/features/admin-dashboard/components/kit-orders-table";
 import { MonthlyTrackingTable } from "@/features/admin-dashboard/components/monthly-tracking-table";
 import { PaymentsTable } from "@/features/admin-dashboard/components/payments-table";
 import { ValidationQueue } from "@/features/admin-dashboard/components/validation-queue";
@@ -77,6 +78,9 @@ export function AdminDashboardPage({ data }: AdminDashboardPageProps) {
 
       {/* ── Payments — full width ── */}
       <PaymentsTable month={data.month} rows={data.payments} />
+
+      {/* ── Kit Orders — full width ── */}
+      <KitOrdersTable rows={data.kitOrders} shopDomain="retromuscle1000.myshopify.com" />
 
       {/* ── Collapsible sections ── */}
       <AdminAccordion title={`Créateurs (${data.creatorsMaster.length})`}>

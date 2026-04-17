@@ -216,6 +216,8 @@ export type Database = {
           followers_tiktok: number;
           handle: string;
           id: string;
+          kit_order_amount: number | null;
+          kit_order_currency: string | null;
           kit_order_placed_at: string | null;
           kit_promo_code: string | null;
           notes: string | null;
@@ -239,6 +241,8 @@ export type Database = {
           followers_tiktok?: number;
           handle: string;
           id?: string;
+          kit_order_amount?: number | null;
+          kit_order_currency?: string | null;
           kit_order_placed_at?: string | null;
           kit_promo_code?: string | null;
           notes?: string | null;
@@ -262,6 +266,8 @@ export type Database = {
           followers_tiktok?: number;
           handle?: string;
           id?: string;
+          kit_order_amount?: number | null;
+          kit_order_currency?: string | null;
           kit_order_placed_at?: string | null;
           kit_promo_code?: string | null;
           notes?: string | null;

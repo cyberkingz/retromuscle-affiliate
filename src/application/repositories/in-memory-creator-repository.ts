@@ -241,6 +241,8 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     creatorId: string;
     kitOrderPlacedAt: string;
     shopifyKitOrderId: string;
+    orderAmount?: number | null;
+    orderCurrency?: string | null;
   }): Promise<Creator> {
     throw new Error("Kit order updates are not available in offline mode");
   }

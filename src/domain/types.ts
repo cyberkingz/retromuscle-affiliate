@@ -41,6 +41,8 @@ export interface Creator {
   shopifyDiscountId?: string;
   kitOrderPlacedAt?: string;
   shopifyKitOrderId?: string;
+  kitOrderAmount?: number | null;
+  kitOrderCurrency?: string | null;
 }
 
 /**

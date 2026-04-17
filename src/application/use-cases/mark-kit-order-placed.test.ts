@@ -76,7 +76,9 @@ describe("markKitOrderPlaced", () => {
     expect(repository.markKitOrdered).toHaveBeenCalledWith({
       creatorId: CREATOR_ID,
       kitOrderPlacedAt: "2026-04-17T12:00:00Z",
-      shopifyKitOrderId: "gid://shopify/Order/555"
+      shopifyKitOrderId: "gid://shopify/Order/555",
+      orderAmount: null,
+      orderCurrency: null
     });
     expect(repository.rollbackShopifyWebhook).not.toHaveBeenCalled();
   });
