@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import type { CreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { UploadCard } from "@/features/creator-dashboard/components/upload-card";
+import { UploadWizard } from "@/features/creator-uploads/components/upload-wizard";
 import { CardSection } from "@/components/layout/card-section";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { videoStatusTone } from "@/lib/status-tone";
@@ -88,14 +88,10 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
         </div>
       ) : null}
 
-      <UploadCard
+      <UploadWizard
         monthlyTrackingId={data.upload.monthlyTrackingId}
         ratesByType={data.upload.ratesByType}
         specs={data.upload.specs}
-        tips={data.upload.tips}
-        pendingReviewCount={data.upload.pendingReviewCount}
-        rejectedCount={data.upload.rejectedCount}
-        recentVideos={data.upload.recentVideos}
       />
 
       {/* Full video list for the month */}
