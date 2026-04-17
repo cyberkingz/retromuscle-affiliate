@@ -18,11 +18,15 @@ export function DataTableCard({
   children
 }: DataTableCardProps) {
   return (
-    <Card className={cn("overflow-hidden border-line bg-white/95", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3 px-5 pb-3 pt-5">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">{title}</p>
-          {subtitle ? <p className="text-sm text-foreground/70">{subtitle}</p> : null}
+    <Card className={cn("overflow-hidden rounded-[20px] border-line bg-white/90", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/55">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="mt-0.5 text-[12px] text-foreground/50">{subtitle}</p>
+          ) : null}
         </div>
         {action}
       </div>

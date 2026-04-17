@@ -274,10 +274,20 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
   const selectedIds = table.getSelectedRowModel().rows.map((row) => row.original.videoId);
 
   return (
-    <CardSection className="space-y-3">
-      <p className="mb-3 text-xs uppercase tracking-[0.15em] text-foreground/75">
-        File de validation
-      </p>
+    <CardSection className="space-y-3 rounded-[20px]">
+      {/* Section header */}
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/60">
+            File de validation
+          </p>
+          {rows.length > 0 && (
+            <span className="inline-flex items-center justify-center rounded-full bg-primary px-2 py-0.5 font-display text-[11px] font-black leading-none text-white">
+              {rows.length}
+            </span>
+          )}
+        </div>
+      </div>
 
       {error ? (
         <div
