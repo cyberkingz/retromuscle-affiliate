@@ -128,12 +128,12 @@ function PromoCodePendingCard() {
       </div>
 
       <p className="font-display text-[18px] font-black uppercase leading-tight tracking-[0.02em] text-foreground/80">
-        On t'envoie ton code dans quelques secondes
+        On t&apos;envoie ton code dans quelques secondes
       </p>
 
       <p className="mt-2 text-[11px] leading-[1.5] text-foreground/50">
-        Ton contrat vient d'être signé. Le code personnel arrive sous peu par email et s'affichera
-        ici automatiquement. Rafraîchis la page si rien après 2 minutes.
+        Ton contrat vient d&apos;être signé. Le code personnel arrive sous peu par email et
+        s&apos;affichera ici automatiquement. Rafraîchis la page si rien après 2 minutes.
       </p>
     </div>
   );
@@ -157,8 +157,8 @@ function PromoCodeFailedCard() {
       </p>
 
       <p className="mt-2 text-[11px] leading-[1.5] text-amber-900/70">
-        Petit grain de sable technique. L'équipe RetroMuscle va te l'envoyer par email dans les
-        prochaines heures. Pas besoin de faire quoi que ce soit.
+        Petit grain de sable technique. L&apos;équipe RetroMuscle va te l&apos;envoyer par email dans
+        les prochaines heures. Pas besoin de faire quoi que ce soit.
       </p>
     </div>
   );

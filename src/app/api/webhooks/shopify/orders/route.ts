@@ -81,7 +81,6 @@ export async function POST(request: Request) {
     });
     return new NextResponse(null, { status: 200 });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error("[shopify-webhook] markKitOrderPlaced failed", {
       webhookId,
       message: error instanceof Error ? error.message : "unknown"

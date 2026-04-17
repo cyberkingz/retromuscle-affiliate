@@ -19,7 +19,7 @@ export function KitStatusBanner() {
           Kit en route
         </p>
         <p className="mt-0.5 text-[12px] leading-[1.5] text-secondary/80">
-          Ta tenue RetroMuscle arrive. Dès qu'elle est entre tes mains, lance ta première vidéo —
+          Ta tenue RetroMuscle arrive. Dès qu&apos;elle est entre tes mains, lance ta première vidéo —
           on a hâte de voir ça.
         </p>
       </div>

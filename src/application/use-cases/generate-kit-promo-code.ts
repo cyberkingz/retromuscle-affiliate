@@ -117,7 +117,6 @@ export async function generateKitPromoCode(
           });
         } catch (emailError) {
           // Never fail the use-case because of email delivery issues.
-          // eslint-disable-next-line no-console
           console.error("[generate-kit-promo-code] welcome email failed", {
             creatorId: creator.id,
             message: emailError instanceof Error ? emailError.message : "unknown"

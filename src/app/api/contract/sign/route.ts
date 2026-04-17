@@ -162,7 +162,6 @@ export async function POST(request: Request) {
       promoCode = generated.code;
     } catch (error) {
       const code = error instanceof GenerateKitPromoCodeError ? error.code : "UNKNOWN";
-      // eslint-disable-next-line no-console
       console.error("[contract:sign] generateKitPromoCode failed", {
         creatorId: creator.id,
         code,
