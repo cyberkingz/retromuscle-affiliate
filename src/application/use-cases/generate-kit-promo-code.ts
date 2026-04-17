@@ -1,6 +1,7 @@
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
 import type { Creator } from "@/domain/types";
 import { getRepository } from "@/application/dependencies";
+import { sendKitWelcomeEmail } from "@/infrastructure/email/send-emails";
 import {
   buildKitPromoCode,
   createDiscountCodeOnShopify
@@ -56,11 +57,14 @@ export async function generateKitPromoCode(
     repository?: CreatorRepository;
     /** Injectable Shopify implementation for tests. */
     createDiscount?: typeof createDiscountCodeOnShopify;
+    /** Injectable welcome-email sender for tests. */
+    sendEmail?: typeof sendKitWelcomeEmail;
   },
-  options?: { allowWithoutSignedContract?: boolean }
+  options?: { allowWithoutSignedContract?: boolean; skipWelcomeEmail?: boolean }
 ): Promise<{ creator: Creator; code: string; discountId: string; alreadyExisted: boolean }> {
   const repository = input.repository ?? getRepository();
   const createDiscount = input.createDiscount ?? createDiscountCodeOnShopify;
+  const sendEmail = input.sendEmail ?? sendKitWelcomeEmail;
 
   const creator = await repository.getCreatorById(input.creatorId);
   if (!creator) {
@@ -103,6 +107,23 @@ export async function generateKitPromoCode(
         kitPromoCode: code,
         shopifyDiscountId: discountId
       });
+
+      if (!options?.skipWelcomeEmail && updated.email) {
+        try {
+          await sendEmail({
+            to: updated.email,
+            displayName: updated.displayName ?? updated.handle,
+            promoCode: code
+          });
+        } catch (emailError) {
+          // Never fail the use-case because of email delivery issues.
+          // eslint-disable-next-line no-console
+          console.error("[generate-kit-promo-code] welcome email failed", {
+            creatorId: creator.id,
+            message: emailError instanceof Error ? emailError.message : "unknown"
+          });
+        }
+      }
 
       return {
         creator: updated,

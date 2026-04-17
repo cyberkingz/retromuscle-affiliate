@@ -12,7 +12,6 @@ import {
 } from "@/application/use-cases/generate-kit-promo-code";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
-import { sendCreatorKitEmail } from "@/infrastructure/email/send-emails";
 import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
 import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
@@ -153,24 +152,16 @@ export async function POST(request: Request) {
     return response;
   }
 
-  // First-time side effects: kit email + Shopify promo code generation.
-  // Either failure must NOT fail the signing request — the signature is the
-  // source of truth; side effects can be retried via the admin regenerate path.
+  // First-time side effect: Shopify promo code generation + welcome email.
+  // Failure must NOT fail the signing request — the signature is the source of
+  // truth; side effects can be retried via the admin regenerate path.
   let promoCode: string | null = null;
   if (signatureOutcome.wasFirstTimeSigning) {
-    if (auth.session.email) {
-      void sendCreatorKitEmail({
-        to: auth.session.email,
-        displayName: creator.displayName ?? auth.session.email.split("@")[0] ?? "Créateur"
-      });
-    }
-
     try {
       const generated = await generateKitPromoCode({ creatorId: creator.id, repository });
       promoCode = generated.code;
     } catch (error) {
-      const code =
-        error instanceof GenerateKitPromoCodeError ? error.code : "UNKNOWN";
+      const code = error instanceof GenerateKitPromoCodeError ? error.code : "UNKNOWN";
       // eslint-disable-next-line no-console
       console.error("[contract:sign] generateKitPromoCode failed", {
         creatorId: creator.id,

@@ -46,6 +46,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+const noopEmail = vi.fn().mockResolvedValue(undefined);
+
 describe("generateKitPromoCode", () => {
   it("creates a new code and stores it on the creator row", async () => {
     const repository = makeRepo();
@@ -53,11 +55,13 @@ describe("generateKitPromoCode", () => {
       code: "RETRO-COCOLABAN",
       discountId: "gid://shopify/DiscountCodeNode/1"
     });
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
 
     const result = await generateKitPromoCode({
       creatorId: CREATOR_ID,
       repository,
-      createDiscount
+      createDiscount,
+      sendEmail
     });
 
     expect(result.alreadyExisted).toBe(false);
@@ -72,6 +76,48 @@ describe("generateKitPromoCode", () => {
       kitPromoCode: "RETRO-COCOLABAN",
       shopifyDiscountId: "gid://shopify/DiscountCodeNode/1"
     });
+    expect(sendEmail).toHaveBeenCalledWith({
+      to: "coco@example.com",
+      displayName: "Coco Laban",
+      promoCode: "RETRO-COCOLABAN"
+    });
+  });
+
+  it("does not send a welcome email when skipWelcomeEmail is set", async () => {
+    const repository = makeRepo();
+    const createDiscount = vi.fn().mockResolvedValue({
+      code: "RETRO-COCOLABAN",
+      discountId: "gid://shopify/DiscountCodeNode/1"
+    });
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
+
+    await generateKitPromoCode(
+      { creatorId: CREATOR_ID, repository, createDiscount, sendEmail },
+      { skipWelcomeEmail: true }
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("swallows email send errors without failing the use-case", async () => {
+    const repository = makeRepo();
+    const createDiscount = vi.fn().mockResolvedValue({
+      code: "RETRO-COCOLABAN",
+      discountId: "gid://shopify/DiscountCodeNode/1"
+    });
+    const sendEmail = vi.fn().mockRejectedValue(new Error("resend down"));
+    const originalError = console.error;
+    console.error = vi.fn();
+
+    const result = await generateKitPromoCode({
+      creatorId: CREATOR_ID,
+      repository,
+      createDiscount,
+      sendEmail
+    });
+
+    expect(result.code).toBe("RETRO-COCOLABAN");
+    console.error = originalError;
   });
 
   it("is idempotent: returns existing code without calling Shopify again", async () => {
@@ -87,7 +133,8 @@ describe("generateKitPromoCode", () => {
     const result = await generateKitPromoCode({
       creatorId: CREATOR_ID,
       repository,
-      createDiscount
+      createDiscount,
+      sendEmail: noopEmail
     });
 
     expect(result.alreadyExisted).toBe(true);
@@ -111,7 +158,8 @@ describe("generateKitPromoCode", () => {
     const result = await generateKitPromoCode({
       creatorId: CREATOR_ID,
       repository,
-      createDiscount
+      createDiscount,
+      sendEmail: noopEmail
     });
 
     expect(result.code).toBe("RETRO-COCOLABAN-2");
@@ -137,7 +185,8 @@ describe("generateKitPromoCode", () => {
       generateKitPromoCode({
         creatorId: CREATOR_ID,
         repository,
-        createDiscount
+        createDiscount,
+        sendEmail: noopEmail
       })
     ).rejects.toMatchObject({ code: "CODE_COLLISION_EXHAUSTED" });
 
@@ -153,7 +202,8 @@ describe("generateKitPromoCode", () => {
       generateKitPromoCode({
         creatorId: "missing",
         repository,
-        createDiscount: vi.fn()
+        createDiscount: vi.fn(),
+        sendEmail: noopEmail
       })
     ).rejects.toBeInstanceOf(GenerateKitPromoCodeError);
   });
@@ -167,7 +217,8 @@ describe("generateKitPromoCode", () => {
       generateKitPromoCode({
         creatorId: CREATOR_ID,
         repository,
-        createDiscount: vi.fn()
+        createDiscount: vi.fn(),
+        sendEmail: noopEmail
       })
     ).rejects.toMatchObject({ code: "CONTRACT_NOT_SIGNED" });
   });
@@ -182,7 +233,8 @@ describe("generateKitPromoCode", () => {
       generateKitPromoCode({
         creatorId: CREATOR_ID,
         repository,
-        createDiscount
+        createDiscount,
+        sendEmail: noopEmail
       })
     ).rejects.toMatchObject({ code: "SHOPIFY_ERROR" });
   });
