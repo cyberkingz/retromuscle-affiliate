@@ -28,7 +28,7 @@ const REVIEW_TEMPLATES: Array<{ label: string; text: string; tone: "approve" | "
   {
     label: "✅ Bienvenue !",
     tone: "approve",
-    text: "Bienvenue dans l'équipe RetroMuscle 🔥 On a adoré ton profil, t'as exactement le vibe qu'on cherche. Signe ton contrat et on te prépare ton kit créateur !"
+    text: "Bienvenue dans l'équipe RetroMuscle 🔥 On a adoré ton profil, t'as exactement le vibe qu'on cherche. Signe ton contrat (scroll tout en bas du contrat pour pouvoir le signer) et on te prépare ton kit créateur !"
   },
   {
     label: "✅ Trop fort·e",
