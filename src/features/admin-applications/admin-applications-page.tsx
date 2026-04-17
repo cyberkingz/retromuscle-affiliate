@@ -20,6 +20,49 @@ import { cn } from "@/lib/cn";
 
 type Decision = "approved" | "rejected";
 
+// ---------------------------------------------------------------------------
+// Review message templates
+// ---------------------------------------------------------------------------
+const REVIEW_TEMPLATES: Array<{ label: string; text: string; tone: "approve" | "reject" }> = [
+  // Approve
+  {
+    label: "✅ Top profil",
+    tone: "approve",
+    text: "Super profil, contenu de qualité et communauté engagée. Bienvenue dans l'équipe RetroMuscle !"
+  },
+  {
+    label: "✅ OOTD / Training",
+    tone: "approve",
+    text: "Profil parfait pour les contenus OOTD et Training. On compte sur toi pour représenter la marque !"
+  },
+  {
+    label: "✅ Belle commu",
+    tone: "approve",
+    text: "Belle communauté, bons taux d'engagement. On est impatients de voir tes premiers contenus !"
+  },
+  // Reject
+  {
+    label: "❌ Trop peu de followers",
+    tone: "reject",
+    text: "Ton profil est en dessous du seuil minimum de followers requis pour rejoindre le programme. N'hésite pas à revenir quand ta communauté aura grandi !"
+  },
+  {
+    label: "❌ Niche hors cible",
+    tone: "reject",
+    text: "Ton contenu ne correspond pas encore à la ligne éditoriale RetroMuscle (fitness rétro, sport, sportswear). On reste ouverts si ton profil évolue !"
+  },
+  {
+    label: "❌ Profil inactif",
+    tone: "reject",
+    text: "Ton compte TikTok / Instagram semble récent ou peu actif. Reviens avec un profil plus établi !"
+  },
+  {
+    label: "❌ Contenu hors charte",
+    tone: "reject",
+    text: "Le style de tes contenus n'est pas aligné avec notre charte visuelle pour le moment. On te souhaite bonne continuation !"
+  }
+];
+
 function statusLabel(status: ApplicationStatus): string {
   switch (status) {
     case "draft":
@@ -78,6 +121,15 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastApproval, setLastApproval] = useState<{ creatorId: string } | null>(null);
 
+  // ── Bulk selection ────────────────────────────────────────────────────────
+  const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(new Set());
+  const [bulkNotes, setBulkNotes] = useState("");
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
   const counts = useMemo(() => {
     return applications.reduce<Record<ApplicationStatus, number>>(
       (acc, application) => {
@@ -103,8 +155,46 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
       .sort(sortApplications);
   }, [applications, filter, search]);
 
+  const pendingFiltered = useMemo(
+    () => filtered.filter((a) => a.status === "pending_review"),
+    [filtered]
+  );
+
+  const allPendingChecked =
+    pendingFiltered.length > 0 && pendingFiltered.every((a) => checkedUserIds.has(a.userId));
+  const somePendingChecked =
+    !allPendingChecked && pendingFiltered.some((a) => checkedUserIds.has(a.userId));
+
   const columns = useMemo<ColumnDef<CreatorApplication>[]>(
     () => [
+      {
+        id: "select",
+        enableSorting: false,
+        header: () =>
+          filter === "pending_review" ? (
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-secondary"
+              checked={allPendingChecked}
+              ref={(el) => {
+                if (el) el.indeterminate = somePendingChecked;
+              }}
+              aria-label="Tout sélectionner"
+              onChange={toggleAllChecked}
+            />
+          ) : null,
+        cell: ({ row }) =>
+          row.original.status === "pending_review" ? (
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-secondary"
+              checked={checkedUserIds.has(row.original.userId)}
+              aria-label="Sélectionner"
+              onChange={() => toggleChecked(row.original.userId)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : null
+      },
       {
         id: "creator",
         header: "Créateur",
@@ -154,7 +244,8 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         )
       }
     ],
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, allPendingChecked, somePendingChecked, checkedUserIds]
   );
 
   const selected = useMemo(
@@ -170,6 +261,82 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
     setLastApproval(null);
     setStatusMessage(null);
     setErrorMessage(null);
+  }
+
+  // ── Bulk helpers ─────────────────────────────────────────────────────────
+  function toggleChecked(userId: string) {
+    setCheckedUserIds((prev) => {
+      const next = new Set(prev);
+      next.has(userId) ? next.delete(userId) : next.add(userId);
+      return next;
+    });
+  }
+
+  function toggleAllChecked() {
+    const allIds = pendingFiltered.map((a) => a.userId);
+    const allChecked = allIds.every((id) => checkedUserIds.has(id));
+    setCheckedUserIds(allChecked ? new Set() : new Set(allIds));
+  }
+
+  async function submitBulkDecision(decision: Decision) {
+    if (!auth.user) return;
+    const ids = Array.from(checkedUserIds);
+    if (ids.length === 0) return;
+    if (decision === "rejected" && bulkNotes.trim().length === 0) {
+      setBulkStatus({ type: "error", message: "Ajoute un message avant de refuser en masse." });
+      return;
+    }
+
+    setBulkSubmitting(true);
+    setBulkStatus(null);
+
+    try {
+      const results = await Promise.allSettled(
+        ids.map((userId) =>
+          fetch("/api/admin/applications/review", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              decision,
+              reviewNotes: bulkNotes.trim() || null
+            })
+          }).then(async (r) => {
+            const payload = (await r.json()) as { application?: CreatorApplication };
+            if (!r.ok || !payload.application) throw new Error("Erreur review");
+            return payload.application;
+          })
+        )
+      );
+
+      const nextApplications = [...applications];
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          const idx = nextApplications.findIndex((a) => a.userId === ids[i]);
+          if (idx >= 0) nextApplications[idx] = result.value;
+        }
+      });
+      setApplications(nextApplications.sort(sortApplications));
+
+      const failures = results.filter((r) => r.status === "rejected").length;
+      const successes = ids.length - failures;
+      setBulkStatus({
+        type: failures === 0 ? "success" : "error",
+        message:
+          failures === 0
+            ? `${successes} candidature(s) ${decision === "approved" ? "approuvée(s)" : "refusée(s)"}.`
+            : `${successes}/${ids.length} traitées — ${failures} erreur(s).`
+      });
+
+      if (failures === 0) {
+        setCheckedUserIds(new Set());
+        setBulkNotes("");
+      }
+    } catch {
+      setBulkStatus({ type: "error", message: "Erreur lors du traitement en masse." });
+    } finally {
+      setBulkSubmitting(false);
+    }
   }
 
   async function submitDecision(decision: Decision) {
@@ -286,6 +453,96 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
         />
       </div>
 
+      {/* ── Bulk action bar ── */}
+      {checkedUserIds.size > 0 ? (
+        <div className="space-y-3 rounded-[20px] border border-secondary/25 bg-secondary/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-secondary">
+              {checkedUserIds.size} dossier{checkedUserIds.size > 1 ? "s" : ""} sélectionné
+              {checkedUserIds.size > 1 ? "s" : ""}
+            </p>
+            <button
+              type="button"
+              className="text-xs text-foreground/50 underline underline-offset-2"
+              onClick={() => { setCheckedUserIds(new Set()); setBulkStatus(null); }}
+            >
+              Désélectionner
+            </button>
+          </div>
+
+          {/* Template chips */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/50">
+              Message rapide (optionnel)
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {REVIEW_TEMPLATES.map((t) => (
+                <button
+                  key={t.label}
+                  type="button"
+                  onClick={() => setBulkNotes(t.text)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    bulkNotes === t.text
+                      ? "border-secondary bg-secondary text-white"
+                      : t.tone === "approve"
+                        ? "border-mint/40 bg-mint/10 text-foreground/75 hover:bg-mint/20"
+                        : "border-destructive/30 bg-destructive/10 text-foreground/75 hover:bg-destructive/20"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {bulkNotes ? (
+            <div className="relative rounded-xl border border-line bg-white p-3 text-sm text-foreground/75">
+              {bulkNotes}
+              <button
+                type="button"
+                onClick={() => setBulkNotes("")}
+                className="absolute right-2 top-2 text-[10px] text-foreground/40 hover:text-foreground/70"
+              >
+                ✕
+              </button>
+            </div>
+          ) : null}
+
+          {bulkStatus ? (
+            <p
+              role="alert"
+              className={cn(
+                "text-sm",
+                bulkStatus.type === "success" ? "text-mint" : "text-destructive"
+              )}
+            >
+              {bulkStatus.message}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="pill"
+              disabled={bulkSubmitting}
+              onClick={() => void submitBulkDecision("approved")}
+            >
+              {bulkSubmitting ? "..." : `Approuver (${checkedUserIds.size})`}
+            </Button>
+            <Button
+              type="button"
+              size="pill"
+              variant="outline"
+              disabled={bulkSubmitting}
+              onClick={() => void submitBulkDecision("rejected")}
+            >
+              {bulkSubmitting ? "..." : `Refuser (${checkedUserIds.size})`}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <DataTableCard
           title="Dossiers"
@@ -321,9 +578,21 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{row.handle}</p>
-                      <p className="text-xs text-foreground/60">{row.fullName}</p>
+                    <div className="flex items-start gap-2">
+                      {row.status === "pending_review" ? (
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-secondary"
+                          checked={checkedUserIds.has(row.userId)}
+                          aria-label="Sélectionner"
+                          onChange={() => toggleChecked(row.userId)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : null}
+                      <div>
+                        <p className="font-semibold">{row.handle}</p>
+                        <p className="text-xs text-foreground/60">{row.fullName}</p>
+                      </div>
                     </div>
                     <StatusBadge label={statusLabel(row.status)} tone={statusTone(row.status)} />
                   </div>
@@ -415,11 +684,35 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                 <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
                   Notes de review (visible créateur)
                 </p>
+
+                {/* Template chips — only when still pending */}
+                {selected.status === "pending_review" ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {REVIEW_TEMPLATES.map((t) => (
+                      <button
+                        key={t.label}
+                        type="button"
+                        onClick={() => setReviewNotes(t.text)}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                          reviewNotes === t.text
+                            ? "border-secondary bg-secondary text-white"
+                            : t.tone === "approve"
+                              ? "border-mint/40 bg-mint/10 text-foreground/75 hover:bg-mint/20"
+                              : "border-destructive/30 bg-destructive/10 text-foreground/75 hover:bg-destructive/20"
+                        )}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
                 <Textarea
                   value={reviewNotes}
                   onChange={(event) => setReviewNotes(event.target.value)}
                   placeholder="Ex: Super fit. Profil ideal pour contenus OOTD + before/after."
-                  rows={5}
+                  rows={4}
                   disabled={
                     submitting || selected.status === "approved" || selected.status === "rejected"
                   }
