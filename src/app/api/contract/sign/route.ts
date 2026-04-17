@@ -1,18 +1,23 @@
 import crypto from "node:crypto";
 import { isIP } from "node:net";
 
-import { requireApiRole } from "@/features/auth/server/api-guards";
-import { setAuthCookies } from "@/features/auth/server/auth-cookies";
-import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
-import { isAllowedOrigin } from "@/lib/origin";
-import { rateLimit } from "@/lib/rate-limit";
-import { readJsonBodyWithLimit } from "@/lib/request-body";
 import {
   AFFILIATE_CONTRACT_VERSION,
   getAffiliateContractCanonicalText
 } from "@/domain/contracts/affiliate-program-contract";
-import { sendCreatorKitEmail } from "@/infrastructure/email/send-emails";
+import { getRepository } from "@/application/dependencies";
+import {
+  GenerateKitPromoCodeError,
+  generateKitPromoCode
+} from "@/application/use-cases/generate-kit-promo-code";
+import { requireApiRole } from "@/features/auth/server/api-guards";
+import { setAuthCookies } from "@/features/auth/server/auth-cookies";
+import { apiError, apiJson, createApiContext, handleBodyParseError } from "@/lib/api-response";
+import { isAllowedOrigin } from "@/lib/origin";
+import { rateLimit } from "@/lib/rate-limit";
+import { readJsonBodyWithLimit } from "@/lib/request-body";
+
+export const runtime = "nodejs";
 
 interface ContractSignPayload {
   signerName: string;
@@ -84,9 +89,6 @@ export async function POST(request: Request) {
     return auth.response;
   }
 
-  const client = createSupabaseServerClient();
-  const now = new Date().toISOString();
-
   let rawBody: unknown;
   try {
     rawBody = await readJsonBodyWithLimit(request, { maxBytes: 6 * 1024 });
@@ -109,28 +111,10 @@ export async function POST(request: Request) {
     return response;
   }
 
-  const contractText = getAffiliateContractCanonicalText();
-  const checksum = crypto.createHash("sha256").update(contractText, "utf8").digest("hex");
-  const ip = getClientIp(request);
-  const userAgent = request.headers.get("user-agent")?.slice(0, 700) ?? null;
+  const repository = getRepository();
 
-  const { data: creator, error: creatorError } = await client
-    .from("creators")
-    .select("id, contract_signed_at, display_name")
-    .eq("user_id", auth.session.userId)
-    .maybeSingle();
-
-  if (creatorError) {
-    const response = apiError(ctx, {
-      status: 500,
-      code: "INTERNAL",
-      message: "Unable to load creator profile."
-    });
-    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-    return response;
-  }
-
-  if (!creator?.id) {
+  const creator = await repository.getCreatorByUserId(auth.session.userId);
+  if (!creator) {
     const response = apiError(ctx, {
       status: 404,
       code: "NOT_FOUND",
@@ -140,86 +124,63 @@ export async function POST(request: Request) {
     return response;
   }
 
-  const signatureInsert = await client
-    .from("creator_contract_signatures")
-    .upsert(
-      {
-        creator_id: creator.id,
-        user_id: auth.session.userId,
-        contract_version: AFFILIATE_CONTRACT_VERSION,
-        contract_checksum: checksum,
-        contract_text: contractText,
-        signer_name: payload.signerName,
-        acceptance: payload.accepted,
-        ip,
-        user_agent: userAgent,
-        signed_at: now
-      },
-      { onConflict: "user_id,contract_checksum", ignoreDuplicates: true }
-    )
-    .select("id, signed_at")
-    .maybeSingle();
+  const contractText = getAffiliateContractCanonicalText();
+  const checksum = crypto.createHash("sha256").update(contractText, "utf8").digest("hex");
+  const now = new Date().toISOString();
 
-  if (signatureInsert.error) {
+  let signatureOutcome: Awaited<ReturnType<typeof repository.signContract>>;
+  try {
+    signatureOutcome = await repository.signContract({
+      creatorId: creator.id,
+      userId: auth.session.userId,
+      contractVersion: AFFILIATE_CONTRACT_VERSION,
+      contractChecksum: checksum,
+      contractText,
+      signerName: payload.signerName,
+      acceptance: payload.accepted,
+      ip: getClientIp(request),
+      userAgent: request.headers.get("user-agent")?.slice(0, 700) ?? null,
+      signedAt: now
+    });
+  } catch (error) {
     const response = apiError(ctx, {
       status: 500,
       code: "INTERNAL",
-      message: "Unable to sign contract."
+      message: error instanceof Error ? error.message : "Unable to sign contract."
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   }
 
-  let signatureId: string | null = signatureInsert.data?.id ?? null;
-  let signedAt: string = signatureInsert.data?.signed_at ?? now;
-
-  if (!signatureId) {
-    const existing = await client
-      .from("creator_contract_signatures")
-      .select("id, signed_at")
-      .eq("user_id", auth.session.userId)
-      .eq("contract_checksum", checksum)
-      .order("signed_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    signatureId = existing.data?.id ?? null;
-    signedAt = existing.data?.signed_at ?? now;
-  }
-
-  const { data: updatedCreator, error: updateError } = await client
-    .from("creators")
-    .update({ contract_signed_at: signedAt })
-    .eq("id", creator.id)
-    .select("contract_signed_at")
-    .maybeSingle();
-
-  if (updateError) {
-    const response = apiError(ctx, {
-      status: 500,
-      code: "INTERNAL",
-      message: "Unable to finalize contract signature."
-    });
-    if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
-    return response;
-  }
-
-  // Send kit email only on first-time signing (contract_signed_at was null before)
-  if (!creator.contract_signed_at && auth.session.email) {
-    void sendCreatorKitEmail({
-      to: auth.session.email,
-      displayName: creator.display_name ?? auth.session.email.split("@")[0] ?? "Créateur"
-    });
+  // First-time side effect: Shopify promo code generation + welcome email.
+  // Failure must NOT fail the signing request — the signature is the source of
+  // truth; side effects can be retried via the admin regenerate path.
+  let promoCode: string | null = null;
+  if (signatureOutcome.wasFirstTimeSigning) {
+    try {
+      const generated = await generateKitPromoCode({ creatorId: creator.id, repository });
+      promoCode = generated.code;
+    } catch (error) {
+      const code = error instanceof GenerateKitPromoCodeError ? error.code : "UNKNOWN";
+      console.error("[contract:sign] generateKitPromoCode failed", {
+        creatorId: creator.id,
+        code,
+        message: error instanceof Error ? error.message : "unknown"
+      });
+    }
+  } else if (creator.kitPromoCode) {
+    promoCode = creator.kitPromoCode;
   }
 
   const response = apiJson(
     ctx,
     {
       creatorId: creator.id,
-      signatureId,
+      signatureId: signatureOutcome.signatureId,
       contractVersion: AFFILIATE_CONTRACT_VERSION,
       contractChecksum: checksum,
-      contractSignedAt: updatedCreator?.contract_signed_at ?? signedAt
+      contractSignedAt: signatureOutcome.contractSignedAt,
+      promoCode
     },
     { status: 200 }
   );

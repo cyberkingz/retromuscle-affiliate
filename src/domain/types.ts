@@ -36,7 +36,27 @@ export interface Creator {
   startDate: string;
   contractSignedAt?: string;
   notes?: string;
+  // Shopify per-creator kit promo code + order tracking
+  kitPromoCode?: string;
+  shopifyDiscountId?: string;
+  kitOrderPlacedAt?: string;
+  shopifyKitOrderId?: string;
 }
+
+/**
+ * Derived kit status for a creator, used by admin UI and dashboard logic.
+ * - `pending_code`: contract signed but code generation not yet complete (or failed without flag)
+ * - `code_ready`: code generated, creator has not placed the kit order yet
+ * - `ordered`: webhook received, kit order placed (kitOrderPlacedAt is set)
+ * - `failed`: code generation attempted and failed — admin retry surface
+ * - `not_applicable`: creator has not signed contract yet
+ */
+export type CreatorKitStatus =
+  | "not_applicable"
+  | "pending_code"
+  | "code_ready"
+  | "ordered"
+  | "failed";
 
 export interface MonthlyTracking {
   id: string;

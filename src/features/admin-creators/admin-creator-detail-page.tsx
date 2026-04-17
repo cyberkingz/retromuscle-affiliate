@@ -13,6 +13,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { VideoPreviewModal } from "@/components/ui/video-preview-modal";
+import { CreatorPromoCodeRow } from "@/features/admin-creators/components/creator-promo-code-row";
 import { useVideoPreview } from "@/hooks/use-video-preview";
 import type { PreviewItem } from "@/hooks/use-video-preview";
 import { formatCurrency } from "@/lib/currency";
@@ -363,6 +364,13 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
           <div className="rounded-2xl border border-line bg-frost/70 px-4 py-3 text-xs text-foreground/65">
             {data.contract.signatures.length} signature(s) enregistrée(s).
           </div>
+
+          <CreatorPromoCodeRow
+            creatorId={creatorId}
+            promoCode={data.creator.kitPromoCode}
+            kitOrderPlacedAt={data.creator.kitOrderPlacedAt}
+            kitStatus={data.creator.kitStatus}
+          />
         </CardSection>
       </div>
 

@@ -128,4 +128,58 @@ export interface CreatorRepository {
     month: string; // YYYY-MM
     delivered: MonthlyTracking["delivered"];
   }): Promise<MonthlyTracking>;
+
+  // Contract signing (self-serve creator)
+  /**
+   * Atomically record a signature row and set `contract_signed_at` on the creator.
+   * Idempotent on `(user_id, contract_checksum)` — signing the same contract twice
+   * returns the original signature metadata and `wasFirstTimeSigning: false`.
+   */
+  signContract(input: {
+    creatorId: string;
+    userId: string;
+    contractVersion: string;
+    contractChecksum: string;
+    contractText: string;
+    signerName: string;
+    acceptance: Record<string, boolean>;
+    ip: string | null;
+    userAgent: string | null;
+    signedAt: string;
+  }): Promise<{
+    signatureId: string;
+    signedAt: string;
+    contractSignedAt: string;
+    wasFirstTimeSigning: boolean;
+  }>;
+
+  // Shopify kit promo code integration
+  /** Look up a creator by their generated Shopify promo code (case-insensitive). */
+  getCreatorByKitPromoCode(code: string): Promise<Creator | null>;
+  /** Store the generated Shopify discount code + id on the creator row. */
+  updateKitPromoCode(input: {
+    creatorId: string;
+    kitPromoCode: string;
+    shopifyDiscountId: string;
+  }): Promise<Creator>;
+  /** Null out the kit promo code fields so a fresh one can be generated. Admin-only rotate path. */
+  clearKitPromoCode(creatorId: string): Promise<Creator>;
+  /** Mark the creator's kit order as placed. Called from the orders/create webhook. */
+  markKitOrdered(input: {
+    creatorId: string;
+    kitOrderPlacedAt: string;
+    shopifyKitOrderId: string;
+  }): Promise<Creator>;
+  /**
+   * Atomically record a Shopify webhook delivery for dedupe.
+   * Returns true if this is the first time we see this webhookId, false otherwise.
+   */
+  recordShopifyWebhookOnce(input: {
+    webhookId: string;
+    topic: string;
+    shopDomain?: string | null;
+    creatorId?: string | null;
+  }): Promise<boolean>;
+  /** Remove a recorded webhook event when downstream processing fails, so retries can proceed. */
+  rollbackShopifyWebhook(webhookId: string): Promise<void>;
 }

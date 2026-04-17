@@ -5,22 +5,29 @@ import { Copy, Check, ShoppingBag, Gift } from "lucide-react";
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
-import { CREATOR_PROMO_CODE, CREATOR_STORE_URL } from "./promo-code-card";
+import { CREATOR_STORE_URL } from "./promo-code-card";
 
 interface WelcomePromoModalProps {
   contractSignedAt?: string;
   creatorId: string;
+  /** Promo code to display. If null, the modal stays closed until a code is minted. */
+  promoCode?: string | null;
 }
 
-export function WelcomePromoModal({ contractSignedAt, creatorId }: WelcomePromoModalProps) {
+export function WelcomePromoModal({
+  contractSignedAt,
+  creatorId,
+  promoCode
+}: WelcomePromoModalProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!contractSignedAt) return;
+    // Only surface the modal when we have both a signed contract AND a real code.
+    if (!contractSignedAt || !promoCode) return;
     const key = `rm_promo_seen_${creatorId}`;
     if (!localStorage.getItem(key)) setOpen(true);
-  }, [contractSignedAt, creatorId]);
+  }, [contractSignedAt, creatorId, promoCode]);
 
   function dismiss() {
     localStorage.setItem(`rm_promo_seen_${creatorId}`, "1");
@@ -28,7 +35,8 @@ export function WelcomePromoModal({ contractSignedAt, creatorId }: WelcomePromoM
   }
 
   function handleCopy() {
-    void navigator.clipboard.writeText(CREATOR_PROMO_CODE).then(() => {
+    if (!promoCode) return;
+    void navigator.clipboard.writeText(promoCode).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
@@ -152,14 +160,14 @@ export function WelcomePromoModal({ contractSignedAt, creatorId }: WelcomePromoM
               </div>
 
               <DialogDescription className="sr-only">
-                Utilise le code {CREATOR_PROMO_CODE} pour -20% sur ta première commande RetroMuscle.
+                Utilise le code {promoCode} pour -20% sur ta première commande RetroMuscle.
               </DialogDescription>
 
               <p
-                className="rm-code-shimmer font-display text-[56px] font-black uppercase leading-none tracking-[0.04em]"
-                aria-label={`Code promo : ${CREATOR_PROMO_CODE}`}
+                className="rm-code-shimmer font-display text-[56px] font-black uppercase leading-none tracking-[0.04em] break-all"
+                aria-label={`Code promo : ${promoCode}`}
               >
-                {CREATOR_PROMO_CODE}
+                {promoCode}
               </p>
 
               <p className="mt-2.5 text-[11px] text-white/30">

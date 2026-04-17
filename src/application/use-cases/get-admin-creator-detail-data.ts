@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { getRepository } from "@/application/dependencies";
 import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
+import { deriveKitStatusForCreator } from "@/domain/services/derive-kit-status";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
-import { VIDEO_TYPES } from "@/domain/types";
+import { VIDEO_TYPES, type CreatorKitStatus } from "@/domain/types";
 import { resolveMonth } from "@/application/use-cases/shared";
 
 export interface AdminCreatorDetailData {
@@ -21,6 +22,9 @@ export interface AdminCreatorDetailData {
     status: string;
     contractSignedAt?: string;
     notes?: string;
+    kitPromoCode?: string | null;
+    kitOrderPlacedAt?: string | null;
+    kitStatus: CreatorKitStatus;
   };
   payoutProfile: {
     method: string;
@@ -140,7 +144,10 @@ export async function getAdminCreatorDetailData(input: {
       followersInstagram: creator.followersInstagram,
       status: creator.status,
       contractSignedAt: creator.contractSignedAt,
-      notes: creator.notes
+      notes: creator.notes,
+      kitPromoCode: creator.kitPromoCode ?? null,
+      kitOrderPlacedAt: creator.kitOrderPlacedAt ?? null,
+      kitStatus: deriveKitStatusForCreator(creator)
     },
     payoutProfile: payoutProfile
       ? {

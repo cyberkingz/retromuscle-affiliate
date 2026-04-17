@@ -22,10 +22,11 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
 
   return (
     <div className="space-y-5">
-      {/* Post-contract welcome modal — shown once per creator */}
+      {/* Post-contract welcome modal — shown once per creator, only when a code is ready */}
       <WelcomePromoModal
         contractSignedAt={data.creator.contractSignedAt}
         creatorId={data.creator.id}
+        promoCode={data.creator.kitPromoCode}
       />
 
       {/* Welcome banner — compact 1-ligne, magenta gradient subtil, matches V2 HTML */}
@@ -254,7 +255,11 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         {/* ── 4. KIT CRÉATEUR ── mobile order 4 ── */}
         {data.creator.contractSignedAt && (
           <div className="order-4 lg:order-none">
-            <CreatorKitSection contractSignedAt={data.creator.contractSignedAt} />
+            <CreatorKitSection
+              contractSignedAt={data.creator.contractSignedAt}
+              kitStatus={data.creator.kitStatus}
+              promoCode={data.creator.kitPromoCode}
+            />
           </div>
         )}
 

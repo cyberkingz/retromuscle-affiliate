@@ -136,16 +136,30 @@ export async function sendApplicationRejectedEmail(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Creator kit — sent immediately after contract signing
+// Creator kit — sent after per-creator Shopify promo code has been minted
 // ---------------------------------------------------------------------------
-export const CREATOR_PROMO_CODE = "CREATOR20";
-const STORE_URL = "https://retromuscle.net";
+const DEFAULT_STORE_URL = "https://retromuscle.net";
 
-export async function sendCreatorKitEmail(input: {
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export async function sendKitWelcomeEmail(input: {
   to: string;
   displayName: string;
+  promoCode: string;
+  storeUrl?: string;
 }): Promise<void> {
   if (!isResendConfigured()) return;
+
+  const storeUrl = input.storeUrl ?? DEFAULT_STORE_URL;
+  const safePromoCode = escapeHtml(input.promoCode);
+  const safeDisplayName = escapeHtml(input.displayName);
 
   await getResendClient().emails.send({
     from: FROM,
@@ -164,7 +178,7 @@ export async function sendCreatorKitEmail(input: {
           Kit Créateur RetroMuscle
         </p>
         <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
-          Ton contrat est signé, ${input.displayName} 🔥
+          Ton contrat est signé, ${safeDisplayName} 🔥
         </p>
 
         <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#aaa;">
@@ -175,17 +189,17 @@ export async function sendCreatorKitEmail(input: {
         <!-- Promo code block -->
         <div style="background:#1a0a12;border:1px solid #d4006a44;border-radius:10px;padding:24px 28px;margin:0 0 28px;text-align:center;">
           <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#d4006a;text-transform:uppercase;letter-spacing:0.12em;">
-            Ton code kit créateur
+            Ton code kit créateur personnel
           </p>
-          <p style="margin:0 0 10px;font-size:38px;font-weight:900;color:#fff;letter-spacing:0.08em;font-variant-numeric:tabular-nums;">
-            ${CREATOR_PROMO_CODE}
+          <p style="margin:0 0 10px;font-size:32px;font-weight:900;color:#fff;letter-spacing:0.08em;font-variant-numeric:tabular-nums;">
+            ${safePromoCode}
           </p>
           <p style="margin:0;font-size:12px;color:#666;">
-            Valable 1 fois · Usage personnel uniquement
+            -20% sur ta commande · Valable 1 fois · Usage personnel uniquement
           </p>
         </div>
 
-        <a href="${STORE_URL}?utm_source=creator-email&utm_medium=kit&utm_campaign=welcome"
+        <a href="${storeUrl}?utm_source=creator-email&utm_medium=kit&utm_campaign=welcome"
            style="display:block;background:#d4006a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;text-align:center;letter-spacing:0.04em;">
           Commander ma tenue de shoot →
         </a>
