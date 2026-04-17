@@ -26,40 +26,40 @@ type Decision = "approved" | "rejected";
 const REVIEW_TEMPLATES: Array<{ label: string; text: string; tone: "approve" | "reject" }> = [
   // Approve
   {
-    label: "✅ Top profil",
+    label: "✅ Bienvenue !",
     tone: "approve",
-    text: "Super profil, contenu de qualité et communauté engagée. Bienvenue dans l'équipe RetroMuscle !"
+    text: "Bienvenue dans l'équipe RetroMuscle 🔥 On a adoré ton profil, t'as exactement le vibe qu'on cherche. Signe ton contrat et on te prépare ton kit créateur !"
   },
   {
-    label: "✅ OOTD / Training",
+    label: "✅ Trop fort·e",
     tone: "approve",
-    text: "Profil parfait pour les contenus OOTD et Training. On compte sur toi pour représenter la marque !"
+    text: "Waouh, ton contenu est vraiment top 🙌 On est super heureux·se de t'avoir avec nous. Bienvenue dans la famille RetroMuscle — hâte de voir ce que tu vas créer !"
   },
   {
-    label: "✅ Belle commu",
+    label: "✅ Parfait pour nous",
     tone: "approve",
-    text: "Belle communauté, bons taux d'engagement. On est impatients de voir tes premiers contenus !"
+    text: "Ton profil colle parfaitement à l'univers RetroMuscle 💪 Bienvenue ! Signe ton contrat pour débloquer ton accès et ton code kit créateur."
   },
   // Reject
   {
-    label: "❌ Trop peu de followers",
+    label: "❌ Pas encore",
     tone: "reject",
-    text: "Ton profil est en dessous du seuil minimum de followers requis pour rejoindre le programme. N'hésite pas à revenir quand ta communauté aura grandi !"
+    text: "Merci d'avoir postulé ! Pour l'instant ton profil n'atteint pas encore le seuil qu'on s'est fixé, mais ça peut changer vite — reviens quand ta communauté aura grandi, on sera là 🙏"
   },
   {
-    label: "❌ Niche hors cible",
+    label: "❌ Mauvaise niche",
     tone: "reject",
-    text: "Ton contenu ne correspond pas encore à la ligne éditoriale RetroMuscle (fitness rétro, sport, sportswear). On reste ouverts si ton profil évolue !"
+    text: "Merci pour ta candidature ! RetroMuscle c'est vraiment centré sur le fitness et le sportswear rétro, et ton contenu s'éloigne un peu de ça pour l'instant. On reste ouverts si ça évolue 💙"
   },
   {
-    label: "❌ Profil inactif",
+    label: "❌ Profil trop récent",
     tone: "reject",
-    text: "Ton compte TikTok / Instagram semble récent ou peu actif. Reviens avec un profil plus établi !"
+    text: "Merci d'avoir postulé ! Ton compte est encore récent et on préfère attendre que tu aies plus de contenu posté avant de t'intégrer. N'hésite pas à revenir dans quelques mois !"
   },
   {
-    label: "❌ Contenu hors charte",
+    label: "❌ Style différent",
     tone: "reject",
-    text: "Le style de tes contenus n'est pas aligné avec notre charte visuelle pour le moment. On te souhaite bonne continuation !"
+    text: "Merci pour l'intérêt que tu portes à RetroMuscle ! Ton style est sympa mais ne colle pas encore à notre esthétique pour l'instant. On te souhaite plein de succès dans ta créa 🤙"
   }
 ];
 
