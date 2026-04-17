@@ -153,7 +153,7 @@ export function StepProfileForm({
             </label>
             <PrefixInput
               id="socialTiktok"
-              prefixLabel="tiktok.com/@"
+              prefixLabel="@"
               value={tiktokHandle}
               onChange={(handle) =>
                 onFieldChange("socialTiktok", handle ? TIKTOK_PREFIX + handle : "")
@@ -175,7 +175,7 @@ export function StepProfileForm({
               </span>
             ) : (
               <span id="socialTiktok-hint" className="block text-xs leading-relaxed text-foreground/50">
-                Ton handle TikTok, sans le @.
+                Ton handle TikTok (sans arobase).
               </span>
             )}
           </div>
@@ -233,7 +233,7 @@ export function StepProfileForm({
             </label>
             <PrefixInput
               id="socialInstagram"
-              prefixLabel="instagram.com/"
+              prefixLabel="@"
               value={instagramHandle}
               onChange={(handle) =>
                 onFieldChange("socialInstagram", handle ? INSTAGRAM_PREFIX + handle : "")
@@ -261,7 +261,7 @@ export function StepProfileForm({
                 id="socialInstagram-hint"
                 className="block text-xs leading-relaxed text-foreground/50"
               >
-                Ton handle Instagram, sans le @.
+                Ton handle Instagram (sans arobase).
               </span>
             )}
           </div>

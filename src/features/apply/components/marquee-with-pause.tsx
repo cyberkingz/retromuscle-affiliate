@@ -17,7 +17,7 @@ export function MarqueeWithPause({ creators }: MarqueeWithPauseProps) {
   const marqueeItems = [...creators, ...creators];
 
   return (
-    <div className="mask-fade-y h-full py-12">
+    <div className="mask-fade-y h-full pb-12 pt-24">
       <button
         type="button"
         aria-label={paused ? "Reprendre le défilement" : "Mettre en pause le défilement"}

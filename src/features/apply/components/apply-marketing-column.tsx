@@ -13,8 +13,8 @@ export function ApplyMarketingColumn({ data, authenticated }: ApplyMarketingColu
   return (
     <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:h-[calc(100vh-160px)]">
       <div className="relative h-[380px] overflow-hidden rounded-[2rem] border border-line bg-white/40 lg:flex-1 lg:h-auto">
-        <div className="absolute inset-x-0 top-4 z-10 text-center sm:top-6">
-          <span className="rounded-full border border-line bg-white/80 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground/75 backdrop-blur-sm sm:text-[10px]">
+        <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-white/95 via-white/80 to-transparent pb-6 pt-4 text-center sm:pt-6">
+          <span className="rounded-full border border-line bg-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground/75 shadow-sm sm:text-[10px]">
             Programme cr&eacute;ateur
           </span>
           <p className="mt-2 text-[11px] text-foreground/65">
