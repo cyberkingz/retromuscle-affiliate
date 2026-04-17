@@ -2,7 +2,6 @@ import { Gift, Link2 } from "lucide-react";
 
 import type { CreatorKitStatus } from "@/domain/types";
 
-import { KitStatusBanner } from "./kit-status-banner";
 import { PromoCodeCard } from "./promo-code-card";
 
 interface CreatorKitSectionProps {
@@ -41,9 +40,6 @@ export function CreatorKitSection({
             : kitStatus
         }
       />
-
-      {/* "Kit en route" mint banner — shown the moment the webhook marks the order */}
-      {kitStatus === "ordered" && <KitStatusBanner />}
 
       {/* Affiliation — coming soon placeholder */}
       <div className="flex items-center gap-3 rounded-2xl border border-line bg-frost/40 px-4 py-3.5 opacity-60">
