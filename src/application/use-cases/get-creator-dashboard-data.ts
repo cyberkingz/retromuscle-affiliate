@@ -1,6 +1,7 @@
 import { getRepository } from "@/application/dependencies";
 import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import { calculatePayout } from "@/domain/services/calculate-payout";
+import { deriveKitStatusForCreator } from "@/domain/services/derive-kit-status";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
 import { VIDEO_TYPES, type VideoType } from "@/domain/types";
 import {
@@ -17,6 +18,9 @@ export interface CreatorDashboardData {
     country: string;
     status: string;
     contractSignedAt?: string;
+    kitPromoCode?: string;
+    kitOrderPlacedAt?: string;
+    kitStatus: "not_applicable" | "pending_code" | "code_ready" | "ordered" | "failed";
   };
   month: string;
   progress: {
@@ -229,7 +233,10 @@ export async function getCreatorDashboardData(input: {
       displayName: creator.displayName,
       country: creator.country,
       status: creator.status,
-      contractSignedAt: creator.contractSignedAt
+      contractSignedAt: creator.contractSignedAt,
+      kitPromoCode: creator.kitPromoCode,
+      kitOrderPlacedAt: creator.kitOrderPlacedAt,
+      kitStatus: deriveKitStatusForCreator(creator)
     },
     month: currentTracking.month,
     progress: {

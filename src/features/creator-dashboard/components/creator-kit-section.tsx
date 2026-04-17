@@ -1,11 +1,21 @@
 import { Gift, Link2 } from "lucide-react";
+
+import type { CreatorKitStatus } from "@/domain/types";
+
+import { KitStatusBanner } from "./kit-status-banner";
 import { PromoCodeCard } from "./promo-code-card";
 
 interface CreatorKitSectionProps {
   contractSignedAt?: string;
+  kitStatus: CreatorKitStatus;
+  promoCode?: string | null;
 }
 
-export function CreatorKitSection({ contractSignedAt }: CreatorKitSectionProps) {
+export function CreatorKitSection({
+  contractSignedAt,
+  kitStatus,
+  promoCode
+}: CreatorKitSectionProps) {
   // Only render once contract is signed
   if (!contractSignedAt) return null;
 
@@ -22,8 +32,18 @@ export function CreatorKitSection({ contractSignedAt }: CreatorKitSectionProps) 
         </h2>
       </div>
 
-      {/* Promo code */}
-      <PromoCodeCard />
+      {/* Promo code card — variant depends on kitStatus */}
+      <PromoCodeCard
+        promoCode={promoCode}
+        kitStatus={
+          kitStatus === "not_applicable"
+            ? "pending_code" // defensive: if contract is signed we shouldn't be here
+            : kitStatus
+        }
+      />
+
+      {/* "Kit en route" mint banner — shown the moment the webhook marks the order */}
+      {kitStatus === "ordered" && <KitStatusBanner />}
 
       {/* Affiliation — coming soon placeholder */}
       <div className="flex items-center gap-3 rounded-2xl border border-line bg-frost/40 px-4 py-3.5 opacity-60">
