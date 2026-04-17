@@ -160,7 +160,7 @@ export function DataTable<TData>({
       </div>
 
       {table.getPageCount() > 1 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-4">
           <p className="text-xs text-foreground/60" aria-live="polite" role="status">
             Page {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
           </p>

@@ -63,6 +63,18 @@ const REVIEW_TEMPLATES: Array<{ label: string; text: string; tone: "approve" | "
   }
 ];
 
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+function InfoCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-white/35">{label}</p>
+      <p className="truncate text-[12px] text-white/75">{value}</p>
+    </div>
+  );
+}
+
 function statusLabel(status: ApplicationStatus): string {
   switch (status) {
     case "draft":
@@ -619,143 +631,195 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
           />
         </DataTableCard>
 
-        <Card className="space-y-4 bg-white/95 p-5 sm:p-6">
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">Détail dossier</p>
-
+        {/* ── Detail panel ── */}
+        <Card className="overflow-hidden bg-white/95">
           {!selected ? (
-            <p className="text-sm text-foreground/70">
-              Sélectionne un dossier pour afficher les détails.
-            </p>
+            <div className="flex h-52 flex-col items-center justify-center gap-2 p-6 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/35">
+                Détail dossier
+              </p>
+              <p className="text-sm text-foreground/50">
+                ← Sélectionne un dossier pour voir le détail
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-line bg-frost/65 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-display text-3xl uppercase leading-none">
+            <>
+              {/* ── Creator hero ── */}
+              <div className="relative overflow-hidden bg-secondary px-5 pb-5 pt-5">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-4 right-4 select-none font-display text-[90px] font-black leading-none text-white/[0.04]"
+                >
+                  @
+                </span>
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-2xl font-black uppercase leading-none text-white">
                       {selected.handle}
                     </p>
-                    <p className="text-sm text-foreground/70">{selected.fullName}</p>
+                    <p className="mt-1 truncate text-[12px] text-white/55">{selected.fullName}</p>
                   </div>
-                  <StatusBadge
-                    label={statusLabel(selected.status)}
-                    tone={statusTone(selected.status)}
-                  />
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em]",
+                      selected.status === "approved"
+                        ? "border-mint/50 bg-mint/20 text-mint"
+                        : selected.status === "pending_review"
+                          ? "border-accent/50 bg-accent/20 text-accent"
+                          : "border-white/20 bg-white/10 text-white/55"
+                    )}
+                  >
+                    {statusLabel(selected.status)}
+                  </span>
                 </div>
-                <div className="mt-3 grid gap-2 text-sm text-foreground/75">
-                  <p>Email: {selected.email}</p>
-                  <p>WhatsApp: {selected.whatsapp}</p>
-                  <p>Pays: {selected.country}</p>
+
+                {/* Info grid */}
+                <div className="relative mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
+                  <InfoCell label="Email" value={selected.email} />
+                  <InfoCell label="WhatsApp" value={selected.whatsapp} />
+                  <InfoCell label="Pays" value={selected.country} />
                   {selected.followersTiktok > 0 ? (
-                    <p>TikTok: {selected.followersTiktok.toLocaleString("fr-FR")} abonnes</p>
+                    <InfoCell
+                      label="TikTok"
+                      value={`${selected.followersTiktok.toLocaleString("fr-FR")} abn.`}
+                    />
                   ) : null}
                   {selected.followersInstagram > 0 ? (
-                    <p>Instagram: {selected.followersInstagram.toLocaleString("fr-FR")} abonnes</p>
+                    <InfoCell
+                      label="Instagram"
+                      value={`${selected.followersInstagram.toLocaleString("fr-FR")} abn.`}
+                    />
                   ) : null}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Liens</p>
-                <div className="grid gap-2 text-sm">
+              {/* ── Social links ── */}
+              {selected.socialTiktok ?? selected.socialInstagram ? (
+                <div className="flex gap-2 border-b border-line px-5 py-3">
                   {selected.socialTiktok ? (
                     <a
-                      className="underline underline-offset-4"
                       href={selected.socialTiktok}
                       target="_blank"
                       rel="noreferrer"
+                      className="rounded-full border border-line px-3 py-1.5 text-[11px] font-medium text-foreground/70 transition-colors hover:bg-frost"
                     >
-                      TikTok
+                      TikTok ↗
                     </a>
                   ) : null}
                   {selected.socialInstagram ? (
                     <a
-                      className="underline underline-offset-4"
                       href={selected.socialInstagram}
                       target="_blank"
                       rel="noreferrer"
+                      className="rounded-full border border-line px-3 py-1.5 text-[11px] font-medium text-foreground/70 transition-colors hover:bg-frost"
                     >
-                      Instagram
+                      Instagram ↗
                     </a>
                   ) : null}
                 </div>
-              </div>
+              ) : null}
 
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">
-                  Notes de review (visible créateur)
+              {/* ── Review section ── */}
+              <div className="space-y-3 p-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/55">
+                  Message créateur
                 </p>
 
-                {/* Template chips — only when still pending */}
                 {selected.status === "pending_review" ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {REVIEW_TEMPLATES.map((t) => (
-                      <button
-                        key={t.label}
-                        type="button"
-                        onClick={() => setReviewNotes(t.text)}
-                        className={cn(
-                          "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                          reviewNotes === t.text
-                            ? "border-secondary bg-secondary text-white"
-                            : t.tone === "approve"
-                              ? "border-mint/40 bg-mint/10 text-foreground/75 hover:bg-mint/20"
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-foreground/35">
+                      Approbation
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {REVIEW_TEMPLATES.filter((t) => t.tone === "approve").map((t) => (
+                        <button
+                          key={t.label}
+                          type="button"
+                          onClick={() => setReviewNotes(t.text)}
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                            reviewNotes === t.text
+                              ? "border-secondary bg-secondary text-white"
+                              : "border-mint/40 bg-mint/10 text-foreground/75 hover:bg-mint/20"
+                          )}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="pt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-foreground/35">
+                      Refus
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {REVIEW_TEMPLATES.filter((t) => t.tone === "reject").map((t) => (
+                        <button
+                          key={t.label}
+                          type="button"
+                          onClick={() => setReviewNotes(t.text)}
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                            reviewNotes === t.text
+                              ? "border-secondary bg-secondary text-white"
                               : "border-destructive/30 bg-destructive/10 text-foreground/75 hover:bg-destructive/20"
-                        )}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
+                          )}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
 
                 <Textarea
                   value={reviewNotes}
                   onChange={(event) => setReviewNotes(event.target.value)}
-                  placeholder="Ex: Super fit. Profil ideal pour contenus OOTD + before/after."
-                  rows={4}
+                  placeholder="Message visible par le créateur après ta décision..."
+                  rows={3}
                   disabled={
                     submitting || selected.status === "approved" || selected.status === "rejected"
                   }
                 />
+
+                {errorMessage ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errorMessage}
+                  </p>
+                ) : null}
+                {statusMessage ? <p className="text-sm text-mint">{statusMessage}</p> : null}
+
+                {selected.status === "pending_review" ? (
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="pill"
+                      disabled={submitting}
+                      onClick={() => submitDecision("approved")}
+                      className="flex-1"
+                    >
+                      {submitting ? "..." : "✓ Approuver"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="pill"
+                      variant="outline"
+                      disabled={submitting}
+                      onClick={() => submitDecision("rejected")}
+                      className="flex-1"
+                    >
+                      {submitting ? "..." : "✕ Refuser"}
+                    </Button>
+                  </div>
+                ) : null}
+
+                {selected.status === "approved" && lastApproval?.creatorId ? (
+                  <Button asChild size="pill" variant="outline">
+                    <Link href={`/admin/creators/${lastApproval.creatorId}`}>
+                      Voir la fiche créateur
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
-
-              {errorMessage ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {errorMessage}
-                </p>
-              ) : null}
-              {statusMessage ? <p className="text-sm text-mint">{statusMessage}</p> : null}
-
-              {selected.status === "pending_review" ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="pill"
-                    disabled={submitting}
-                    onClick={() => submitDecision("approved")}
-                  >
-                    {submitting ? "..." : "Approuver"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="pill"
-                    variant="outline"
-                    disabled={submitting}
-                    onClick={() => submitDecision("rejected")}
-                  >
-                    {submitting ? "..." : "Refuser"}
-                  </Button>
-                </div>
-              ) : null}
-
-              {selected.status === "approved" && lastApproval?.creatorId ? (
-                <Button asChild size="pill" variant="outline">
-                  <Link href={`/admin/creators/${lastApproval.creatorId}`}>
-                    Voir la fiche créateur
-                  </Link>
-                </Button>
-              ) : null}
-            </div>
+            </>
           )}
         </Card>
       </div>
