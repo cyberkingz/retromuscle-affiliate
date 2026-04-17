@@ -12,6 +12,7 @@ import {
   AFFILIATE_CONTRACT_VERSION,
   getAffiliateContractCanonicalText
 } from "@/domain/contracts/affiliate-program-contract";
+import { sendCreatorKitEmail } from "@/infrastructure/email/send-emails";
 
 interface ContractSignPayload {
   signerName: string;
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
 
   const { data: creator, error: creatorError } = await client
     .from("creators")
-    .select("id, contract_signed_at")
+    .select("id, contract_signed_at, display_name")
     .eq("user_id", auth.session.userId)
     .maybeSingle();
 
@@ -201,6 +202,14 @@ export async function POST(request: Request) {
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
+  }
+
+  // Send kit email only on first-time signing (contract_signed_at was null before)
+  if (!creator.contract_signed_at && auth.session.email) {
+    void sendCreatorKitEmail({
+      to: auth.session.email,
+      displayName: creator.display_name ?? auth.session.email.split("@")[0] ?? "Créateur"
+    });
   }
 
   const response = apiJson(

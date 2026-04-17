@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import type { CreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { CardSection } from "@/components/layout/card-section";
 import { CreatorHeader } from "@/features/creator-dashboard/components/creator-header";
+import { CreatorKitSection } from "@/features/creator-dashboard/components/creator-kit-section";
 import { CreatorProgressCard } from "@/features/creator-dashboard/components/creator-progress-card";
 import { PaymentHistoryTable } from "@/features/creator-dashboard/components/payment-history-table";
 import { PayoutBreakdownTable } from "@/features/creator-dashboard/components/payout-breakdown-table";
@@ -42,6 +43,8 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
           </Link>
         </div>
       )}
+      <CreatorKitSection contractSignedAt={data.creator.contractSignedAt} />
+
       {!data.hasPayoutProfile ? (
         <div
           className="flex items-center gap-3 rounded-2xl border border-amber-400/40 bg-amber-50 px-5 py-4 text-sm text-amber-900"

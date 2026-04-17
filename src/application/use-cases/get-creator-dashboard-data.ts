@@ -16,6 +16,7 @@ export interface CreatorDashboardData {
     displayName: string;
     country: string;
     status: string;
+    contractSignedAt?: string;
   };
   month: string;
   progress: {
@@ -225,7 +226,8 @@ export async function getCreatorDashboardData(input: {
       handle: creator.handle,
       displayName: creator.displayName,
       country: creator.country,
-      status: creator.status
+      status: creator.status,
+      contractSignedAt: creator.contractSignedAt
     },
     month: currentTracking.month,
     progress: {
