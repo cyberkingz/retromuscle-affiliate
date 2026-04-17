@@ -578,7 +578,7 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2">
+                    <div className="flex min-w-0 items-start gap-2">
                       {row.status === "pending_review" ? (
                         <input
                           type="checkbox"
@@ -589,9 +589,9 @@ export function AdminApplicationsPage({ data }: AdminApplicationsPageProps) {
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : null}
-                      <div>
-                        <p className="font-semibold">{row.handle}</p>
-                        <p className="text-xs text-foreground/60">{row.fullName}</p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{row.handle}</p>
+                        <p className="truncate text-xs text-foreground/60">{row.fullName}</p>
                       </div>
                     </div>
                     <StatusBadge label={statusLabel(row.status)} tone={statusTone(row.status)} />
