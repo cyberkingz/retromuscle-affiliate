@@ -1,6 +1,4 @@
-import { CardSection } from "@/components/layout/card-section";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, UploadCloud, XCircle, Film } from "lucide-react";
+import { CheckCircle2, Clock, UploadCloud, XCircle, Film, Banknote, FileText } from "lucide-react";
 
 type ActivityItem = {
   id: string;
@@ -11,40 +9,26 @@ type ActivityItem = {
   tone: "neutral" | "success" | "warning";
 };
 
-function iconFor(kind: ActivityItem["kind"]) {
+function DotFor({ tone }: { tone: ActivityItem["tone"] }) {
+  if (tone === "success") return <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-mint" />;
+  if (tone === "warning") return <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />;
+  return <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/20" />;
+}
+
+function IconFor({ kind }: { kind: ActivityItem["kind"] }) {
+  const cls = "h-3.5 w-3.5 shrink-0";
   switch (kind) {
-    case "approved":
-    case "paid":
-    case "contract":
-      return <CheckCircle2 className="h-4 w-4 text-mint" />;
-    case "rejected":
-      return <XCircle className="h-4 w-4 text-destructive/80" />;
-    case "rush":
-      return <Film className="h-4 w-4 text-secondary" />;
-    case "upload":
-    default:
-      return <UploadCloud className="h-4 w-4 text-secondary" />;
+    case "approved":  return <CheckCircle2 className={`${cls} text-mint`} />;
+    case "paid":      return <Banknote className={`${cls} text-mint`} />;
+    case "contract":  return <FileText className={`${cls} text-mint`} />;
+    case "rejected":  return <XCircle className={`${cls} text-destructive/70`} />;
+    case "rush":      return <Film className={`${cls} text-secondary/60`} />;
+    default:          return <UploadCloud className={`${cls} text-secondary/60`} />;
   }
 }
 
-function badgeFor(tone: ActivityItem["tone"]) {
-  if (tone === "success")
-    return (
-      <Badge className="bg-mint/15 text-mint border-mint/20" variant="outline">
-        OK
-      </Badge>
-    );
-  if (tone === "warning")
-    return (
-      <Badge className="bg-primary/15 text-primary border-primary/25" variant="outline">
-        A corriger
-      </Badge>
-    );
-  return (
-    <Badge className="bg-frost text-foreground/70 border-line" variant="outline">
-      Info
-    </Badge>
-  );
+function formatTs(ts: string): string {
+  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
 interface ActivityFeedCardProps {
@@ -53,46 +37,48 @@ interface ActivityFeedCardProps {
 
 export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
   return (
-    <CardSection className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.15em] text-foreground/75">Activite recente</p>
-          <p className="mt-2 text-sm text-foreground/75">Tes uploads, validations et paiements.</p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-foreground/60">
-          <Clock className="h-4 w-4" />
-          12 derniers evenements
-        </div>
+    <div className="rounded-[22px] border border-line bg-white/85 p-4">
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/55">
+          Activité récente
+        </p>
+        <Clock className="h-3 w-3 text-foreground/30" />
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-frost/70 px-4 py-6 text-sm text-foreground/70">
-          Aucune activite pour ce mois.
-        </div>
+        <p className="py-4 text-center text-[12px] text-foreground/40">
+          Aucune activité pour ce mois.
+        </p>
       ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
+        <div className="space-y-0">
+          {items.map((item, i) => (
             <div
               key={item.id}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-line bg-frost/70 px-4 py-3"
+              className="flex items-start gap-3 py-2.5"
+              style={
+                i < items.length - 1
+                  ? { borderBottom: "1px solid hsl(227 78% 12% / 0.07)" }
+                  : undefined
+              }
             >
-              <div className="flex min-w-0 gap-3">
-                <div className="mt-0.5">{iconFor(item.kind)}</div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{item.title}</p>
-                  {item.detail ? (
-                    <p className="mt-1 text-xs text-foreground/65">{item.detail}</p>
-                  ) : null}
-                  <p className="mt-1 text-[11px] text-foreground/70">
-                    {new Date(item.timestamp).toLocaleString("fr-FR")}
-                  </p>
-                </div>
+              <IconFor kind={item.kind} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12px] font-semibold leading-snug text-foreground/80">
+                  {item.title}
+                </p>
+                {item.detail && (
+                  <p className="mt-0.5 truncate text-[11px] text-foreground/45">{item.detail}</p>
+                )}
               </div>
-              <div className="shrink-0">{badgeFor(item.tone)}</div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <DotFor tone={item.tone} />
+                <span className="text-[10px] text-foreground/35">{formatTs(item.timestamp)}</span>
+              </div>
             </div>
           ))}
         </div>
       )}
-    </CardSection>
+    </div>
   );
 }

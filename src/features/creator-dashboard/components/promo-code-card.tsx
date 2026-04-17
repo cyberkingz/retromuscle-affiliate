@@ -5,7 +5,7 @@ import { Tag, Copy, Check, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export const CREATOR_PROMO_CODE = "CREATOR20";
-const STORE_URL =
+export const CREATOR_STORE_URL =
   "https://retromuscle.net?utm_source=creator-dashboard&utm_medium=kit&utm_campaign=creator-kit";
 
 export function PromoCodeCard() {
@@ -21,80 +21,74 @@ export function PromoCodeCard() {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-secondary/35",
-        "bg-gradient-to-br from-secondary/20 via-secondary/8 to-transparent",
-        "shadow-[0_0_24px_rgba(212,0,106,0.10)] p-5"
+        "relative overflow-hidden rounded-[20px] border border-primary/20 px-[18px] py-4",
+        "bg-white/85 [background-image:radial-gradient(ellipse_at_top_right,rgba(255,82,177,0.07)_0%,transparent_60%)]"
       )}
     >
-      {/* Decorative # — retro creator aesthetic */}
+      {/* Decorative # (magenta tint) */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -bottom-6 -right-3 select-none font-display text-[110px] font-black leading-none text-secondary/6"
+        className="pointer-events-none absolute -bottom-[15px] -right-[5px] select-none font-display text-[80px] font-black leading-none text-primary/[0.06]"
       >
         #
       </span>
 
-      {/* Label tag */}
-      <div className="mb-3 flex items-center gap-1.5">
-        <Tag className="h-3 w-3 text-secondary" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-secondary/80">
+      {/* Badge — magenta */}
+      <div className="mb-2 flex items-center gap-1.5">
+        <Tag className="h-3 w-3 text-primary" />
+        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
           Code exclusif
         </span>
       </div>
 
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Code + description */}
-        <div className="space-y-1.5">
-          <p
-            className="font-display text-4xl font-black uppercase leading-none tracking-wider text-secondary sm:text-5xl"
-            aria-label={`Code promo : ${CREATOR_PROMO_CODE}`}
-          >
-            {CREATOR_PROMO_CODE}
-          </p>
-          <p className="text-xs leading-relaxed text-foreground/55">
-            Commande ta première tenue RetroMuscle pour shooter.
-            <br className="hidden sm:block" />
-            Valable&nbsp;1&nbsp;fois par compte client.
-          </p>
-        </div>
+      {/* Code — magenta, tight tracking */}
+      <p
+        className="font-display text-[36px] font-black uppercase leading-none tracking-[0.04em] text-primary"
+        aria-label={`Code promo : ${CREATOR_PROMO_CODE}`}
+      >
+        {CREATOR_PROMO_CODE}
+      </p>
 
-        {/* Actions */}
-        <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className={cn(
-              "inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-6",
-              "text-xs font-bold uppercase tracking-[0.08em] text-white transition active:scale-95 sm:w-auto",
-              copied
-                ? "bg-emerald-500 border border-emerald-500/50"
-                : "bg-secondary border border-secondary/50 hover:bg-secondary/90"
-            )}
-          >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                Copié&nbsp;!
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                Copier le code
-              </>
-            )}
-          </button>
+      {/* Description */}
+      <p className="mb-3 mt-1 text-[11px] leading-[1.5] text-foreground/50">
+        Commande ta première tenue RetroMuscle pour shooter. Valable&nbsp;1&nbsp;fois.
+      </p>
 
-          <a
-            href={STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 text-xs text-foreground/45 transition hover:text-foreground/75 sm:justify-end"
-          >
-            <ShoppingBag className="h-3 w-3" />
-            Aller sur la boutique
-          </a>
-        </div>
-      </div>
+      {/* Full-width copy button — navy */}
+      <button
+        type="button"
+        onClick={handleCopy}
+        className={cn(
+          "inline-flex w-full items-center justify-center gap-1.5 rounded-[18px] px-4 py-[9px]",
+          "text-[11px] font-bold uppercase tracking-[0.08em] text-white transition active:scale-95",
+          copied
+            ? "bg-emerald-500"
+            : "bg-secondary hover:bg-secondary/90"
+        )}
+      >
+        {copied ? (
+          <>
+            <Check className="h-3.5 w-3.5" />
+            Copié&nbsp;!
+          </>
+        ) : (
+          <>
+            <Copy className="h-3.5 w-3.5" />
+            Copier le code
+          </>
+        )}
+      </button>
+
+      {/* Centered store link below button */}
+      <a
+        href={CREATOR_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-foreground/40 transition hover:text-foreground/65"
+      >
+        <ShoppingBag className="h-3 w-3" />
+        Aller sur la boutique
+      </a>
     </div>
   );
 }

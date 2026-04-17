@@ -126,7 +126,9 @@ export async function getCreatorDashboardData(input: {
   const summary = summarizeTracking(currentTracking.delivered);
   const payout = calculatePayout(currentTracking.delivered, rates);
 
-  const deliveredByType = VIDEO_TYPES.map((videoType) => ({
+  const activeVideoTypes = new Set(rates.filter((r) => !r.isPlaceholder).map((r) => r.videoType));
+
+  const deliveredByType = VIDEO_TYPES.filter((vt) => activeVideoTypes.has(vt)).map((videoType) => ({
     key: videoType,
     label: VIDEO_TYPE_LABELS[videoType],
     delivered: currentTracking.delivered[videoType]
@@ -235,13 +237,15 @@ export async function getCreatorDashboardData(input: {
       estimatedPayout: payout.total
     },
     deliveredByType,
-    payoutBreakdown: payout.items.map((item) => ({
-      key: item.key,
-      label: VIDEO_TYPE_LABELS[item.key],
-      delivered: item.delivered,
-      rate: item.rate,
-      subtotal: item.subtotal
-    })),
+    payoutBreakdown: payout.items
+      .filter((item) => activeVideoTypes.has(item.key))
+      .map((item) => ({
+        key: item.key,
+        label: VIDEO_TYPE_LABELS[item.key],
+        delivered: item.delivered,
+        rate: item.rate,
+        subtotal: item.subtotal
+      })),
     upload: {
       monthlyTrackingId: currentTracking.id,
       ratesByType: rates

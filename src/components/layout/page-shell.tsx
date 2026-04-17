@@ -30,7 +30,7 @@ export function PageShell({ children, currentPath }: PageShellProps) {
   const isHomePage = currentPath === "/";
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+    <div className="bg-retro-grid relative flex min-h-screen flex-col bg-background text-foreground">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
