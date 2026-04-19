@@ -113,7 +113,9 @@ export async function getAdminDashboardData(input?: {
     };
   });
 
-  const paymentsTodoRows = monthlyRows.filter((row) => row.paymentStatusKey !== "paye");
+  const paymentsTodoRows = monthlyRows.filter(
+    (row) => row.paymentStatusKey !== "paye" && row.payoutAmount > 0
+  );
 
   const metrics = {
     creatorsActive: monthlyRows.length,
