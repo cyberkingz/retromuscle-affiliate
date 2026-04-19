@@ -9,9 +9,18 @@ import { DataTable } from "@/components/ui/data-table";
 import { DataTableCard } from "@/components/ui/data-table-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/cn";
+import { toShortDate } from "@/lib/date";
 import { creatorStatusTone } from "@/lib/status-tone";
 
 import { KitStatusCell } from "./kit-status-cell";
+
+type TableFilter = "all" | "no_contract" | "kit_pending";
+
+const PENDING_KIT_STATUSES: ReadonlySet<CreatorKitStatus> = new Set([
+  "pending_code",
+  "code_ready",
+  "failed"
+]);
 
 interface CreatorsMasterTableRow {
   creatorId: string;
@@ -19,40 +28,25 @@ interface CreatorsMasterTableRow {
   email: string;
   country: string;
   status: string;
+  contractSignedAt?: string;
   kitStatus: CreatorKitStatus;
 }
 
 interface CreatorsMasterTableProps {
-  rows: CreatorsMasterTableRow[];
+  rows: Array<CreatorsMasterTableRow>;
 }
 
-type KitFilter = "all" | "pending";
-
-/**
- * Rows whose kit is "not yet ordered" — admin surface for chasing creators
- * who got a code but haven't redeemed it. Excludes `not_applicable` (no
- * contract signed) and `ordered` (done).
- */
-const PENDING_KIT_STATUSES: ReadonlySet<CreatorKitStatus> = new Set([
-  "pending_code",
-  "code_ready",
-  "failed"
-]);
-
 export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
-  const [kitFilter, setKitFilter] = useState<KitFilter>("all");
+  const [filter, setFilter] = useState<TableFilter>("all");
 
   const filteredRows = useMemo(() => {
-    if (kitFilter === "pending") {
-      return rows.filter((row) => PENDING_KIT_STATUSES.has(row.kitStatus));
-    }
+    if (filter === "no_contract") return rows.filter((row) => !row.contractSignedAt);
+    if (filter === "kit_pending") return rows.filter((row) => PENDING_KIT_STATUSES.has(row.kitStatus));
     return rows;
-  }, [rows, kitFilter]);
+  }, [rows, filter]);
 
-  const pendingCount = useMemo(
-    () => rows.filter((row) => PENDING_KIT_STATUSES.has(row.kitStatus)).length,
-    [rows]
-  );
+  const noContractCount = useMemo(() => rows.filter((r) => !r.contractSignedAt).length, [rows]);
+  const kitPendingCount = useMemo(() => rows.filter((r) => PENDING_KIT_STATUSES.has(r.kitStatus)).length, [rows]);
 
   const columns = useMemo<ColumnDef<CreatorsMasterTableRow>[]>(
     () => [
@@ -71,6 +65,19 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
       },
       { accessorKey: "email", header: "Email" },
       { accessorKey: "country", header: "Pays" },
+      {
+        id: "contrat",
+        header: "Contrat",
+        accessorFn: (row) => row.contractSignedAt ?? "",
+        cell: ({ row }) =>
+          row.original.contractSignedAt ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+              ✓ {toShortDate(row.original.contractSignedAt)}
+            </span>
+          ) : (
+            <span className="text-sm text-foreground/35">—</span>
+          )
+      },
       {
         id: "status",
         header: "Statut",
@@ -94,27 +101,25 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
       title="Répertoire créateurs"
       subtitle="Base créateurs et statut de collaboration."
     >
-      <div className="flex flex-wrap items-center gap-2 border-b border-line px-5 py-3">
+      <div className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
+        <FilterPill label={`Tous · ${rows.length}`} active={filter === "all"} onClick={() => setFilter("all")} />
         <FilterPill
-          label="Tous"
-          active={kitFilter === "all"}
-          onClick={() => setKitFilter("all")}
+          label={`Sans contrat${noContractCount > 0 ? ` · ${noContractCount}` : ""}`}
+          active={filter === "no_contract"}
+          onClick={() => setFilter("no_contract")}
         />
         <FilterPill
-          label={`Kit non commandé${pendingCount > 0 ? ` · ${pendingCount}` : ""}`}
-          active={kitFilter === "pending"}
-          onClick={() => setKitFilter("pending")}
+          label={`Kit non commandé${kitPendingCount > 0 ? ` · ${kitPendingCount}` : ""}`}
+          active={filter === "kit_pending"}
+          onClick={() => setFilter("kit_pending")}
         />
       </div>
-
       <div className="p-5">
         <DataTable
           data={filteredRows}
           columns={columns}
           pageSize={10}
-          emptyMessage={
-            kitFilter === "pending" ? "Aucun créateur en attente de kit." : "Aucun créateur."
-          }
+          emptyMessage="Aucun créateur."
           aria-label="Répertoire des créateurs"
           getRowId={(row) => row.creatorId}
           renderMobileRow={(row) => (
@@ -134,6 +139,16 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
                 <span className="font-medium">{row.country}</span>
               </div>
               <div className="flex items-center justify-between text-sm text-foreground/75">
+                <span>Contrat</span>
+                {row.contractSignedAt ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    ✓ {toShortDate(row.contractSignedAt)}
+                  </span>
+                ) : (
+                  <span className="text-foreground/35">—</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-sm text-foreground/75">
                 <span>Kit</span>
                 <KitStatusCell status={row.kitStatus} />
               </div>
@@ -145,13 +160,7 @@ export function CreatorsMasterTable({ rows }: CreatorsMasterTableProps) {
   );
 }
 
-interface FilterPillProps {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}
-
-function FilterPill({ label, active, onClick }: FilterPillProps) {
+function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"

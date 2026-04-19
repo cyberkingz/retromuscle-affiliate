@@ -15,6 +15,8 @@ export interface AdminDashboardData {
   availableMonths: string[];
   metrics: {
     creatorsActive: number;
+    contractsSigned: number;
+    creatorsTotal: number;
     validationTodo: number;
     paymentsTodo: number;
     totalToPay: number;
@@ -25,6 +27,7 @@ export interface AdminDashboardData {
     email: string;
     country: string;
     status: string;
+    contractSignedAt?: string;
     kitStatus: CreatorKitStatus;
   }>;
   monthlyRows: Array<{
@@ -117,8 +120,11 @@ export async function getAdminDashboardData(input?: {
     (row) => row.paymentStatusKey !== "paye" && row.payoutAmount > 0
   );
 
+  const nonPendingCreators = creators.filter((c) => c.status !== "candidat");
   const metrics = {
     creatorsActive: monthlyRows.length,
+    contractsSigned: creators.filter((c) => !!c.contractSignedAt).length,
+    creatorsTotal: nonPendingCreators.length,
     validationTodo: pendingVideos.length,
     paymentsTodo: paymentsTodoRows.length,
     totalToPay: paymentsTodoRows.reduce((sum, row) => sum + row.payoutAmount, 0)
@@ -134,6 +140,7 @@ export async function getAdminDashboardData(input?: {
       email: creator.email,
       country: creator.country,
       status: CREATOR_STATUS_LABELS[creator.status],
+      contractSignedAt: creator.contractSignedAt,
       kitStatus: deriveKitStatusForCreator(creator)
     })),
     monthlyRows,
