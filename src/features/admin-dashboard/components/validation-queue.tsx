@@ -444,7 +444,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         </p>
                         <Textarea value={revisionNote} onChange={(e) => setRevisionNote(e.target.value)}
                           placeholder="Ex: Lumière insuffisante, retourne en plein jour. Ajoute des sous-titres…"
-                          className="mt-2 border-amber-200 bg-white focus:border-amber-400" rows={3} autoFocus />
+                          className="mt-2 border-amber-200 bg-white focus:border-amber-400 focus-visible:ring-amber-300/50 focus-visible:ring-offset-0" rows={3} autoFocus />
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" className="bg-amber-500 text-white hover:bg-amber-600"
                             onClick={() => void reviewOne(row.videoId, "revision_requested", revisionNote)}
