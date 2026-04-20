@@ -23,27 +23,29 @@ function isMissingAtomicReviewRpc(error: unknown): boolean {
 export async function reviewVideoUpload(input: {
   adminUserId: string;
   videoId: string;
-  decision: "approved" | "rejected";
+  decision: "approved" | "rejected" | "revision_requested";
   rejectionReason?: string | null;
 }) {
   const repository = getRepository();
 
-  // Guard against approved → rejected downgrade: an approved video has
-  // already been counted in delivered totals (and possibly paid), so
-  // changing it to rejected would silently corrupt those counts.
-  if (input.decision === "rejected") {
+  // Guard against approved → rejected/revision downgrade: an approved video
+  // has already been counted in delivered totals (and possibly paid).
+  if (input.decision === "rejected" || input.decision === "revision_requested") {
     const current = await repository.getVideoById(input.videoId);
     if (current?.status === "approved") {
-      throw new Error("Cannot reject an already approved video");
+      throw new Error("Cannot change status of an already approved video");
     }
   }
+
+  // rejectionReason is stored for both rejected and revision_requested statuses.
+  const rejectionReason = input.decision !== "approved" ? (input.rejectionReason ?? null) : null;
 
   try {
     // Prefer atomic RPC when available.
     return await repository.reviewVideoAndUpdateTracking({
       videoId: input.videoId,
       status: input.decision,
-      rejectionReason: input.decision === "rejected" ? (input.rejectionReason ?? null) : null,
+      rejectionReason,
       reviewedBy: input.adminUserId
     });
   } catch (error) {
@@ -56,7 +58,7 @@ export async function reviewVideoUpload(input: {
     const video = await repository.reviewVideoAsset({
       videoId: input.videoId,
       status: input.decision,
-      rejectionReason: input.decision === "rejected" ? (input.rejectionReason ?? null) : null,
+      rejectionReason,
       reviewedBy: input.adminUserId
     });
 

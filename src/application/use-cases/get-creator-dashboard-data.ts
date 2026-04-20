@@ -72,7 +72,7 @@ export interface CreatorDashboardData {
   };
   activity: Array<{
     id: string;
-    kind: "upload" | "approved" | "rejected" | "rush" | "paid" | "contract";
+    kind: "upload" | "approved" | "rejected" | "revision_requested" | "rush" | "paid" | "contract";
     title: string;
     detail?: string;
     timestamp: string;
@@ -190,7 +190,18 @@ export async function getCreatorDashboardData(input: {
           items.push({
             id: `rejected-${video.id}`,
             kind: "rejected" as const,
-            title: `Rejete: ${label}`,
+            title: `Refusé : ${label}`,
+            detail: video.rejectionReason ?? undefined,
+            timestamp: video.reviewedAt,
+            tone: "warning" as const
+          });
+        }
+
+        if (video.status === "revision_requested") {
+          items.push({
+            id: `revision-${video.id}`,
+            kind: "revision_requested" as const,
+            title: `Révision demandée : ${label}`,
             detail: video.rejectionReason ?? undefined,
             timestamp: video.reviewedAt,
             tone: "warning" as const
@@ -286,7 +297,9 @@ export async function getCreatorDashboardData(input: {
       },
       pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review")
         .length,
-      rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
+      rejectedCount: uploadedVideos.filter(
+        (video) => video.status === "rejected" || video.status === "revision_requested"
+      ).length,
       recentVideos: uploadedVideos.slice(0, 8).map((video) => ({
         id: video.id,
         videoType: video.videoType,

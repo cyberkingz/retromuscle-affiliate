@@ -43,14 +43,14 @@ export interface CreatorRepository {
   }): Promise<VideoAsset>;
   reviewVideoAsset(input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<VideoAsset>;
   /** Atomically review a video and recalculate tracking delivered counts. */
   reviewVideoAndUpdateTracking(input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }>;

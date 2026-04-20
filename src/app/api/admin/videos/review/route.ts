@@ -1,6 +1,6 @@
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
 import { getRepository } from "@/application/dependencies";
-import { sendVideoRejectedEmail } from "@/infrastructure/email/send-emails";
+import { sendVideoRejectedEmail, sendVideoRevisionRequestedEmail } from "@/infrastructure/email/send-emails";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -12,7 +12,7 @@ import { isUuid } from "@/lib/validation";
 
 interface ReviewVideoPayload {
   videoId: string;
-  decision: "approved" | "rejected";
+  decision: "approved" | "rejected" | "revision_requested";
   rejectionReason?: string | null;
 }
 
@@ -30,8 +30,11 @@ function parsePayload(body: unknown): ReviewVideoPayload {
   if (!videoId || !isUuid(videoId)) {
     throw new Error("Invalid videoId");
   }
-  if (decision !== "approved" && decision !== "rejected") {
+  if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
     throw new Error("Invalid decision");
+  }
+  if (decision === "revision_requested" && !rejectionReason) {
+    throw new Error("revisionReason is required when requesting a revision");
   }
   if (rejectionReason && rejectionReason.length > 2000) {
     throw new Error("rejectionReason is too long");
@@ -96,17 +99,25 @@ export async function POST(request: Request) {
       rejectionReason: payload.rejectionReason
     });
 
-    // Fire-and-forget email on rejection
-    if (payload.decision === "rejected") {
+    // Fire-and-forget email on rejection or revision request
+    if (payload.decision === "rejected" || payload.decision === "revision_requested") {
       getRepository()
         .getCreatorById(result.video.creatorId)
         .then((creator) => {
           if (!creator) return;
-          return sendVideoRejectedEmail({
+          if (payload.decision === "rejected") {
+            return sendVideoRejectedEmail({
+              to: creator.email,
+              creatorName: creator.displayName,
+              videoType: result.video.videoType,
+              reason: payload.rejectionReason
+            });
+          }
+          return sendVideoRevisionRequestedEmail({
             to: creator.email,
             creatorName: creator.displayName,
             videoType: result.video.videoType,
-            reason: payload.rejectionReason
+            revisionNote: payload.rejectionReason ?? ""
           });
         })
         .catch(console.error);

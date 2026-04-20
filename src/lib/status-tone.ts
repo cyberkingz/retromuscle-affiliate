@@ -43,6 +43,10 @@ export function videoStatusTone(statusLabel: string): BadgeTone {
     return "neutral";
   }
 
+  if (value.includes("revision") || value.includes("modification")) {
+    return "warning";
+  }
+
   if (value.includes("pending") || value.includes("review") || value.includes("attente")) {
     return "warning";
   }

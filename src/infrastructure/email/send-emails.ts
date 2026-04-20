@@ -292,3 +292,60 @@ export async function sendVideoRejectedEmail(input: {
     `.trim()
   });
 }
+
+// ---------------------------------------------------------------------------
+// Video revision requested
+// ---------------------------------------------------------------------------
+export async function sendVideoRevisionRequestedEmail(input: {
+  to: string;
+  creatorName: string;
+  videoType: string;
+  revisionNote: string;
+}): Promise<void> {
+  if (!isResendConfigured()) return;
+
+  const typeLabel = VIDEO_TYPE_LABELS[input.videoType] ?? input.videoType;
+
+  await getResendClient().emails.send({
+    from: FROM,
+    to: input.to,
+    subject: `Modifications demandées — ${typeLabel}`,
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;padding:0 20px;">
+    <tr><td>
+      <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px 36px;">
+        <p style="margin:0 0 24px;font-size:22px;font-weight:700;color:#fff;">
+          Bonjour ${input.creatorName},
+        </p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#aaa;">
+          Ta vidéo <strong style="color:#fff;">${typeLabel}</strong> nécessite quelques modifications avant validation.
+        </p>
+        <div style="background:#1a1a0a;border-left:3px solid #f59e0b;border-radius:4px;padding:14px 16px;margin:20px 0;">
+          <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Ce qu'on te demande</p>
+          <p style="margin:0;font-size:14px;color:#aaa;line-height:1.6;">${input.revisionNote}</p>
+        </div>
+        <p style="margin:16px 0 28px;font-size:15px;line-height:1.6;color:#aaa;">
+          Prends en compte ces retours et uploade une nouvelle version depuis ton espace.
+        </p>
+        <a href="${APP_URL}/uploads"
+           style="display:inline-block;background:#f59e0b;color:#000;text-decoration:none;padding:13px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+          Modifier et ré-uploader →
+        </a>
+        <p style="margin:32px 0 0;font-size:13px;color:#555;">
+          Des questions ? Réponds à cet email.
+        </p>
+      </div>
+      <p style="margin:20px 0 0;text-align:center;font-size:12px;color:#444;">
+        © ${new Date().getFullYear()} RetroMuscle · <a href="${APP_URL}" style="color:#666;text-decoration:none;">${APP_URL}</a>
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>
+    `.trim()
+  });
+}

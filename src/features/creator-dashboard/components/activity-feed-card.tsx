@@ -1,8 +1,8 @@
-import { CheckCircle2, Clock, UploadCloud, XCircle, Film, Banknote, FileText } from "lucide-react";
+import { CheckCircle2, Clock, MessageSquareDiff, UploadCloud, XCircle, Film, Banknote, FileText } from "lucide-react";
 
 type ActivityItem = {
   id: string;
-  kind: "upload" | "approved" | "rejected" | "rush" | "paid" | "contract";
+  kind: "upload" | "approved" | "rejected" | "revision_requested" | "rush" | "paid" | "contract";
   title: string;
   detail?: string;
   timestamp: string;
@@ -18,12 +18,13 @@ function DotFor({ tone }: { tone: ActivityItem["tone"] }) {
 function IconFor({ kind }: { kind: ActivityItem["kind"] }) {
   const cls = "h-3.5 w-3.5 shrink-0";
   switch (kind) {
-    case "approved":  return <CheckCircle2 className={`${cls} text-mint`} />;
-    case "paid":      return <Banknote className={`${cls} text-mint`} />;
-    case "contract":  return <FileText className={`${cls} text-mint`} />;
-    case "rejected":  return <XCircle className={`${cls} text-destructive/70`} />;
-    case "rush":      return <Film className={`${cls} text-secondary/60`} />;
-    default:          return <UploadCloud className={`${cls} text-secondary/60`} />;
+    case "approved":           return <CheckCircle2 className={`${cls} text-mint`} />;
+    case "paid":               return <Banknote className={`${cls} text-mint`} />;
+    case "contract":           return <FileText className={`${cls} text-mint`} />;
+    case "rejected":           return <XCircle className={`${cls} text-destructive/70`} />;
+    case "revision_requested": return <MessageSquareDiff className={`${cls} text-amber-500`} />;
+    case "rush":               return <Film className={`${cls} text-secondary/60`} />;
+    default:                   return <UploadCloud className={`${cls} text-secondary/60`} />;
   }
 }
 

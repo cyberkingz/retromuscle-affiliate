@@ -4,7 +4,7 @@ export type VideoType = (typeof VIDEO_TYPES)[number];
 
 export type CreatorStatus = "candidat" | "actif" | "pause" | "inactif";
 export type PaymentStatus = "a_faire" | "en_cours" | "paye";
-export type VideoStatus = "uploaded" | "pending_review" | "approved" | "rejected";
+export type VideoStatus = "uploaded" | "pending_review" | "approved" | "rejected" | "revision_requested";
 export type ApplicationStatus = "draft" | "pending_review" | "approved" | "rejected";
 export type PayoutMethod = "iban" | "paypal";
 

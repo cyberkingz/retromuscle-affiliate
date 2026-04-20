@@ -25,5 +25,6 @@ export const VIDEO_STATUS_LABELS: Record<VideoStatus, string> = {
   uploaded: "Upload",
   pending_review: "A valider",
   approved: "Approuve",
-  rejected: "Rejete"
+  rejected: "Rejete",
+  revision_requested: "Révision demandée"
 };

@@ -56,7 +56,7 @@ function toPaymentStatus(value: string): PaymentStatus {
 }
 
 function toVideoStatus(value: string): VideoStatus {
-  const allowed: VideoStatus[] = ["uploaded", "pending_review", "approved", "rejected"];
+  const allowed: VideoStatus[] = ["uploaded", "pending_review", "approved", "rejected", "revision_requested"];
   if (!allowed.includes(value as VideoStatus)) {
     throw new Error(`Unknown video status from database: ${value}`);
   }
@@ -461,7 +461,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
 
   async reviewVideoAsset(input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<VideoAsset> {
@@ -469,7 +469,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .from("videos")
       .update({
         status: input.status,
-        rejection_reason: input.status === "rejected" ? (input.rejectionReason ?? null) : null,
+        rejection_reason: input.status !== "approved" ? (input.rejectionReason ?? null) : null,
         reviewed_at: new Date().toISOString(),
         reviewed_by: input.reviewedBy
       })
@@ -488,7 +488,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
 
   async reviewVideoAndUpdateTracking(input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }> {
@@ -496,7 +496,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       p_video_id: input.videoId,
       p_status: input.status,
       p_rejection_reason:
-        input.status === "rejected" ? (input.rejectionReason ?? undefined) : undefined,
+        input.status !== "approved" ? (input.rejectionReason ?? undefined) : undefined,
       p_reviewed_by: input.reviewedBy
     });
 

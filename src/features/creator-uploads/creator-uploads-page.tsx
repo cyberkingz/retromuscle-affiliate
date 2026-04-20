@@ -24,6 +24,12 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
     .sort((a, b) => b.localeCompare(a));
 
   const approvedCount = data.upload.recentVideos.filter((v) => v.status === "approved").length;
+  const revisionCount = data.upload.recentVideos.filter(
+    (v) => v.status === "revision_requested"
+  ).length;
+  const strictRejectedCount = data.upload.recentVideos.filter(
+    (v) => v.status === "rejected"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -58,7 +64,7 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
       ) : null}
 
       {/* Status summary */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
           <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">À valider</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-foreground/80">
@@ -71,20 +77,34 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
             {approvedCount}
           </p>
         </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center">
+          <p className="text-xs uppercase tracking-[0.12em] text-amber-700/70">En révision</p>
+          <p className="mt-1 font-display text-3xl uppercase leading-none text-amber-600">
+            {revisionCount}
+          </p>
+        </div>
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
           <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">Rejetées</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-destructive">
-            {data.upload.rejectedCount}
+            {strictRejectedCount}
           </p>
         </div>
       </div>
 
+      {/* Revision requested banner */}
+      {revisionCount > 0 ? (
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {revisionCount} vidéo{revisionCount > 1 ? "s" : ""} en attente de modification — consulte
+          les instructions ci-dessous et re-uploade une version corrigée.
+        </div>
+      ) : null}
+
       {/* Rejected summary banner */}
-      {data.upload.rejectedCount > 0 ? (
+      {strictRejectedCount > 0 ? (
         <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          {data.upload.rejectedCount} video{data.upload.rejectedCount > 1 ? "s" : ""} rejetée
-          {data.upload.rejectedCount > 1 ? "s" : ""} — consulte les raisons ci-dessous et re-uploade
-          une version corrigée.
+          {strictRejectedCount} vidéo{strictRejectedCount > 1 ? "s" : ""} rejetée
+          {strictRejectedCount > 1 ? "s" : ""} — consulte les raisons ci-dessous et re-uploade une
+          version corrigée.
         </div>
       ) : null}
 
@@ -112,7 +132,9 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
                 className={
                   video.status === "rejected"
                     ? "rounded-2xl border border-destructive/25 bg-destructive/5 p-4"
-                    : "rounded-2xl border border-line bg-frost/60 p-4"
+                    : video.status === "revision_requested"
+                      ? "rounded-2xl border border-amber-300/50 bg-amber-50/70 p-4"
+                      : "rounded-2xl border border-line bg-frost/60 p-4"
                 }
               >
                 <div className="flex items-start justify-between gap-3">
@@ -125,6 +147,21 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
                     tone={videoStatusTone(video.status)}
                   />
                 </div>
+
+                {video.status === "revision_requested" && video.rejectionReason ? (
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-amber-700/80">
+                      Modifications demandées
+                    </p>
+                    <p className="mt-1 text-sm text-amber-800">{video.rejectionReason}</p>
+                  </div>
+                ) : null}
+
+                {video.status === "revision_requested" && !video.rejectionReason ? (
+                  <p className="mt-3 text-xs text-amber-700">
+                    Des modifications sont demandées — re-uploade une version corrigée.
+                  </p>
+                ) : null}
 
                 {video.status === "rejected" && video.rejectionReason ? (
                   <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2">

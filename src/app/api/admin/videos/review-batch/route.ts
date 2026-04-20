@@ -10,7 +10,7 @@ import { isUuid } from "@/lib/validation";
 
 interface ReviewBatchPayload {
   videoIds: string[];
-  decision: "approved" | "rejected";
+  decision: "approved" | "rejected" | "revision_requested";
   rejectionReason?: string | null;
 }
 
@@ -49,7 +49,7 @@ function parsePayload(body: unknown): ReviewBatchPayload {
   const rejectionReason =
     typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
-  if (decision !== "approved" && decision !== "rejected") {
+  if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
     throw new Error("Invalid decision");
   }
 
