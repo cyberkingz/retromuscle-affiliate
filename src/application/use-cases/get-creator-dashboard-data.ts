@@ -58,6 +58,7 @@ export interface CreatorDashboardData {
       createdAt: string;
       fileUrl: string;
       rejectionReason?: string;
+      supersededBy?: string;
     }>;
   };
   rushes: {
@@ -298,16 +299,18 @@ export async function getCreatorDashboardData(input: {
       },
       pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review")
         .length,
-      revisionCount: uploadedVideos.filter((video) => video.status === "revision_requested")
-        .length,
+      revisionCount: uploadedVideos.filter(
+        (video) => video.status === "revision_requested" && !video.supersededBy
+      ).length,
       rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
-      recentVideos: uploadedVideos.slice(0, 8).map((video) => ({
+      recentVideos: uploadedVideos.filter((video) => !video.supersededBy).slice(0, 8).map((video) => ({
         id: video.id,
         videoType: video.videoType,
         status: video.status,
         createdAt: video.createdAt,
         fileUrl: video.fileUrl,
-        rejectionReason: video.rejectionReason
+        rejectionReason: video.rejectionReason,
+        supersededBy: video.supersededBy
       }))
     },
     rushes: {

@@ -40,6 +40,22 @@ export interface CreatorRepository {
     resolution: VideoAsset["resolution"];
     fileSizeMb: number;
     status?: VideoStatus;
+    supersededBy?: string;
+  }): Promise<VideoAsset>;
+  /**
+   * Set superseded_by on a video to record that another video replaced it.
+   * Called non-fatally after creating the revision replacement video.
+   *
+   * SECURITY: This method performs NO ownership or status checks — it is the
+   * caller's responsibility (use-case layer) to verify:
+   *   1. videoId.creatorId === authenticated creator
+   *   2. videoId.status === "revision_requested"
+   *   3. videoId.supersededBy is currently null (idempotency)
+   *   4. supersededById belongs to the same creator and monthlyTrackingId
+   */
+  markVideoSuperseded(input: {
+    videoId: string;
+    supersededById: string;
   }): Promise<VideoAsset>;
   reviewVideoAsset(input: {
     videoId: string;

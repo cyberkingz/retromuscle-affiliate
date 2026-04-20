@@ -1,4 +1,10 @@
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
+import { getRepository } from "@/application/dependencies";
+import {
+  sendVideoApprovedEmail,
+  sendVideoRejectedEmail,
+  sendVideoRevisionRequestedEmail
+} from "@/infrastructure/email/send-emails";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -51,6 +57,10 @@ function parsePayload(body: unknown): ReviewBatchPayload {
 
   if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
     throw new Error("Invalid decision");
+  }
+
+  if (decision === "revision_requested" && !rejectionReason) {
+    throw new Error("revisionReason is required when requesting a revision");
   }
 
   if (!Array.isArray(input.videoIds) || input.videoIds.length === 0) {
@@ -119,12 +129,41 @@ export async function POST(request: Request) {
 
   for (const videoId of payload.videoIds) {
     try {
-      await reviewVideoUpload({
+      const result = await reviewVideoUpload({
         adminUserId: auth.session.userId,
         videoId,
         decision: payload.decision,
         rejectionReason: payload.rejectionReason
       });
+
+      // Fire-and-forget creator email notification
+      getRepository()
+        .getCreatorById(result.video.creatorId)
+        .then((creator) => {
+          if (!creator) return;
+          if (payload.decision === "approved") {
+            return sendVideoApprovedEmail({
+              to: creator.email,
+              creatorName: creator.displayName,
+              videoType: result.video.videoType
+            });
+          }
+          if (payload.decision === "rejected") {
+            return sendVideoRejectedEmail({
+              to: creator.email,
+              creatorName: creator.displayName,
+              videoType: result.video.videoType,
+              reason: payload.rejectionReason
+            });
+          }
+          return sendVideoRevisionRequestedEmail({
+            to: creator.email,
+            creatorName: creator.displayName,
+            videoType: result.video.videoType,
+            revisionNote: payload.rejectionReason ?? ""
+          });
+        })
+        .catch(console.error);
 
       writeAdminAuditLog({
         request,

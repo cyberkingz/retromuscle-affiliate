@@ -471,6 +471,7 @@ export type Database = {
           reviewed_at: string | null;
           reviewed_by: string | null;
           status: string;
+          superseded_by: string | null;
           video_type: string;
         };
         Insert: {
@@ -486,6 +487,7 @@ export type Database = {
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           status: string;
+          superseded_by?: string | null;
           video_type: string;
         };
         Update: {
@@ -501,6 +503,7 @@ export type Database = {
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           status?: string;
+          superseded_by?: string | null;
           video_type?: string;
         };
         Relationships: [
