@@ -2,10 +2,12 @@ import type { PropsWithChildren } from "react";
 
 import { cn } from "@/lib/cn";
 import { SiteHeader } from "@/components/layout/site-header";
+import type { SiteHeaderNotification } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SupabaseConfigWarning } from "@/components/system/supabase-config-warning";
 
 interface PageShellProps extends PropsWithChildren {
+  notification?: SiteHeaderNotification | null;
   currentPath?:
     | "/"
     | "/apply"
@@ -25,7 +27,7 @@ interface PageShellProps extends PropsWithChildren {
     | "/onboarding/approved";
 }
 
-export function PageShell({ children, currentPath }: PageShellProps) {
+export function PageShell({ children, currentPath, notification }: PageShellProps) {
   const isAuthPage = currentPath === "/apply" || currentPath === "/login";
   const isHomePage = currentPath === "/";
 
@@ -45,7 +47,7 @@ export function PageShell({ children, currentPath }: PageShellProps) {
         </div>
       </div>
 
-      <SiteHeader currentPath={currentPath} />
+      <SiteHeader currentPath={currentPath} notification={notification} />
 
       <main
         id="main-content"

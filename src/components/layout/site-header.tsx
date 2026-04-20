@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { BRAND_ASSETS } from "@/domain/constants/brand-assets";
 import { useAuth } from "@/features/auth/context/auth-context";
 
+export interface SiteHeaderNotification {
+  message: string;
+  href?: Route;
+  tone?: "amber" | "info";
+}
+
 interface SiteHeaderProps {
   currentPath?:
     | "/"
@@ -27,6 +33,7 @@ interface SiteHeaderProps {
     | "/admin/config"
     | "/about"
     | "/onboarding/approved";
+  notification?: SiteHeaderNotification | null;
 }
 
 const marketingLinks: Array<{ href: Route; label: string }> = [
@@ -46,7 +53,7 @@ const adminLinks: Array<{ href: Route; label: string }> = [
   { href: "/admin/config" as Route, label: "Tarifs" }
 ];
 
-export function SiteHeader({ currentPath }: SiteHeaderProps) {
+export function SiteHeader({ currentPath, notification }: SiteHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const auth = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -93,13 +100,33 @@ export function SiteHeader({ currentPath }: SiteHeaderProps) {
 
   return (
     <header className="sticky top-0 z-50">
+      {/* Announcement / notification bar — hidden for admin, contextual for creators, marketing for public */}
       {!isAdmin ? (
-        <div className="border-b border-secondary/60 bg-secondary text-secondary-foreground">
-          <div className="container-wide flex h-8 items-center justify-center text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
-            <span className="hidden xs:inline">PROGRAMME CRÉATEUR OUVERT • </span>
-            RÉPONSE SOUS 48H • PAIEMENTS MENSUELS
+        affiliateReady && notification ? (
+          <div className={cn(
+            "border-b",
+            notification.tone === "amber"
+              ? "border-amber-400/40 bg-amber-400 text-amber-950"
+              : "border-secondary/60 bg-secondary text-secondary-foreground"
+          )}>
+            <div className="container-wide flex h-8 items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
+              {notification.href ? (
+                <Link href={notification.href} className="hover:underline">
+                  {notification.message}
+                </Link>
+              ) : (
+                <span>{notification.message}</span>
+              )}
+            </div>
           </div>
-        </div>
+        ) : affiliateReady ? null : (
+          <div className="border-b border-secondary/60 bg-secondary text-secondary-foreground">
+            <div className="container-wide flex h-8 items-center justify-center text-[10px] uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em]">
+              <span className="hidden xs:inline">PROGRAMME CRÉATEUR OUVERT • </span>
+              RÉPONSE SOUS 48H • PAIEMENTS MENSUELS
+            </div>
+          </div>
+        )
       ) : null}
 
       <div className="border-b border-line bg-background/95 backdrop-blur">

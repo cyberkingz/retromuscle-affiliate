@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, MessageSquareDiff, Upload } from "lucide-react";
+import { AlertTriangle, Upload } from "lucide-react";
 
 import type { CreatorDashboardData } from "@/application/use-cases/get-creator-dashboard-data";
 import { CreatorKitSection } from "@/features/creator-dashboard/components/creator-kit-section";
@@ -9,6 +9,7 @@ import { ActivityFeedCard } from "@/features/creator-dashboard/components/activi
 import { WelcomePromoModal } from "@/features/creator-dashboard/components/welcome-promo-modal";
 import { formatCurrency } from "@/lib/currency";
 import { monthToLabel } from "@/lib/date";
+import { cn } from "@/lib/cn";
 
 interface CreatorDashboardPageProps {
   data: CreatorDashboardData;
@@ -33,48 +34,6 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         creatorId={data.creator.id}
         promoCode={data.creator.kitPromoCode}
       />
-
-      {/* Revision alert banner — highest priority, shown before everything else */}
-      {revisionVideos.length > 0 && (
-        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 px-5 py-4">
-          <div className="flex items-start gap-3">
-            <MessageSquareDiff className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-[15px] font-black uppercase leading-tight text-amber-800">
-                {revisionVideos.length === 1
-                  ? "1 vidéo à corriger"
-                  : `${revisionVideos.length} vidéos à corriger`}
-              </p>
-              <p className="mt-1 text-[13px] text-amber-700/80">
-                L&apos;équipe RetroMuscle a laissé des instructions précises.
-                Lis-les, corrige ta vidéo et re-uploade — elle sera comptabilisée dès validation.
-              </p>
-              {revisionVideos[0]?.rejectionReason && (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-white/70 px-3 py-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-600">
-                    Ce qu&apos;on te demande
-                  </p>
-                  <p className="mt-1 text-[13px] text-amber-800">
-                    {revisionVideos[0].rejectionReason}
-                    {revisionVideos.length > 1 && (
-                      <span className="ml-1 text-amber-600/60">
-                        (+ {revisionVideos.length - 1} autre{revisionVideos.length > 2 ? "s" : ""} — voir Uploads)
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          <Link
-            href="/uploads"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-[12px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-amber-600 active:scale-95"
-          >
-            <Upload className="h-4 w-4" />
-            Corriger et re-uploader
-          </Link>
-        </div>
-      )}
 
       {/* Welcome banner — compact 1-ligne, magenta gradient subtil, matches V2 HTML */}
       {isNewCreator && (
@@ -261,10 +220,47 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
         {/* ═══ RIGHT STACK ═══ contents on mobile, flex-col on desktop ═══ */}
         <div className="contents lg:flex lg:flex-col lg:gap-4">
 
+        {/* ── 2a. REVISION CARD ── shown instead of / above upload CTA when revisions pending ── */}
+        {revisionVideos.length > 0 && (
+          <div className="rounded-[20px] border border-amber-300/60 bg-amber-50 p-5 order-2 lg:order-none">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600/70">
+              Action requise
+            </p>
+            <p className="mt-1 font-display text-[20px] font-black uppercase leading-tight text-amber-800">
+              {revisionVideos.length === 1 ? "1 vidéo à corriger" : `${revisionVideos.length} vidéos à corriger`}
+            </p>
+            {revisionVideos[0]?.rejectionReason && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-white/60 px-3 py-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-amber-600">
+                  Ce qu&apos;on te demande
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-amber-900">
+                  {revisionVideos[0].rejectionReason}
+                  {revisionVideos.length > 1 && (
+                    <span className="mt-0.5 block text-[11px] text-amber-600/60">
+                      +{revisionVideos.length - 1} autre{revisionVideos.length > 2 ? "s" : ""} sur la page Uploads
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            <Link
+              href="/uploads"
+              className="mt-4 flex items-center justify-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-amber-600 active:scale-95"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Corriger et re-uploader
+            </Link>
+          </div>
+        )}
+
         {/* ── 2. UPLOAD CTA ── mobile order 2 ── */}
         <Link
           href="/uploads"
-          className="group rounded-[20px] bg-primary p-5 text-white transition hover:bg-primary/90 order-2 lg:order-none"
+          className={cn(
+            "group rounded-[20px] bg-primary p-5 text-white transition hover:bg-primary/90 lg:order-none",
+            revisionVideos.length > 0 ? "order-3" : "order-2"
+          )}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/55">
             Action principale

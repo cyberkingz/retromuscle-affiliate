@@ -49,8 +49,17 @@ export default async function DashboardRoute({ searchParams }: DashboardRoutePro
     month
   });
 
+  const notification =
+    data.upload.revisionCount > 0
+      ? {
+          message: `${data.upload.revisionCount} vidéo${data.upload.revisionCount > 1 ? "s" : ""} à corriger — voir les instructions`,
+          href: "/uploads" as const,
+          tone: "amber" as const,
+        }
+      : null;
+
   return (
-    <PageShell currentPath="/dashboard">
+    <PageShell currentPath="/dashboard" notification={notification}>
       <CreatorDashboardPage data={data} />
     </PageShell>
   );
