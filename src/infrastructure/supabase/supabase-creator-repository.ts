@@ -149,6 +149,7 @@ function mapVideo(row: VideoRow): VideoAsset {
     fileSizeMb: row.file_size_mb,
     status: toVideoStatus(row.status),
     rejectionReason: row.rejection_reason ?? undefined,
+    supersededBy: row.superseded_by ?? undefined,
     reviewedAt: row.reviewed_at ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
     createdAt: row.created_at
@@ -235,7 +236,7 @@ const CREATOR_COLS =
   "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id,kit_order_amount,kit_order_currency" as const;
 const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
 const VIDEO_COLS =
-  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
+  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,superseded_by,reviewed_at,reviewed_by,created_at" as const;
 const RUSH_COLS =
   "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
 const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
@@ -436,6 +437,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     resolution: VideoAsset["resolution"];
     fileSizeMb: number;
     status?: VideoStatus;
+    supersededBy?: string;
   }): Promise<VideoAsset> {
     const { data, error } = await this.client
       .from("videos")
@@ -447,13 +449,34 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         duration_seconds: input.durationSeconds,
         resolution: input.resolution,
         file_size_mb: input.fileSizeMb,
-        status: input.status ?? "pending_review"
+        status: input.status ?? "pending_review",
+        superseded_by: input.supersededBy ?? null
       })
       .select(VIDEO_COLS)
       .single();
 
     if (error) {
       throw new Error(`Failed to create video asset: ${error.message}`);
+    }
+
+    return mapVideo(data as VideoRow);
+  }
+
+  async markVideoSuperseded(input: {
+    videoId: string;
+    supersededById: string;
+  }): Promise<VideoAsset> {
+    const { data, error } = await this.client
+      .from("videos")
+      .update({ superseded_by: input.supersededById })
+      .eq("id", input.videoId)
+      .select(VIDEO_COLS)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to mark video ${input.videoId} superseded: ${error?.message ?? "missing row"}`
+      );
     }
 
     return mapVideo(data as VideoRow);

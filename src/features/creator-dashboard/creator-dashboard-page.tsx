@@ -23,7 +23,7 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
     data.upload.rejectedCount === 0;
 
   const revisionVideos = data.upload.recentVideos.filter(
-    (v) => v.status === "revision_requested"
+    (v) => v.status === "revision_requested" && !v.supersededBy
   );
 
   return (
@@ -245,7 +245,11 @@ export function CreatorDashboardPage({ data }: CreatorDashboardPageProps) {
               </div>
             )}
             <Link
-              href="/uploads"
+              href={
+                revisionVideos.length === 1 && revisionVideos[0]
+                  ? `/uploads/${revisionVideos[0].id}/revision`
+                  : "/uploads"
+              }
               className="mt-4 flex items-center justify-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-amber-600 active:scale-95"
             >
               <Upload className="h-3.5 w-3.5" />

@@ -81,6 +81,7 @@ export interface VideoAsset {
   fileSizeMb: number;
   status: VideoStatus;
   rejectionReason?: string;
+  supersededBy?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   createdAt: string;

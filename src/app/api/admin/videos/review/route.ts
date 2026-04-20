@@ -1,6 +1,10 @@
 import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
 import { getRepository } from "@/application/dependencies";
-import { sendVideoRejectedEmail, sendVideoRevisionRequestedEmail } from "@/infrastructure/email/send-emails";
+import {
+  sendVideoApprovedEmail,
+  sendVideoRejectedEmail,
+  sendVideoRevisionRequestedEmail
+} from "@/infrastructure/email/send-emails";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { writeAdminAuditLog } from "@/features/admin/server/admin-audit-log";
@@ -99,29 +103,34 @@ export async function POST(request: Request) {
       rejectionReason: payload.rejectionReason
     });
 
-    // Fire-and-forget email on rejection or revision request
-    if (payload.decision === "rejected" || payload.decision === "revision_requested") {
-      getRepository()
-        .getCreatorById(result.video.creatorId)
-        .then((creator) => {
-          if (!creator) return;
-          if (payload.decision === "rejected") {
-            return sendVideoRejectedEmail({
-              to: creator.email,
-              creatorName: creator.displayName,
-              videoType: result.video.videoType,
-              reason: payload.rejectionReason
-            });
-          }
-          return sendVideoRevisionRequestedEmail({
+    // Fire-and-forget email to creator for all review decisions
+    getRepository()
+      .getCreatorById(result.video.creatorId)
+      .then((creator) => {
+        if (!creator) return;
+        if (payload.decision === "approved") {
+          return sendVideoApprovedEmail({
+            to: creator.email,
+            creatorName: creator.displayName,
+            videoType: result.video.videoType
+          });
+        }
+        if (payload.decision === "rejected") {
+          return sendVideoRejectedEmail({
             to: creator.email,
             creatorName: creator.displayName,
             videoType: result.video.videoType,
-            revisionNote: payload.rejectionReason ?? ""
+            reason: payload.rejectionReason
           });
-        })
-        .catch(console.error);
-    }
+        }
+        return sendVideoRevisionRequestedEmail({
+          to: creator.email,
+          creatorName: creator.displayName,
+          videoType: result.video.videoType,
+          revisionNote: payload.rejectionReason ?? ""
+        });
+      })
+      .catch(console.error);
 
     writeAdminAuditLog({
       request,
@@ -140,10 +149,13 @@ export async function POST(request: Request) {
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;
   } catch (error) {
+    const isConflict =
+      error instanceof Error &&
+      (error.message.includes("already approved") || error.message.includes("Cannot change status"));
     const response = apiError(ctx, {
-      status: 500,
-      code: "INTERNAL",
-      message: "Unable to review video"
+      status: isConflict ? 409 : 500,
+      code: isConflict ? "BAD_REQUEST" : "INTERNAL",
+      message: isConflict ? error.message : "Unable to review video"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;

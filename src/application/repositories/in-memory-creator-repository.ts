@@ -87,13 +87,21 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     resolution: VideoAsset["resolution"];
     fileSizeMb: number;
     status?: VideoStatus;
+    supersededBy?: string;
   }): Promise<VideoAsset> {
     throw new Error("Uploads are not available in offline mode");
   }
 
+  async markVideoSuperseded(_input: {
+    videoId: string;
+    supersededById: string;
+  }): Promise<VideoAsset> {
+    throw new Error("Video versioning is not available in offline mode");
+  }
+
   async reviewVideoAsset(_input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<VideoAsset> {
@@ -102,7 +110,7 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async reviewVideoAndUpdateTracking(_input: {
     videoId: string;
-    status: Extract<VideoStatus, "approved" | "rejected">;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<{ video: VideoAsset; tracking: MonthlyTracking }> {
