@@ -30,6 +30,7 @@ interface UploadCardProps {
   specs: string[];
   tips: Record<string, string[]>;
   pendingReviewCount: number;
+  revisionCount: number;
   rejectedCount: number;
   recentVideos: Array<{
     id: string;
@@ -141,6 +142,7 @@ export function UploadCard({
   specs,
   tips,
   pendingReviewCount,
+  revisionCount,
   rejectedCount,
   recentVideos
 }: UploadCardProps) {
@@ -389,8 +391,12 @@ export function UploadCard({
           ))}
         </div>
         <StatusBadge
-          label={`${pendingReviewCount} à valider · ${rejectedCount} rejetées`}
-          tone={rejectedCount > 0 ? "warning" : "neutral"}
+          label={
+            revisionCount > 0
+              ? `${pendingReviewCount} à valider · ${revisionCount} à refaire`
+              : `${pendingReviewCount} à valider · ${rejectedCount} rejetées`
+          }
+          tone={revisionCount > 0 || rejectedCount > 0 ? "warning" : "neutral"}
         />
       </div>
       {!hasActiveVideoTypes ? (

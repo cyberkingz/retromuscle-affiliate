@@ -49,6 +49,7 @@ export interface CreatorDashboardData {
     specs: string[];
     tips: Record<string, string[]>;
     pendingReviewCount: number;
+    revisionCount: number;
     rejectedCount: number;
     recentVideos: Array<{
       id: string;
@@ -297,9 +298,9 @@ export async function getCreatorDashboardData(input: {
       },
       pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review")
         .length,
-      rejectedCount: uploadedVideos.filter(
-        (video) => video.status === "rejected" || video.status === "revision_requested"
-      ).length,
+      revisionCount: uploadedVideos.filter((video) => video.status === "revision_requested")
+        .length,
+      rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
       recentVideos: uploadedVideos.slice(0, 8).map((video) => ({
         id: video.id,
         videoType: video.videoType,
