@@ -8,7 +8,8 @@ import type {
   RushAsset,
   VideoAsset,
   VideoRate,
-  VideoStatus
+  VideoStatus,
+  VideoType
 } from "@/domain/types";
 
 export interface CreatorRepository {
@@ -23,6 +24,11 @@ export interface CreatorRepository {
   getVideoById(videoId: string): Promise<VideoAsset | null>;
   listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]>;
   listVideosByTracking(monthlyTrackingId: string): Promise<VideoAsset[]>;
+  listAllVideos(filters?: {
+    status?: VideoStatus;
+    creatorId?: string;
+    videoType?: VideoType;
+  }): Promise<VideoAsset[]>;
   listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]>;
   createRushAsset(input: {
     monthlyTrackingId: string;

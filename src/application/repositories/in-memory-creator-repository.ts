@@ -64,6 +64,19 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     return videos.filter((video) => video.monthlyTrackingId === monthlyTrackingId);
   }
 
+  async listAllVideos(filters?: {
+    status?: VideoStatus;
+    creatorId?: string;
+    videoType?: import("@/domain/types").VideoType;
+  }): Promise<VideoAsset[]> {
+    return videos.filter((video) => {
+      if (filters?.status && video.status !== filters.status) return false;
+      if (filters?.creatorId && video.creatorId !== filters.creatorId) return false;
+      if (filters?.videoType && video.videoType !== filters.videoType) return false;
+      return true;
+    });
+  }
+
   async listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]> {
     return rushes.filter((item) => item.monthlyTrackingId === monthlyTrackingId);
   }
