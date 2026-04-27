@@ -6,6 +6,7 @@ type TypedClient = SupabaseClient<Database>;
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
 import {
   type ApplicationStatus,
+  type BatchSubmission,
   VIDEO_TYPES,
   type Creator,
   type CreatorApplication,
@@ -30,6 +31,19 @@ type VideoRateRow = Tables<"video_rates">;
 type CreatorApplicationRow = Tables<"creator_applications">;
 type CreatorPayoutProfileRow = Tables<"creator_payout_profiles">;
 type ContractSignatureRow = Tables<"creator_contract_signatures">;
+
+type BatchRow = {
+  id: string;
+  monthly_tracking_id: string;
+  creator_id: string;
+  video_type: string;
+  status: string;
+  min_clips_required: number;
+  rejection_reason: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+};
 
 function toVideoType(value: string): VideoType {
   const normalized = value.toUpperCase();
@@ -137,7 +151,7 @@ function mapMonthlyTracking(row: MonthlyTrackingRow): MonthlyTracking {
   };
 }
 
-function mapVideo(row: VideoRow): VideoAsset {
+function mapVideo(row: VideoRow & { batch_submission_id?: string | null }): VideoAsset {
   return {
     id: row.id,
     monthlyTrackingId: row.monthly_tracking_id,
@@ -150,6 +164,22 @@ function mapVideo(row: VideoRow): VideoAsset {
     status: toVideoStatus(row.status),
     rejectionReason: row.rejection_reason ?? undefined,
     supersededBy: row.superseded_by ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    reviewedBy: row.reviewed_by ?? undefined,
+    createdAt: row.created_at,
+    batchSubmissionId: row.batch_submission_id ?? undefined
+  };
+}
+
+function mapBatch(row: BatchRow): BatchSubmission {
+  return {
+    id: row.id,
+    monthlyTrackingId: row.monthly_tracking_id,
+    creatorId: row.creator_id,
+    videoType: toVideoType(row.video_type),
+    status: toVideoStatus(row.status),
+    minClipsRequired: row.min_clips_required,
+    rejectionReason: row.rejection_reason ?? undefined,
     reviewedAt: row.reviewed_at ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
     createdAt: row.created_at
@@ -236,7 +266,7 @@ const CREATOR_COLS =
   "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id,kit_order_amount,kit_order_currency" as const;
 const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
 const VIDEO_COLS =
-  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,superseded_by,reviewed_at,reviewed_by,created_at" as const;
+  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,superseded_by,reviewed_at,reviewed_by,created_at,batch_submission_id" as const;
 const RUSH_COLS =
   "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
 const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
@@ -244,6 +274,8 @@ const APPLICATION_COLS =
   "id,user_id,status,handle,full_name,email,whatsapp,country,address,social_tiktok,social_instagram,followers_tiktok,followers_instagram,submitted_at,reviewed_at,review_notes,created_at,updated_at" as const;
 const PAYOUT_COLS =
   "creator_id,method,account_holder_name,iban,paypal_email,created_at,updated_at" as const;
+const BATCH_COLS =
+  "id,monthly_tracking_id,creator_id,video_type,status,min_clips_required,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
 
 /** Safety limit for unbounded list queries to prevent OOM at scale (H-04). */
 const LIST_LIMIT = 1000;
@@ -1212,5 +1244,128 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return mapCreator(data as CreatorRow);
+  }
+
+  // ── Batch submissions ────────────────────────────────────────────────────
+
+  async createBatchSubmission(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: import("@/domain/types").VideoType;
+    minClipsRequired: number;
+  }): Promise<import("@/domain/types").BatchSubmission> {
+    const { data, error } = await this.client
+      .from("batch_submissions")
+      .insert({
+        monthly_tracking_id: input.monthlyTrackingId,
+        creator_id: input.creatorId,
+        video_type: input.videoType,
+        min_clips_required: input.minClipsRequired,
+        status: "pending_review"
+      })
+      .select(BATCH_COLS)
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create batch submission: ${error?.message ?? "missing row"}`);
+    }
+
+    return mapBatch(data);
+  }
+
+  async getBatchSubmissionById(
+    batchId: string
+  ): Promise<import("@/domain/types").BatchSubmission | null> {
+    const { data, error } = await this.client
+      .from("batch_submissions")
+      .select(BATCH_COLS)
+      .eq("id", batchId)
+      .maybeSingle();
+
+    if (error) throw new Error(`Failed to fetch batch submission: ${error.message}`);
+    return data ? mapBatch(data) : null;
+  }
+
+  async addClipToBatch(input: {
+    batchSubmissionId: string;
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: import("@/domain/types").VideoType;
+    fileUrl: string;
+    fileSizeMb: number;
+  }): Promise<VideoAsset> {
+    const { data, error } = await this.client
+      .from("videos")
+      .insert({
+        monthly_tracking_id: input.monthlyTrackingId,
+        creator_id: input.creatorId,
+        video_type: input.videoType,
+        file_url: input.fileUrl,
+        file_size_mb: input.fileSizeMb,
+        duration_seconds: 0,
+        resolution: "1080x1920",
+        status: "uploaded",
+        batch_submission_id: input.batchSubmissionId
+      })
+      .select(VIDEO_COLS)
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to add clip to batch: ${error?.message ?? "missing row"}`);
+    }
+
+    return mapVideo(data as VideoRow & { batch_submission_id?: string | null });
+  }
+
+  async listBatchSubmissionsByStatus(
+    status: import("@/domain/types").VideoStatus
+  ): Promise<import("@/domain/types").BatchSubmission[]> {
+    const { data, error } = await this.client
+      .from("batch_submissions")
+      .select(BATCH_COLS)
+      .eq("status", status)
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
+
+    if (error) throw new Error(`Failed to list batch submissions by status: ${error.message}`);
+    return (data ?? []).map(mapBatch);
+  }
+
+  async listBatchSubmissionsByTracking(
+    monthlyTrackingId: string
+  ): Promise<import("@/domain/types").BatchSubmission[]> {
+    const { data, error } = await this.client
+      .from("batch_submissions")
+      .select(BATCH_COLS)
+      .eq("monthly_tracking_id", monthlyTrackingId)
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
+
+    if (error) {
+      throw new Error(`Failed to list batch submissions by tracking: ${error.message}`);
+    }
+    return (data ?? []).map(mapBatch);
+  }
+
+  async reviewBatchAndUpdateTracking(input: {
+    batchId: string;
+    status: Extract<import("@/domain/types").VideoStatus, "approved" | "rejected" | "revision_requested">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ batch: import("@/domain/types").BatchSubmission; tracking: MonthlyTracking }> {
+    const { data, error } = await this.client.rpc("review_batch_and_update_tracking", {
+      p_batch_id: input.batchId,
+      p_status: input.status,
+      p_rejection_reason: input.rejectionReason ?? null,
+      p_reviewed_by: input.reviewedBy
+    });
+
+    if (error) throw new Error(`Failed to review batch: ${error.message}`);
+
+    const result = data as { batch: Record<string, unknown>; tracking: Record<string, unknown> };
+    return {
+      batch: mapBatch(result.batch as BatchRow),
+      tracking: mapMonthlyTracking(result.tracking as MonthlyTrackingRow)
+    };
   }
 }

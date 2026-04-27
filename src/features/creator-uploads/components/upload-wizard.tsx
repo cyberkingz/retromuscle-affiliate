@@ -8,17 +8,20 @@ import {
   Check,
   CheckCircle2,
   Film,
+  Layers,
   Shirt,
   Sparkles,
   UploadCloud,
   Video,
+  X,
   Zap
 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { formatCurrency } from "@/lib/currency";
 import { VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
-import type { VideoAsset, VideoType } from "@/domain/types";
+import { BATCH_MIN_CLIPS, BATCH_SUPPORTED_TYPES } from "@/domain/constants/batch-rules";
+import type { UploadMode, VideoAsset, VideoType } from "@/domain/types";
 import { useAuth } from "@/features/auth/context/auth-context";
 import {
   formatFileSize,
@@ -79,9 +82,14 @@ export function UploadWizard({
 
   const [step, setStep] = useState<WizardStep>(1);
   const [activeType, setActiveType] = useState<VideoType | null>(null);
+  const [uploadMode, setUploadMode] = useState<UploadMode>("single");
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  // Batch-specific state
+  const [batchFiles, setBatchFiles] = useState<File[]>([]);
+  const [batchProgress, setBatchProgress] = useState<number[]>([]);
+  const [batchClipCount, setBatchClipCount] = useState(0);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
@@ -100,8 +108,12 @@ export function UploadWizard({
 function resetWizard() {
     setStep(1);
     setActiveType(null);
+    setUploadMode("single");
     setUploading(false);
     setUploadProgress(0);
+    setBatchFiles([]);
+    setBatchProgress([]);
+    setBatchClipCount(0);
     setWarningMessage(null);
     setErrorMessage(null);
   }
@@ -235,6 +247,112 @@ function resetWizard() {
     }
   }
 
+  async function handleBatchFiles(files: File[]) {
+    if (!auth.user) { router.replace("/login"); return; }
+    if (!activeType) { setErrorMessage("Sélectionne un type de contenu."); return; }
+
+    const minClips = BATCH_MIN_CLIPS[activeType] ?? 4;
+    if (files.length < minClips) {
+      setErrorMessage(`Minimum ${minClips} clips requis pour ce type.`);
+      return;
+    }
+
+    setUploading(true);
+    setWarningMessage(null);
+    setErrorMessage(null);
+    setBatchProgress(files.map(() => 0));
+
+    try {
+      const collectedKeys: string[] = [];
+      const collectedSizes: number[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const filename = sanitizeFilename(file.name);
+
+        const signed = await fetch("/api/creator/uploads/video/signed-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            monthlyTrackingId: resolvedTrackingId,
+            videoType: activeType,
+            filename
+          })
+        });
+
+        const signedPayload = (await signed.json().catch(() => null)) as {
+          key?: string;
+          signedUrl?: string;
+          monthlyTrackingId?: string;
+          message?: string;
+        } | null;
+
+        if (!signed.ok || !signedPayload?.key || !signedPayload.signedUrl) {
+          throw new Error(signedPayload?.message ?? `Impossible de préparer l'upload du clip ${i + 1}.`);
+        }
+
+        if (signedPayload.monthlyTrackingId) {
+          setResolvedTrackingId(signedPayload.monthlyTrackingId);
+        }
+
+        const signedUrl = signedPayload.signedUrl;
+        const uploadForm = new FormData();
+        uploadForm.append("cacheControl", "3600");
+        uploadForm.append("", file);
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", signedUrl);
+          xhr.setRequestHeader("x-upsert", "false");
+          xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable && event.total > 0) {
+              const pct = Math.round((event.loaded / event.total) * 100);
+              setBatchProgress((prev) => {
+                const next = [...prev];
+                next[i] = pct;
+                return next;
+              });
+            }
+          });
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Clip ${i + 1} : upload impossible.`));
+          });
+          xhr.addEventListener("error", () => reject(new Error(`Clip ${i + 1} : upload impossible.`)));
+          xhr.send(uploadForm);
+        });
+
+        collectedKeys.push(signedPayload.key);
+        collectedSizes.push(Math.max(1, Math.ceil(file.size / (1024 * 1024))));
+        setBatchClipCount(i + 1);
+      }
+
+      const response = await fetch("/api/creator/uploads/video/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthlyTrackingId: resolvedTrackingId,
+          videoType: activeType,
+          clipKeys: collectedKeys,
+          clipSizesMb: collectedSizes
+        })
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(data?.message ?? "Impossible d'enregistrer le lot.");
+      }
+
+      setStep(4);
+      router.refresh();
+    } catch (caught) {
+      setErrorMessage(caught instanceof Error ? caught.message : "Upload impossible.");
+    } finally {
+      setUploading(false);
+      setDragActive(false);
+    }
+  }
+
   /* ── No active types fallback ─────────────────────────────────────────── */
   if (!hasActiveVideoTypes) {
     return (
@@ -259,7 +377,15 @@ function resetWizard() {
           <StepChooseType
             ratesByType={ratesByType}
             activeType={activeType}
-            onSelect={(type) => setActiveType(type)}
+            uploadMode={uploadMode}
+            onSelect={(type) => {
+              setActiveType(type);
+              // Reset mode if new type doesn't support batch
+              if (type && !BATCH_SUPPORTED_TYPES.includes(type)) {
+                setUploadMode("single");
+              }
+            }}
+            onModeChange={setUploadMode}
             onContinue={() => setStep(2)}
           />
         )}
@@ -274,7 +400,7 @@ function resetWizard() {
           />
         )}
 
-        {step === 3 && activeType && activeRate && (
+        {step === 3 && activeType && activeRate && uploadMode === "single" && (
           <StepUpload
             activeType={activeType}
             rate={activeRate.ratePerVideo}
@@ -291,10 +417,30 @@ function resetWizard() {
           />
         )}
 
+        {step === 3 && activeType && activeRate && uploadMode === "batch" && (
+          <StepBatchUpload
+            activeType={activeType}
+            rate={activeRate.ratePerVideo}
+            uploading={uploading}
+            batchFiles={batchFiles}
+            batchProgress={batchProgress}
+            batchClipCount={batchClipCount}
+            warningMessage={warningMessage}
+            errorMessage={errorMessage}
+            onBack={() => {
+              if (!uploading) setStep(2);
+            }}
+            onFilesChange={setBatchFiles}
+            onUpload={(files) => void handleBatchFiles(files)}
+          />
+        )}
+
         {step === 4 && activeType && activeRate && (
           <StepSuccess
             activeType={activeType}
             rate={activeRate.ratePerVideo}
+            uploadMode={uploadMode}
+            clipCount={batchFiles.length}
             onUploadAnother={resetWizard}
           />
         )}
@@ -355,14 +501,21 @@ function WizardHeader({ step }: { step: WizardStep }) {
 function StepChooseType({
   ratesByType,
   activeType,
+  uploadMode,
   onSelect,
+  onModeChange,
   onContinue
 }: {
   ratesByType: UploadWizardProps["ratesByType"];
   activeType: VideoType | null;
+  uploadMode: UploadMode;
   onSelect: (type: VideoType) => void;
+  onModeChange: (mode: UploadMode) => void;
   onContinue: () => void;
 }) {
+  const showModeToggle = activeType !== null && BATCH_SUPPORTED_TYPES.includes(activeType);
+  const minClips = activeType ? (BATCH_MIN_CLIPS[activeType] ?? 4) : 4;
+
   return (
     <div className="space-y-6">
       <div>
@@ -391,7 +544,6 @@ function StepChooseType({
               )}
               aria-pressed={isActive}
             >
-              {/* Check badge when active */}
               {isActive && (
                 <span className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
@@ -402,9 +554,7 @@ function StepChooseType({
                 <div
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
-                    isActive
-                      ? "bg-primary text-white"
-                      : "bg-secondary/10 text-secondary"
+                    isActive ? "bg-primary text-white" : "bg-secondary/10 text-secondary"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -431,6 +581,59 @@ function StepChooseType({
           );
         })}
       </div>
+
+      {/* Mode toggle — only shown for batch-eligible types */}
+      {showModeToggle && (
+        <div className="rounded-[18px] border border-line bg-frost/60 p-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/55">
+            Mode d&apos;upload
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onModeChange("single")}
+              className={cn(
+                "flex items-center gap-2.5 rounded-[14px] border-2 px-4 py-3 text-left text-[13px] font-semibold transition-all",
+                uploadMode === "single"
+                  ? "border-primary bg-primary/[0.06] text-primary"
+                  : "border-line bg-white text-foreground/70 hover:border-foreground/30"
+              )}
+              aria-pressed={uploadMode === "single"}
+            >
+              <UploadCloud className="h-4 w-4 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold">Vidéo montée</p>
+                <p className="text-[11px] font-normal text-foreground/55">1 fichier final</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange("batch")}
+              className={cn(
+                "flex items-center gap-2.5 rounded-[14px] border-2 px-4 py-3 text-left text-[13px] font-semibold transition-all",
+                uploadMode === "batch"
+                  ? "border-secondary bg-secondary/[0.06] text-secondary"
+                  : "border-line bg-white text-foreground/70 hover:border-foreground/30"
+              )}
+              aria-pressed={uploadMode === "batch"}
+            >
+              <Layers className="h-4 w-4 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold">Lot de clips</p>
+                <p className="text-[11px] font-normal text-foreground/55">
+                  min. {minClips} scènes brutes
+                </p>
+              </div>
+            </button>
+          </div>
+          {uploadMode === "batch" && (
+            <p className="mt-2 text-[11px] text-foreground/50">
+              Envoie tes scènes brutes sans montage — compte comme{" "}
+              <span className="font-semibold text-secondary">1 vidéo</span> dans ton paiement.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-end pt-2">
         <button
@@ -774,18 +977,322 @@ function StepUpload({
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
+/* Step 3b — Batch upload                                                     */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function StepBatchUpload({
+  activeType,
+  rate,
+  uploading,
+  batchFiles,
+  batchProgress,
+  batchClipCount,
+  warningMessage,
+  errorMessage,
+  onBack,
+  onFilesChange,
+  onUpload
+}: {
+  activeType: VideoType;
+  rate: number;
+  uploading: boolean;
+  batchFiles: File[];
+  batchProgress: number[];
+  batchClipCount: number;
+  warningMessage: string | null;
+  errorMessage: string | null;
+  onBack: () => void;
+  onFilesChange: (files: File[]) => void;
+  onUpload: (files: File[]) => void;
+}) {
+  const Icon = TYPE_ICON[activeType] ?? Film;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const minClips = BATCH_MIN_CLIPS[activeType] ?? 4;
+  const canSubmit = batchFiles.length >= minClips && !uploading;
+  const overallProgress =
+    batchProgress.length > 0
+      ? Math.round(batchProgress.reduce((s, p) => s + p, 0) / batchProgress.length)
+      : 0;
+
+  function addFiles(incoming: FileList | null) {
+    if (!incoming) return;
+    const next = [...batchFiles];
+    for (const f of Array.from(incoming)) {
+      if (!next.find((x) => x.name === f.name && x.size === f.size)) next.push(f);
+    }
+    onFilesChange(next);
+  }
+
+  function removeFile(index: number) {
+    onFilesChange(batchFiles.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Recap bar */}
+      <div className="flex items-center gap-3 rounded-[18px] border border-secondary/20 bg-secondary/[0.05] px-4 py-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-white">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
+            Lot · {VIDEO_TYPE_LABELS[activeType]}
+          </p>
+          <p className="truncate text-[12px] text-foreground/60">
+            {formatCurrency(rate)} pour le lot validé · min. {minClips} clips
+          </p>
+        </div>
+        {/* Clip count badge */}
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl text-center transition-colors",
+            batchFiles.length >= minClips
+              ? "bg-mint/15 text-mint"
+              : batchFiles.length > 0
+                ? "bg-amber-100 text-amber-700"
+                : "bg-foreground/8 text-foreground/40"
+          )}
+          aria-label={`${batchFiles.length} clips sur ${minClips} minimum`}
+        >
+          <span className="font-display text-lg font-black leading-none">{batchFiles.length}</span>
+          <span className="text-[9px] font-bold leading-none">/{minClips}</span>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-2xl font-black uppercase leading-tight text-secondary sm:text-[28px]">
+          Ajoute tes clips
+        </h2>
+        <p className="mt-1 text-[13px] text-foreground/60">
+          Sélectionne {minClips} scènes brutes minimum. Chaque clip est uploadé séparément — le lot
+          compte comme 1 vidéo.
+        </p>
+      </div>
+
+      {/* Hidden multi-file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        multiple
+        className="sr-only"
+        onChange={(e) => {
+          addFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
+
+      {/* Drop zone / add button */}
+      {!uploading && (
+        <div
+          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-foreground/25 bg-frost/60 px-4 py-8 text-center transition-colors hover:border-secondary/50 hover:bg-secondary/[0.04]"
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          aria-label="Ajouter des clips vidéo"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            addFiles(e.dataTransfer.files);
+          }}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+            <Layers className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-display text-lg font-black uppercase text-secondary">
+              Glisse tes clips ici
+            </p>
+            <p className="mt-0.5 text-[12px] text-foreground/60">
+              ou clique pour sélectionner plusieurs fichiers
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-[22px] bg-secondary px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_0_0_hsl(var(--foreground)/0.12)]">
+            <Layers className="h-3.5 w-3.5" />
+            Ajouter des clips
+          </span>
+          <p className="text-[11px] text-foreground/40">
+            MP4 / MOV · max 500 MB par clip · sélection multiple OK
+          </p>
+        </div>
+      )}
+
+      {/* Clip list */}
+      {batchFiles.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/55">
+            Clips sélectionnés ({batchFiles.length})
+          </p>
+          <ul className="space-y-2" aria-label="Liste des clips">
+            {batchFiles.map((file, i) => {
+              const progress = uploading ? (batchProgress[i] ?? 0) : null;
+              const isDone = progress === 100;
+              return (
+                <li
+                  key={`${file.name}-${file.size}-${i}`}
+                  className="flex items-center gap-3 rounded-[14px] border border-line bg-white px-3 py-2.5"
+                >
+                  <div
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black",
+                      isDone
+                        ? "bg-mint text-white"
+                        : uploading
+                          ? "bg-secondary/10 text-secondary"
+                          : "bg-foreground/8 text-foreground/50"
+                    )}
+                    aria-hidden
+                  >
+                    {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : i + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-semibold text-foreground/80">
+                      {file.name}
+                    </p>
+                    <p className="text-[11px] text-foreground/50">{formatFileSize(file.size)}</p>
+                    {uploading && progress !== null && (
+                      <div
+                        className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/10"
+                        role="progressbar"
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Clip ${i + 1} : ${progress}%`}
+                      >
+                        <div
+                          className="h-full bg-gradient-to-r from-secondary to-primary transition-[width]"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {!uploading && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-foreground/40 transition hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Retirer ${file.name}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Overall progress when uploading */}
+      {uploading && (
+        <div className="rounded-[16px] border border-secondary/20 bg-secondary/[0.05] p-4">
+          <div className="flex items-center justify-between text-[12px]">
+            <span className="font-semibold text-secondary">
+              Upload en cours ({batchClipCount}/{batchFiles.length})
+            </span>
+            <span className="font-bold text-secondary">{overallProgress}%</span>
+          </div>
+          <div
+            className="mt-2 h-2 overflow-hidden rounded-full bg-foreground/10"
+            role="progressbar"
+            aria-valuenow={overallProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="h-full bg-gradient-to-r from-secondary to-primary transition-[width]"
+              style={{ width: `${overallProgress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-center text-[11px] text-foreground/50">
+            Ne ferme pas cette page pendant l&apos;upload
+          </p>
+        </div>
+      )}
+
+      {warningMessage && (
+        <div
+          className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-50 px-4 py-3 text-[13px] text-amber-900"
+          role="alert"
+        >
+          <span className="mt-0.5 shrink-0 text-lg leading-none" aria-hidden="true">⚠</span>
+          <span>{warningMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div
+          className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-[13px] text-destructive"
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      )}
+
+      {/* Nav */}
+      <div className="flex items-center justify-between pt-2">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={uploading}
+          className="inline-flex items-center gap-1.5 rounded-[22px] border border-line px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-foreground/70 transition hover:bg-frost active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </button>
+        <button
+          type="button"
+          onClick={() => onUpload(batchFiles)}
+          disabled={!canSubmit}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-[22px] px-6 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white transition active:scale-95",
+            canSubmit
+              ? "bg-secondary hover:bg-secondary/90"
+              : "cursor-not-allowed bg-foreground/20 text-white/60"
+          )}
+        >
+          {uploading ? (
+            <>
+              <UploadCloud className="h-4 w-4 animate-pulse" />
+              Upload...
+            </>
+          ) : (
+            <>
+              <Layers className="h-4 w-4" />
+              Envoyer le lot
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
 /* Step 4 — Success                                                           */
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function StepSuccess({
   activeType,
   rate,
+  uploadMode,
+  clipCount,
   onUploadAnother
 }: {
   activeType: VideoType;
   rate: number;
+  uploadMode: UploadMode;
+  clipCount: number;
   onUploadAnother: () => void;
 }) {
+  const isBatch = uploadMode === "batch";
+
   return (
     <div className="space-y-6 text-center">
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-mint/15">
@@ -796,11 +1303,22 @@ function StepSuccess({
 
       <div>
         <h2 className="font-display text-3xl font-black uppercase leading-tight text-secondary sm:text-[32px]">
-          Vidéo envoyée&nbsp;!
+          {isBatch ? "Lot envoyé\u00a0!" : "Vidéo envoyée\u00a0!"}
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-[13px] text-foreground/60">
-          Ton upload <span className="font-semibold text-secondary">{VIDEO_TYPE_LABELS[activeType]}</span>{" "}
-          est en attente de validation. Réponse sous 48h.
+          {isBatch ? (
+            <>
+              Tes{" "}
+              <span className="font-semibold text-secondary">{clipCount} clips</span>{" "}
+              {VIDEO_TYPE_LABELS[activeType]} sont en attente de validation du lot. Réponse sous 48h.
+            </>
+          ) : (
+            <>
+              Ton upload{" "}
+              <span className="font-semibold text-secondary">{VIDEO_TYPE_LABELS[activeType]}</span>{" "}
+              est en attente de validation. Réponse sous 48h.
+            </>
+          )}
         </p>
       </div>
 
@@ -814,9 +1332,19 @@ function StepSuccess({
             {VIDEO_TYPE_LABELS[activeType]}
           </span>
         </div>
+        {isBatch && (
+          <div className="flex items-center justify-between gap-3 border-b border-line py-3">
+            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/55">
+              Clips envoyés
+            </span>
+            <span className="font-display text-sm font-black uppercase text-secondary">
+              {clipCount}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 pt-3">
           <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground/55">
-            Gain si validée
+            Gain si validé{isBatch ? "" : "e"}
           </span>
           <span className="font-display text-sm font-black uppercase text-primary">
             {formatCurrency(rate)}
@@ -831,7 +1359,7 @@ function StepSuccess({
           className="inline-flex w-full items-center justify-center gap-2 rounded-[22px] bg-primary px-6 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white transition hover:bg-primary/90 active:scale-95 sm:w-auto"
         >
           <UploadCloud className="h-4 w-4" />
-          Uploader une autre vidéo
+          {isBatch ? "Uploader un autre lot" : "Uploader une autre vidéo"}
         </button>
       </div>
     </div>

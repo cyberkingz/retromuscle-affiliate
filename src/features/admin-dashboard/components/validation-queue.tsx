@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
+  Layers,
   MessageSquareDiff,
   MoreHorizontal,
   Play,
@@ -32,6 +33,9 @@ interface ValidationQueueProps {
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
+    /** Defined for batch submissions; absent for single-video rows. */
+    batchId?: string;
+    clipCount?: number;
   }>;
 }
 
@@ -168,6 +172,30 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
     (id: string, decision: "approved" | "rejected" | "revision_requested", reason?: string | null) =>
       reviewMany([id], decision, reason),
     [reviewMany]
+  );
+
+  const reviewBatchSubmission = useCallback(
+    async (batchId: string, decision: "approved" | "rejected" | "revision_requested", reason?: string | null) => {
+      if (!canAct) { router.replace("/login"); return; }
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/videos/review-batch-submission", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchId, decision, rejectionReason: decision !== "approved" ? (reason ?? null) : null }),
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const d = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(d?.message ?? "Impossible de mettre à jour le lot.");
+        }
+        resetPanel();
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Impossible de mettre à jour le lot.");
+      }
+    },
+    [canAct, router] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const toggleSelect = (id: string) => setSelectedIds((prev) => {
@@ -314,46 +342,81 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
           ) : (
             <div>
               {pageRows.map((row) => {
-                const isRejecting = rejectingId === row.videoId;
-                const isRevising  = revisingId  === row.videoId;
-                const isMoreOpen  = moreOpenId  === row.videoId;
-                const isSelected  = selectedIds.has(row.videoId);
+                const isBatch     = row.batchId !== undefined;
+                const reviewId    = row.videoId; // used as panel key for both types
+                const isRejecting = rejectingId === reviewId;
+                const isRevising  = revisingId  === reviewId;
+                const isMoreOpen  = moreOpenId  === reviewId;
+                // Batch rows are excluded from bulk selection
+                const isSelected  = !isBatch && selectedIds.has(reviewId);
+
+                const approve = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "approved")
+                    : void reviewOne(reviewId, "approved");
+
+                const confirmRevision = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "revision_requested", revisionNote)
+                    : void reviewOne(reviewId, "revision_requested", revisionNote);
+
+                const confirmReject = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "rejected", rejectionReason)
+                    : void reviewOne(reviewId, "rejected", rejectionReason);
 
                 return (
-                  <div key={row.videoId} className={cn(
+                  <div key={reviewId} className={cn(
                     "border-b border-line/40 last:border-0 transition-colors",
-                    isSelected && "bg-secondary/5"
+                    isSelected && "bg-secondary/5",
+                    isBatch && "bg-secondary/[0.02]"
                   )}>
                     {/* ── Main row ── */}
                     <div className="flex items-center gap-3 py-2.5 px-1">
 
-                      {/* Checkbox */}
-                      <input type="checkbox" className="h-3.5 w-3.5 shrink-0 accent-secondary"
-                        checked={isSelected} onChange={() => toggleSelect(row.videoId)}
-                        aria-label={`Sélectionner ${row.creatorHandle}`} />
+                      {/* Checkbox — disabled for batch rows */}
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 accent-secondary disabled:opacity-30"
+                        checked={isSelected}
+                        disabled={isBatch}
+                        onChange={() => { if (!isBatch) toggleSelect(reviewId); }}
+                        aria-label={isBatch ? "Lot — sélection individuelle non disponible" : `Sélectionner ${row.creatorHandle}`}
+                      />
 
-                      {/* Creator + type */}
+                      {/* Creator + type + batch badge */}
                       <div className="flex min-w-0 flex-1 items-center gap-2">
                         <span className="truncate text-sm font-bold text-foreground/85">
                           @{row.creatorHandle}
                         </span>
                         <TypePill type={row.videoType} />
+                        {isBatch && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-secondary/30 bg-secondary/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-widest text-secondary">
+                            <Layers className="h-2.5 w-2.5" />
+                            {row.clipCount ?? "?"} clips
+                          </span>
+                        )}
                         {/* Meta — visible desktop only */}
                         <span className="hidden shrink-0 sm:inline text-[11px] text-foreground/35">
-                          {formatDate(row.uploadedAt)} · {row.durationSeconds}s · {row.resolution}
+                          {formatDate(row.uploadedAt)}
+                          {isBatch
+                            ? ` · lot de ${row.clipCount ?? "?"} clips`
+                            : ` · ${row.durationSeconds}s · ${row.resolution}`}
                         </span>
                       </div>
 
                       {/* ── Desktop actions (≥sm) ── */}
                       <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-                        {/* Preview */}
-                        <ActionIcon title="Voir la vidéo" disabled={!canAct}
-                          onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
-                          <Play className="h-3.5 w-3.5" />
-                        </ActionIcon>
+                        {/* Preview — single video only */}
+                        {!isBatch && (
+                          <ActionIcon title="Voir la vidéo" disabled={!canAct}
+                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
+                            <Play className="h-3.5 w-3.5" />
+                          </ActionIcon>
+                        )}
                         {/* Approve */}
                         <button type="button" disabled={!canAct}
-                          onClick={() => void reviewOne(row.videoId, "approved")}
+                          onClick={approve}
                           className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-30">
                           <ThumbsUp className="h-3.5 w-3.5" />
                           Valider
@@ -362,32 +425,30 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         <ActionIcon title="Demander une révision" disabled={!canAct}
                           className={cn(isRevising && "border-amber-400 bg-amber-100 text-amber-700")}
                           onClick={() => { setError(null); setRejectingId(null); setRejectionReason(""); setMoreOpenId(null);
-                            setRevisingId((c) => c === row.videoId ? null : row.videoId); setRevisionNote(""); }}>
+                            setRevisingId((c) => c === reviewId ? null : reviewId); setRevisionNote(""); }}>
                           <MessageSquareDiff className="h-3.5 w-3.5 text-amber-500" />
                         </ActionIcon>
                         {/* Reject */}
                         <ActionIcon title="Rejeter" disabled={!canAct}
                           className={cn(isRejecting && "border-destructive/40 bg-destructive/10 text-destructive")}
                           onClick={() => { setError(null); setRevisingId(null); setRevisionNote(""); setMoreOpenId(null);
-                            setRejectingId((c) => c === row.videoId ? null : row.videoId); setRejectionReason(""); }}>
+                            setRejectingId((c) => c === reviewId ? null : reviewId); setRejectionReason(""); }}>
                           <ThumbsDown className="h-3.5 w-3.5 text-destructive/60" />
                         </ActionIcon>
                       </div>
 
                       {/* ── Mobile actions (<sm) ── */}
                       <div className="flex sm:hidden items-center gap-2 shrink-0">
-                        {/* Primary CTA */}
                         <button type="button" disabled={!canAct}
-                          onClick={() => void reviewOne(row.videoId, "approved")}
+                          onClick={approve}
                           className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 active:scale-95 disabled:opacity-30">
                           <ThumbsUp className="h-3.5 w-3.5" />
                           Valider
                         </button>
-                        {/* Overflow toggle */}
                         <button type="button"
                           aria-label="Plus d'actions"
                           aria-expanded={isMoreOpen}
-                          onClick={() => { setMoreOpenId((c) => c === row.videoId ? null : row.videoId); }}
+                          onClick={() => { setMoreOpenId((c) => c === reviewId ? null : reviewId); }}
                           className={cn(
                             "flex h-9 w-9 items-center justify-center rounded-xl border transition",
                             isMoreOpen
@@ -401,26 +462,31 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
                     {/* Mobile meta row */}
                     <div className="flex sm:hidden items-center gap-2 px-6 pb-2 text-[10px] text-foreground/35">
-                      {formatDate(row.uploadedAt)} · {row.durationSeconds}s · {row.resolution}
+                      {formatDate(row.uploadedAt)}
+                      {isBatch
+                        ? ` · lot de ${row.clipCount ?? "?"} clips`
+                        : ` · ${row.durationSeconds}s · ${row.resolution}`}
                     </div>
 
                     {/* ── Mobile overflow strip ── */}
                     {isMoreOpen && (
                       <div className="flex sm:hidden items-center gap-2 px-1 pb-3">
-                        <button type="button" disabled={!canAct}
-                          onClick={() => { setMoreOpenId(null); videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds }); }}
-                          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-white text-xs text-foreground/60 hover:bg-frost disabled:opacity-30">
-                          <Play className="h-3.5 w-3.5" /> Voir
-                        </button>
+                        {!isBatch && (
+                          <button type="button" disabled={!canAct}
+                            onClick={() => { setMoreOpenId(null); videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds }); }}
+                            className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-white text-xs text-foreground/60 hover:bg-frost disabled:opacity-30">
+                            <Play className="h-3.5 w-3.5" /> Voir
+                          </button>
+                        )}
                         <button type="button" disabled={!canAct}
                           onClick={() => { setMoreOpenId(null); setError(null); setRejectingId(null); setRejectionReason("");
-                            setRevisingId((c) => c === row.videoId ? null : row.videoId); setRevisionNote(""); }}
+                            setRevisingId((c) => c === reviewId ? null : reviewId); setRevisionNote(""); }}
                           className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-30">
                           <MessageSquareDiff className="h-3.5 w-3.5" /> Révision
                         </button>
                         <button type="button" disabled={!canAct}
                           onClick={() => { setMoreOpenId(null); setError(null); setRevisingId(null); setRevisionNote("");
-                            setRejectingId((c) => c === row.videoId ? null : row.videoId); setRejectionReason(""); }}
+                            setRejectingId((c) => c === reviewId ? null : reviewId); setRejectionReason(""); }}
                           className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-30">
                           <ThumbsDown className="h-3.5 w-3.5" /> Rejeter
                         </button>
@@ -432,7 +498,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                       <div className="mx-1 mb-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-700">
-                            Demande de modification
+                            {isBatch ? "Demande de révision du lot" : "Demande de modification"}
                           </p>
                           <button type="button" onClick={() => { setRevisingId(null); setRevisionNote(""); }}
                             className="text-amber-500 hover:text-amber-700">
@@ -447,7 +513,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           className="mt-2 border-amber-200 bg-white focus:border-amber-400 focus-visible:ring-amber-300/50 focus-visible:ring-offset-0" rows={3} autoFocus />
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" className="bg-amber-500 text-white hover:bg-amber-600"
-                            onClick={() => void reviewOne(row.videoId, "revision_requested", revisionNote)}
+                            onClick={confirmRevision}
                             disabled={!canAct || !revisionNote.trim()}>
                             Envoyer la demande
                           </Button>
@@ -464,7 +530,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                       <div className="mx-1 mb-3 rounded-2xl border border-destructive/15 bg-destructive/5 p-4">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-destructive/70">
-                            Raison du rejet
+                            {isBatch ? "Raison du rejet du lot" : "Raison du rejet"}
                           </p>
                           <button type="button" onClick={() => { setRejectingId(null); setRejectionReason(""); }}
                             className="text-destructive/40 hover:text-destructive/70">
@@ -476,7 +542,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           className="mt-2" rows={3} autoFocus />
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" variant="destructive"
-                            onClick={() => void reviewOne(row.videoId, "rejected", rejectionReason)}
+                            onClick={confirmReject}
                             disabled={!canAct || !rejectionReason.trim()}>
                             Confirmer le rejet
                           </Button>

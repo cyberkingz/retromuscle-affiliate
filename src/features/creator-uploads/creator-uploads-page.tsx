@@ -12,6 +12,7 @@ import { videoStatusTone } from "@/lib/status-tone";
 import { monthToLabel, toShortDate } from "@/lib/date";
 import { VIDEO_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/labels";
 import type { VideoStatus } from "@/domain/types";
+import { Layers } from "lucide-react";
 
 interface CreatorUploadsPageProps {
   data: CreatorDashboardData;
@@ -253,6 +254,128 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
           </div>
         )}
       </CardSection>
+
+      {/* Batch submissions */}
+      {data.upload.recentBatches.length > 0 && (
+        <CardSection className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.15em] text-foreground/70">
+              Lots envoyés — {monthToLabel(data.month)}
+            </p>
+            <span className="rounded-full bg-foreground/8 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-foreground/50">
+              {data.upload.recentBatches.length}
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {data.upload.recentBatches.map((batch) => {
+              const statusTone = videoStatusTone(batch.status);
+              const statusLabel =
+                VIDEO_STATUS_LABELS[batch.status as VideoStatus] ?? batch.status;
+
+              return (
+                <div
+                  key={batch.id}
+                  className={
+                    batch.status === "rejected"
+                      ? "overflow-hidden rounded-2xl border border-destructive/25 bg-destructive/[0.03]"
+                      : batch.status === "revision_requested"
+                        ? "overflow-hidden rounded-2xl border border-amber-300/60 bg-amber-50/60"
+                        : batch.status === "approved"
+                          ? "overflow-hidden rounded-2xl border border-mint/20 bg-mint/[0.03]"
+                          : "overflow-hidden rounded-2xl border border-line bg-white/80"
+                  }
+                >
+                  <div
+                    className={
+                      batch.status === "rejected"
+                        ? "h-0.5 w-full bg-destructive/40"
+                        : batch.status === "revision_requested"
+                          ? "h-0.5 w-full bg-amber-400/60"
+                          : batch.status === "approved"
+                            ? "h-0.5 w-full bg-mint/50"
+                            : "h-0.5 w-full bg-foreground/8"
+                    }
+                  />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={
+                            "mt-px h-2 w-2 shrink-0 rounded-full " +
+                            (batch.status === "approved"
+                              ? "bg-mint"
+                              : batch.status === "rejected"
+                                ? "bg-destructive"
+                                : batch.status === "revision_requested"
+                                  ? "bg-amber-500"
+                                  : "bg-foreground/25")
+                          }
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate font-semibold text-[14px] leading-tight text-foreground">
+                              {VIDEO_TYPE_LABELS[batch.videoType]}
+                            </p>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-secondary/30 bg-secondary/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-widest text-secondary">
+                              <Layers className="h-2.5 w-2.5" />
+                              {batch.minClipsRequired} clips
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-foreground/45">
+                            {toShortDate(batch.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <StatusBadge label={statusLabel} tone={statusTone} />
+                    </div>
+
+                    {batch.status === "approved" && (
+                      <p className="mt-3 text-[12px] text-mint/90 font-medium">
+                        ✓ Lot validé et comptabilisé dans tes gains
+                      </p>
+                    )}
+
+                    {batch.status === "pending_review" && (
+                      <p className="mt-3 text-[12px] text-foreground/50">
+                        Lot en attente de validation — généralement sous 48h.
+                      </p>
+                    )}
+
+                    {batch.status === "revision_requested" && batch.rejectionReason && (
+                      <div className="mt-3 rounded-xl border border-amber-200/80 bg-white/50 px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-700/70">
+                          Modifications demandées
+                        </p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-amber-800">
+                          {batch.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+
+                    {batch.status === "revision_requested" && !batch.rejectionReason && (
+                      <p className="mt-3 text-[12px] text-amber-700">
+                        Des modifications sont demandées pour ce lot.
+                      </p>
+                    )}
+
+                    {batch.status === "rejected" && batch.rejectionReason && (
+                      <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-destructive/60">
+                          Raison du rejet
+                        </p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-destructive">
+                          {batch.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardSection>
+      )}
     </div>
   );
 }
