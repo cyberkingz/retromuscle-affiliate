@@ -100,7 +100,7 @@ describe("reviewVideoUpload", () => {
 
     await expect(
       reviewVideoUpload({ adminUserId: ADMIN_ID, videoId: VIDEO_ID, decision: "rejected" })
-    ).rejects.toThrow("Cannot reject an already approved video");
+    ).rejects.toThrow("Cannot change status of an already approved video");
   });
 
   it("does NOT check getVideoById when approving (only rejection needs the guard)", async () => {
