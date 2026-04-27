@@ -13,11 +13,12 @@ import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
+import { parseReviewDecision } from "../_parse-review-decision";
 
 interface ReviewBatchPayload {
   batchId: string;
   decision: "approved" | "rejected" | "revision_requested";
-  rejectionReason?: string | null;
+  rejectionReason: string | null;
 }
 
 function parsePayload(body: unknown): ReviewBatchPayload {
@@ -27,23 +28,12 @@ function parsePayload(body: unknown): ReviewBatchPayload {
 
   const input = body as Record<string, unknown>;
   const batchId = typeof input.batchId === "string" ? input.batchId.trim() : "";
-  const decision = input.decision;
-  const rejectionReason =
-    typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
   if (!batchId || !isUuid(batchId)) {
     throw new Error("Invalid batchId");
   }
-  if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
-    throw new Error("Invalid decision");
-  }
-  if ((decision === "revision_requested" || decision === "rejected") && !rejectionReason) {
-    throw new Error("rejectionReason is required when rejecting or requesting a revision");
-  }
-  if (rejectionReason && rejectionReason.length > 2000) {
-    throw new Error("rejectionReason is too long");
-  }
 
+  const { decision, rejectionReason } = parseReviewDecision(input);
   return { batchId, decision, rejectionReason };
 }
 

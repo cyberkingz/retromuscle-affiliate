@@ -1,7 +1,7 @@
 import { getRepository } from "@/application/dependencies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { BATCH_MIN_CLIPS, BATCH_SUPPORTED_TYPES } from "@/domain/constants/batch-rules";
-import { VIDEO_TYPES, type BatchSubmission, type VideoType } from "@/domain/types";
+import { BATCH_MIN_CLIPS } from "@/domain/constants/batch-rules";
+import type { BatchSubmission, VideoType } from "@/domain/types";
 import { resolveUploadTrackingForUser } from "./resolve-upload-tracking";
 
 export async function recordBatchSubmission(input: {
@@ -11,14 +11,6 @@ export async function recordBatchSubmission(input: {
   clipKeys: string[];
   clipSizesMb: number[];
 }): Promise<BatchSubmission> {
-  if (!VIDEO_TYPES.includes(input.videoType)) {
-    throw new Error(`Invalid videoType: ${input.videoType}`);
-  }
-
-  if (!BATCH_SUPPORTED_TYPES.includes(input.videoType)) {
-    throw new Error(`Batch upload not supported for type: ${input.videoType}`);
-  }
-
   const minClips = BATCH_MIN_CLIPS[input.videoType];
   if (!minClips) {
     throw new Error(`Batch upload not supported for type: ${input.videoType}`);
@@ -43,14 +35,13 @@ export async function recordBatchSubmission(input: {
     monthlyTrackingId: input.monthlyTrackingId,
   });
 
-  // Verify every clip exists in storage before creating any DB rows.
-  // Same probe pattern as the single-video upload route.
   const supabase = createSupabaseServerClient();
-  for (const key of input.clipKeys) {
-    const { error } = await supabase.storage.from("videos").createSignedUrl(key, 10);
-    if (error) {
-      throw new Error(`Clip not found in storage: ${key}`);
-    }
+  const probes = await Promise.all(
+    input.clipKeys.map((key) => supabase.storage.from("videos").createSignedUrl(key, 10))
+  );
+  const failedIdx = probes.findIndex(({ error }) => Boolean(error));
+  if (failedIdx !== -1) {
+    throw new Error(`Clip not found in storage: ${input.clipKeys[failedIdx]}`);
   }
 
   const repository = getRepository();
@@ -69,20 +60,21 @@ export async function recordBatchSubmission(input: {
   });
 
   try {
-    for (let i = 0; i < input.clipKeys.length; i++) {
-      await repository.addClipToBatch({
-        batchSubmissionId: batch.id,
-        monthlyTrackingId: context.monthlyTrackingId,
-        creatorId: context.creatorId,
-        videoType: input.videoType,
-        fileUrl: input.clipKeys[i],
-        fileSizeMb: Math.max(1, Math.ceil(input.clipSizesMb[i] ?? 1)),
-      });
-    }
+    await Promise.all(
+      input.clipKeys.map((key, i) =>
+        repository.addClipToBatch({
+          batchSubmissionId: batch.id,
+          monthlyTrackingId: context.monthlyTrackingId,
+          creatorId: context.creatorId,
+          videoType: input.videoType,
+          fileUrl: key,
+          fileSizeMb: Math.max(1, Math.ceil(input.clipSizesMb[i] ?? 1)),
+        })
+      )
+    );
   } catch (clipError) {
     // Compensating rollback: remove the partial batch row so the admin queue
-    // never shows an incomplete entry. Storage files are already uploaded and
-    // will be cleaned up by the storage lifecycle policy or a periodic job.
+    // never shows an incomplete entry.
     await repository.deleteBatchSubmission(batch.id).catch(() => undefined);
     throw clipError;
   }

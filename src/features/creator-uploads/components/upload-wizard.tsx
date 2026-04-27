@@ -29,7 +29,8 @@ import {
   readVideoMetadata,
   RECOMMENDED_MAX_VIDEO_BYTES,
   resolveAllowedResolution,
-  sanitizeFilename
+  sanitizeFilename,
+  uploadFileToSignedUrl
 } from "@/features/creator-uploads/lib/upload-helpers";
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -89,7 +90,6 @@ export function UploadWizard({
   // Batch-specific state
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
   const [batchProgress, setBatchProgress] = useState<number[]>([]);
-  const [batchClipCount, setBatchClipCount] = useState(0);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
@@ -113,7 +113,6 @@ function resetWizard() {
     setUploadProgress(0);
     setBatchFiles([]);
     setBatchProgress([]);
-    setBatchClipCount(0);
     setWarningMessage(null);
     setErrorMessage(null);
   }
@@ -194,30 +193,8 @@ function resetWizard() {
       if (!trackingIdForUpload) throw new Error("Suivi mensuel introuvable.");
       setResolvedTrackingId(trackingIdForUpload);
 
-      const signedUrl = signedPayload.signedUrl;
-      const uploadForm = new FormData();
-      uploadForm.append("cacheControl", "3600");
-      uploadForm.append("", file);
-
       setUploadProgress(0);
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", signedUrl);
-        xhr.setRequestHeader("x-upsert", "false");
-        xhr.upload.addEventListener("progress", (event) => {
-          if (event.lengthComputable && event.total > 0) {
-            setUploadProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        });
-        xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error("Upload impossible. Réessaie dans quelques instants."));
-        });
-        xhr.addEventListener("error", () =>
-          reject(new Error("Upload impossible. Réessaie dans quelques instants."))
-        );
-        xhr.send(uploadForm);
-      });
+      await uploadFileToSignedUrl(signedPayload.signedUrl, file, setUploadProgress);
 
       const response = await fetch("/api/creator/uploads/video", {
         method: "POST",
@@ -302,36 +279,16 @@ function resetWizard() {
           setResolvedTrackingId(batchTrackingId);
         }
 
-        const signedUrl = signedPayload.signedUrl;
-        const uploadForm = new FormData();
-        uploadForm.append("cacheControl", "3600");
-        uploadForm.append("", file);
-
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("PUT", signedUrl);
-          xhr.setRequestHeader("x-upsert", "false");
-          xhr.upload.addEventListener("progress", (event) => {
-            if (event.lengthComputable && event.total > 0) {
-              const pct = Math.round((event.loaded / event.total) * 100);
-              setBatchProgress((prev) => {
-                const next = [...prev];
-                next[i] = pct;
-                return next;
-              });
-            }
+        await uploadFileToSignedUrl(signedPayload.signedUrl, file, (pct) => {
+          setBatchProgress((prev) => {
+            const next = [...prev];
+            next[i] = pct;
+            return next;
           });
-          xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Clip ${i + 1} : upload impossible.`));
-          });
-          xhr.addEventListener("error", () => reject(new Error(`Clip ${i + 1} : upload impossible.`)));
-          xhr.send(uploadForm);
         });
 
         collectedKeys.push(signedPayload.key);
         collectedSizes.push(Math.max(1, Math.ceil(file.size / (1024 * 1024))));
-        setBatchClipCount(i + 1);
       }
 
       const response = await fetch("/api/creator/uploads/video/batch", {
@@ -431,7 +388,6 @@ function resetWizard() {
             uploading={uploading}
             batchFiles={batchFiles}
             batchProgress={batchProgress}
-            batchClipCount={batchClipCount}
             warningMessage={warningMessage}
             errorMessage={errorMessage}
             onBack={() => {
@@ -993,7 +949,6 @@ function StepBatchUpload({
   uploading,
   batchFiles,
   batchProgress,
-  batchClipCount,
   warningMessage,
   errorMessage,
   onBack,
@@ -1005,7 +960,6 @@ function StepBatchUpload({
   uploading: boolean;
   batchFiles: File[];
   batchProgress: number[];
-  batchClipCount: number;
   warningMessage: string | null;
   errorMessage: string | null;
   onBack: () => void;
@@ -1016,6 +970,7 @@ function StepBatchUpload({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const minClips = BATCH_MIN_CLIPS[activeType] ?? 4;
   const canSubmit = batchFiles.length >= minClips && !uploading;
+  const doneCount = batchProgress.filter((p) => p === 100).length;
   const overallProgress =
     batchProgress.length > 0
       ? Math.round(batchProgress.reduce((s, p) => s + p, 0) / batchProgress.length)
@@ -1201,7 +1156,7 @@ function StepBatchUpload({
         <div className="rounded-[16px] border border-secondary/20 bg-secondary/[0.05] p-4">
           <div className="flex items-center justify-between text-[12px]">
             <span className="font-semibold text-secondary">
-              Upload en cours ({batchClipCount}/{batchFiles.length})
+              Upload en cours ({doneCount}/{batchFiles.length})
             </span>
             <span className="font-bold text-secondary">{overallProgress}%</span>
           </div>

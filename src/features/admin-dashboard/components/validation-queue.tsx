@@ -343,12 +343,14 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
             <div>
               {pageRows.map((row) => {
                 const isBatch     = row.batchId !== undefined;
-                const reviewId    = row.videoId; // used as panel key for both types
+                const reviewId    = row.videoId;
                 const isRejecting = rejectingId === reviewId;
                 const isRevising  = revisingId  === reviewId;
                 const isMoreOpen  = moreOpenId  === reviewId;
-                // Batch rows are excluded from bulk selection
                 const isSelected  = !isBatch && selectedIds.has(reviewId);
+                const metaSuffix  = isBatch
+                  ? ` · lot de ${row.clipCount ?? "?"} clips`
+                  : ` · ${row.durationSeconds}s · ${row.resolution}`;
 
                 const approve = () =>
                   isBatch
@@ -399,9 +401,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         {/* Meta — visible desktop only */}
                         <span className="hidden shrink-0 sm:inline text-[11px] text-foreground/35">
                           {formatDate(row.uploadedAt)}
-                          {isBatch
-                            ? ` · lot de ${row.clipCount ?? "?"} clips`
-                            : ` · ${row.durationSeconds}s · ${row.resolution}`}
+                          {metaSuffix}
                         </span>
                       </div>
 

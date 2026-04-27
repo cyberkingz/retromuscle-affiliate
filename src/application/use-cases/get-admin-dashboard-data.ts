@@ -129,7 +129,7 @@ export async function getAdminDashboardData(input?: {
     creatorsActive: monthlyRows.length,
     contractsSigned: creators.filter((c) => !!c.contractSignedAt).length,
     creatorsTotal: nonPendingCreators.length,
-    validationTodo: pendingVideos.length,
+    validationTodo: pendingVideos.length + pendingBatches.length,
     paymentsTodo: paymentsTodoRows.length,
     totalToPay: paymentsTodoRows.reduce((sum, row) => sum + row.payoutAmount, 0)
   };

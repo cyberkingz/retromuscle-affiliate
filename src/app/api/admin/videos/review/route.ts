@@ -13,11 +13,12 @@ import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
+import { parseReviewDecision } from "../_parse-review-decision";
 
 interface ReviewVideoPayload {
   videoId: string;
   decision: "approved" | "rejected" | "revision_requested";
-  rejectionReason?: string | null;
+  rejectionReason: string | null;
 }
 
 function parsePayload(body: unknown): ReviewVideoPayload {
@@ -27,28 +28,13 @@ function parsePayload(body: unknown): ReviewVideoPayload {
 
   const input = body as Record<string, unknown>;
   const videoId = typeof input.videoId === "string" ? input.videoId.trim() : "";
-  const decision = input.decision;
-  const rejectionReason =
-    typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
 
   if (!videoId || !isUuid(videoId)) {
     throw new Error("Invalid videoId");
   }
-  if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
-    throw new Error("Invalid decision");
-  }
-  if (decision === "revision_requested" && !rejectionReason) {
-    throw new Error("revisionReason is required when requesting a revision");
-  }
-  if (rejectionReason && rejectionReason.length > 2000) {
-    throw new Error("rejectionReason is too long");
-  }
 
-  return {
-    videoId,
-    decision,
-    rejectionReason
-  };
+  const { decision, rejectionReason } = parseReviewDecision(input);
+  return { videoId, decision, rejectionReason };
 }
 
 export async function POST(request: Request) {
