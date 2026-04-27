@@ -68,15 +68,23 @@ export async function recordBatchSubmission(input: {
     minClipsRequired: minClips,
   });
 
-  for (let i = 0; i < input.clipKeys.length; i++) {
-    await repository.addClipToBatch({
-      batchSubmissionId: batch.id,
-      monthlyTrackingId: context.monthlyTrackingId,
-      creatorId: context.creatorId,
-      videoType: input.videoType,
-      fileUrl: input.clipKeys[i],
-      fileSizeMb: Math.max(1, Math.ceil(input.clipSizesMb[i] ?? 1)),
-    });
+  try {
+    for (let i = 0; i < input.clipKeys.length; i++) {
+      await repository.addClipToBatch({
+        batchSubmissionId: batch.id,
+        monthlyTrackingId: context.monthlyTrackingId,
+        creatorId: context.creatorId,
+        videoType: input.videoType,
+        fileUrl: input.clipKeys[i],
+        fileSizeMb: Math.max(1, Math.ceil(input.clipSizesMb[i] ?? 1)),
+      });
+    }
+  } catch (clipError) {
+    // Compensating rollback: remove the partial batch row so the admin queue
+    // never shows an incomplete entry. Storage files are already uploaded and
+    // will be cleaned up by the storage lifecycle policy or a periodic job.
+    await repository.deleteBatchSubmission(batch.id).catch(() => undefined);
+    throw clipError;
   }
 
   return batch;

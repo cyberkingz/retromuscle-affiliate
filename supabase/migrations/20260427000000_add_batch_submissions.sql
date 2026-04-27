@@ -15,6 +15,8 @@ create table public.batch_submissions (
   status              text        not null default 'pending_review'
                                   check (status in ('uploaded','pending_review','approved','rejected','revision_requested')),
   min_clips_required  integer     not null default 4 check (min_clips_required >= 1),
+  -- Actual number of clips recorded via addClipToBatch; incremented atomically.
+  clip_count          integer     not null default 0 check (clip_count >= 0),
   rejection_reason    text,
   reviewed_at         timestamptz,
   reviewed_by         uuid,
@@ -56,6 +58,18 @@ create policy "creators_select_own_batches"
     )
   );
 
+-- Creators can insert their own batch submissions (defense-in-depth;
+-- server-side code uses the service role key, but this policy future-proofs
+-- any migration to per-user RLS clients).
+create policy "creators_insert_own_batches"
+  on public.batch_submissions
+  for insert
+  with check (
+    creator_id in (
+      select id from public.creators where user_id = auth.uid()
+    )
+  );
+
 -- Admins have full access
 create policy "admins_all_batches"
   on public.batch_submissions
@@ -64,10 +78,31 @@ create policy "admins_all_batches"
     ((auth.jwt() -> 'app_metadata') ->> 'role') = 'admin'
   );
 
+-- ─── RPC: increment_batch_clip_count ────────────────────────────────────────
+-- Called once per clip after the videos row is inserted.
+-- Atomic increment avoids any TOCTOU race under concurrent clip additions.
+
+create or replace function public.increment_batch_clip_count(
+  p_batch_id uuid
+)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.batch_submissions
+  set clip_count = clip_count + 1
+  where id = p_batch_id;
+$$;
+
 -- ─── RPC: review_batch_and_update_tracking ───────────────────────────────────
--- IMPORTANT: uses a direct +1 increment (NOT a recount of videos rows).
+-- IMPORTANT: uses a direct atomic +1 increment (NOT a recount of video rows).
 -- Individual clips are stored with status = 'uploaded' — they must never be
 -- counted as delivered units. Only the batch row approval increments the counter.
+--
+-- The increment is performed inline in a single UPDATE expression to avoid
+-- the TOCTOU race that a separate SELECT + UPDATE would create under concurrent
+-- approvals of the same video_type for the same creator.
 
 create or replace function public.review_batch_and_update_tracking(
   p_batch_id          uuid,
@@ -83,7 +118,6 @@ as $$
 declare
   v_batch    public.batch_submissions%rowtype;
   v_tracking public.monthly_tracking%rowtype;
-  v_current  int;
 begin
   if p_status not in ('approved', 'rejected', 'revision_requested') then
     raise exception 'Invalid status: %', p_status;
@@ -103,19 +137,14 @@ begin
     raise exception 'Batch submission not found: %', p_batch_id;
   end if;
 
-  -- Only increment delivered count when approving
+  -- Only increment delivered count when approving.
+  -- Atomic single-statement increment — no separate SELECT avoids TOCTOU race.
   if p_status = 'approved' then
-    -- Read current count (default 0 if key missing)
-    select coalesce((delivered ->> v_batch.video_type)::int, 0)
-    into   v_current
-    from   public.monthly_tracking
-    where  id = v_batch.monthly_tracking_id;
-
     update public.monthly_tracking
     set delivered = jsonb_set(
       coalesce(delivered, '{}'::jsonb),
       array[v_batch.video_type],
-      to_jsonb(v_current + 1)
+      to_jsonb(coalesce((delivered ->> v_batch.video_type)::int, 0) + 1)
     )
     where id = v_batch.monthly_tracking_id
     returning * into v_tracking;

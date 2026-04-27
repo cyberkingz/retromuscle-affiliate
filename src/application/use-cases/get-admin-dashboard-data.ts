@@ -169,7 +169,7 @@ export async function getAdminDashboardData(input?: {
         return {
           videoId: batch.id,
           batchId: batch.id,
-          clipCount: batch.minClipsRequired,
+          clipCount: batch.clipCount,
           creatorHandle: creator?.handle ?? "@inconnu",
           videoType: VIDEO_TYPE_LABELS[batch.videoType],
           fileUrl: "",

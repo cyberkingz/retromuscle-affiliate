@@ -37,8 +37,8 @@ function parsePayload(body: unknown): ReviewBatchPayload {
   if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
     throw new Error("Invalid decision");
   }
-  if (decision === "revision_requested" && !rejectionReason) {
-    throw new Error("rejectionReason is required when requesting a revision");
+  if ((decision === "revision_requested" || decision === "rejected") && !rejectionReason) {
+    throw new Error("rejectionReason is required when rejecting or requesting a revision");
   }
   if (rejectionReason && rejectionReason.length > 2000) {
     throw new Error("rejectionReason is too long");

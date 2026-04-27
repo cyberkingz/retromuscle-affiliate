@@ -265,6 +265,11 @@ function resetWizard() {
     try {
       const collectedKeys: string[] = [];
       const collectedSizes: number[] = [];
+      // Stable tracking ID for the entire batch — captured from the first
+      // signed-URL response and reused for all clips and the final POST.
+      // Using a local variable (not React state) avoids async state-update
+      // races when the month rolls over mid-upload.
+      let batchTrackingId = resolvedTrackingId;
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -274,7 +279,7 @@ function resetWizard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            monthlyTrackingId: resolvedTrackingId,
+            monthlyTrackingId: batchTrackingId,
             videoType: activeType,
             filename
           })
@@ -291,8 +296,10 @@ function resetWizard() {
           throw new Error(signedPayload?.message ?? `Impossible de préparer l'upload du clip ${i + 1}.`);
         }
 
-        if (signedPayload.monthlyTrackingId) {
-          setResolvedTrackingId(signedPayload.monthlyTrackingId);
+        // Pin tracking ID on first response — all subsequent clips use the same month.
+        if (i === 0 && signedPayload.monthlyTrackingId) {
+          batchTrackingId = signedPayload.monthlyTrackingId;
+          setResolvedTrackingId(batchTrackingId);
         }
 
         const signedUrl = signedPayload.signedUrl;
@@ -331,7 +338,7 @@ function resetWizard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          monthlyTrackingId: resolvedTrackingId,
+          monthlyTrackingId: batchTrackingId,
           videoType: activeType,
           clipKeys: collectedKeys,
           clipSizesMb: collectedSizes

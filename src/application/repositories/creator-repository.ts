@@ -222,6 +222,8 @@ export interface CreatorRepository {
   }): Promise<VideoAsset>;
   listBatchSubmissionsByStatus(status: VideoStatus): Promise<BatchSubmission[]>;
   listBatchSubmissionsByTracking(monthlyTrackingId: string): Promise<BatchSubmission[]>;
+  /** Delete a batch submission row (used for compensating rollback on partial clip insert failure). */
+  deleteBatchSubmission(batchId: string): Promise<void>;
   /** Atomically review a batch and increment delivered[videoType] by 1 when approved. */
   reviewBatchAndUpdateTracking(input: {
     batchId: string;

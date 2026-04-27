@@ -39,6 +39,7 @@ type BatchRow = {
   video_type: string;
   status: string;
   min_clips_required: number;
+  clip_count: number;
   rejection_reason: string | null;
   reviewed_at: string | null;
   reviewed_by: string | null;
@@ -179,6 +180,7 @@ function mapBatch(row: BatchRow): BatchSubmission {
     videoType: toVideoType(row.video_type),
     status: toVideoStatus(row.status),
     minClipsRequired: row.min_clips_required,
+    clipCount: row.clip_count,
     rejectionReason: row.rejection_reason ?? undefined,
     reviewedAt: row.reviewed_at ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
@@ -275,7 +277,7 @@ const APPLICATION_COLS =
 const PAYOUT_COLS =
   "creator_id,method,account_holder_name,iban,paypal_email,created_at,updated_at" as const;
 const BATCH_COLS =
-  "id,monthly_tracking_id,creator_id,video_type,status,min_clips_required,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
+  "id,monthly_tracking_id,creator_id,video_type,status,min_clips_required,clip_count,rejection_reason,reviewed_at,reviewed_by,created_at" as const;
 
 /** Safety limit for unbounded list queries to prevent OOM at scale (H-04). */
 const LIST_LIMIT = 1000;
@@ -1314,6 +1316,16 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to add clip to batch: ${error?.message ?? "missing row"}`);
     }
 
+    // Atomically increment clip_count on the parent batch row.
+    // Uses raw SQL to avoid a separate read-modify-write cycle.
+    const { error: incrementError } = await this.client.rpc(
+      "increment_batch_clip_count" as never,
+      { p_batch_id: input.batchSubmissionId } as never
+    );
+    if (incrementError) {
+      throw new Error(`Failed to increment batch clip count: ${incrementError.message}`);
+    }
+
     return mapVideo(data as VideoRow & { batch_submission_id?: string | null });
   }
 
@@ -1367,5 +1379,13 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       batch: mapBatch(result.batch as BatchRow),
       tracking: mapMonthlyTracking(result.tracking as MonthlyTrackingRow)
     };
+  }
+
+  async deleteBatchSubmission(batchId: string): Promise<void> {
+    const { error } = await this.client
+      .from("batch_submissions")
+      .delete()
+      .eq("id", batchId);
+    if (error) throw new Error(`Failed to delete batch submission: ${error.message}`);
   }
 }

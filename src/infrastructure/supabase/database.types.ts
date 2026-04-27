@@ -465,6 +465,7 @@ export type Database = {
           video_type: string;
           status: string;
           min_clips_required: number;
+          clip_count: number;
           rejection_reason: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -477,6 +478,7 @@ export type Database = {
           video_type: string;
           status?: string;
           min_clips_required?: number;
+          clip_count?: number;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -489,6 +491,7 @@ export type Database = {
           video_type?: string;
           status?: string;
           min_clips_required?: number;
+          clip_count?: number;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -585,6 +588,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      increment_batch_clip_count: {
+        Args: { p_batch_id: string };
+        Returns: undefined;
+      };
       review_batch_and_update_tracking: {
         Args: {
           p_batch_id: string;

@@ -336,4 +336,8 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   }): Promise<{ batch: BatchSubmission; tracking: MonthlyTracking }> {
     throw new Error("Batch submissions are not available in offline mode");
   }
+
+  async deleteBatchSubmission(_batchId: string): Promise<void> {
+    throw new Error("Batch submissions are not available in offline mode");
+  }
 }

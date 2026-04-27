@@ -97,6 +97,7 @@ export interface BatchSubmission {
   videoType: VideoType;
   status: VideoStatus;
   minClipsRequired: number;
+  clipCount: number;
   rejectionReason?: string;
   reviewedAt?: string;
   reviewedBy?: string;
