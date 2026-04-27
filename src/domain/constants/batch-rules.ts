@@ -8,6 +8,8 @@ export const BATCH_MIN_CLIPS: Partial<Record<VideoType, number>> = {
   CINEMATIC: 4,
 };
 
+export const BATCH_MAX_CLIPS = 20;
+
 export const BATCH_SUPPORTED_TYPES: VideoType[] = Object.keys(
   BATCH_MIN_CLIPS
 ) as VideoType[];

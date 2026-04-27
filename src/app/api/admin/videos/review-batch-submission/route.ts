@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const limited = await rateLimit({
     ctx,
     request,
-    key: "admin:videos:review-batch",
+    key: "admin:videos:review-batch-submission",
     limit: 120,
     windowMs: 60_000
   });
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   const userLimited = await rateLimit({
     ctx,
     request,
-    key: "admin:videos:review-batch",
+    key: "admin:videos:review-batch-submission",
     limit: 120,
     windowMs: 60_000,
     userId: auth.session.userId

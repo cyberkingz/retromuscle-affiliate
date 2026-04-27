@@ -15,9 +15,9 @@ export async function readVideoMetadata(
   file: File
 ): Promise<{ durationSeconds: number; width: number; height: number }> {
   const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement("video");
 
   try {
-    const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
@@ -50,6 +50,7 @@ export async function readVideoMetadata(
       height: video.videoHeight
     };
   } finally {
+    video.src = "";
     URL.revokeObjectURL(objectUrl);
   }
 }
@@ -89,9 +90,15 @@ export function formatFileSize(bytes: number): string {
 export function uploadFileToSignedUrl(
   signedUrl: string,
   file: File,
-  onProgress: (pct: number) => void
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Upload annulé.", "AbortError"));
+      return;
+    }
+
     const form = new FormData();
     form.append("cacheControl", "3600");
     form.append("", file);
@@ -111,6 +118,10 @@ export function uploadFileToSignedUrl(
     xhr.addEventListener("error", () =>
       reject(new Error("Upload impossible. Réessaie dans quelques instants."))
     );
+    signal?.addEventListener("abort", () => {
+      xhr.abort();
+      reject(new DOMException("Upload annulé.", "AbortError"));
+    });
     xhr.send(form);
   });
 }

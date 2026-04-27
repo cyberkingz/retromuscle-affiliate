@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -132,6 +132,11 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
 
   const pageCount = Math.ceil(filteredRows.length / PAGE_SIZE);
   const pageRows  = filteredRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  useEffect(() => {
+    const maxPage = Math.max(0, pageCount - 1);
+    if (page > maxPage) setPage(maxPage);
+  }, [pageCount, page]);
 
   const resetPanel = () => {
     setRejectingId(null); setRejectionReason("");

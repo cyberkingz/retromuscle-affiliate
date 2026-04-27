@@ -1,6 +1,6 @@
 import { getRepository } from "@/application/dependencies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
-import { BATCH_MIN_CLIPS } from "@/domain/constants/batch-rules";
+import { BATCH_MAX_CLIPS, BATCH_MIN_CLIPS } from "@/domain/constants/batch-rules";
 import type { BatchSubmission, VideoType } from "@/domain/types";
 import { resolveUploadTrackingForUser } from "./resolve-upload-tracking";
 
@@ -20,13 +20,22 @@ export async function recordBatchSubmission(input: {
     throw new Error(`Minimum ${minClips} clips required for ${input.videoType}`);
   }
 
+  if (input.clipKeys.length > BATCH_MAX_CLIPS) {
+    throw new Error(`Maximum ${BATCH_MAX_CLIPS} clips per batch`);
+  }
+
   if (input.clipKeys.length !== input.clipSizesMb.length) {
     throw new Error("clipKeys and clipSizesMb must have the same length");
   }
 
+  if (new Set(input.clipKeys).size !== input.clipKeys.length) {
+    throw new Error("Duplicate clip keys are not allowed");
+  }
+
+  const expectedPrefix = `${input.userId}/${input.monthlyTrackingId}/${input.videoType}/`;
   for (const key of input.clipKeys) {
-    if (!key.startsWith(`${input.userId}/`)) {
-      throw new Error("Invalid clip key: ownership mismatch");
+    if (!key.startsWith(expectedPrefix)) {
+      throw new Error("Invalid clip key: ownership or context mismatch");
     }
   }
 

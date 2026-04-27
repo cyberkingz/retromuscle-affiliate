@@ -93,12 +93,17 @@ export function UploadWizard({
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resolvedTrackingId, setResolvedTrackingId] = useState(monthlyTrackingId);
+  const batchAbortRef = useRef<AbortController | null>(null);
 
   const hasActiveVideoTypes = ratesByType.length > 0;
 
   useEffect(() => {
     setResolvedTrackingId(monthlyTrackingId);
   }, [monthlyTrackingId]);
+
+  useEffect(() => {
+    return () => { batchAbortRef.current?.abort(); };
+  }, []);
 
   const activeRate = useMemo(
     () => ratesByType.find((item) => item.videoType === activeType) ?? null,
@@ -234,6 +239,10 @@ function resetWizard() {
       return;
     }
 
+    batchAbortRef.current?.abort();
+    batchAbortRef.current = new AbortController();
+    const { signal } = batchAbortRef.current;
+
     setUploading(true);
     setWarningMessage(null);
     setErrorMessage(null);
@@ -285,7 +294,7 @@ function resetWizard() {
             next[i] = pct;
             return next;
           });
-        });
+        }, signal);
 
         collectedKeys.push(signedPayload.key);
         collectedSizes.push(Math.max(1, Math.ceil(file.size / (1024 * 1024))));
@@ -1166,6 +1175,7 @@ function StepBatchUpload({
             aria-valuenow={overallProgress}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={`Progression globale du lot : ${overallProgress}%`}
           >
             <div
               className="h-full bg-gradient-to-r from-secondary to-primary transition-[width]"

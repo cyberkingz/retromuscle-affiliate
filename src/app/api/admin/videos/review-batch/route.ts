@@ -99,6 +99,18 @@ export async function POST(request: Request) {
     return auth.response;
   }
 
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:videos:review-batch",
+    limit: 30,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
+  if (userLimited) {
+    return userLimited;
+  }
+
   let payload: ReviewBatchPayload;
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 64 * 1024 }));
