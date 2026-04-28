@@ -1439,7 +1439,12 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       const { data, error } = await this.client.storage.from("videos").createSignedUrl(fileKey, 86400);
       if (error || !data?.signedUrl) return;
 
-      const uid = await ingestVideoToStream(videoId, data.signedUrl);
+      // Supabase SDK may return a relative path — ensure it's a full URL
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+      const rawUrl = data.signedUrl;
+      const signedUrl = rawUrl.startsWith("http") ? rawUrl : `${supabaseUrl}/storage/v1${rawUrl}`;
+
+      const uid = await ingestVideoToStream(videoId, signedUrl);
       if (!uid) return;
 
       await this.client.from("videos").update({ cf_stream_uid: uid } as never).eq("id", videoId);
