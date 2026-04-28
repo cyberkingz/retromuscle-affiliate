@@ -4,10 +4,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, X } from "lucide-react";
 
 import type { UseVideoPreviewReturn } from "@/hooks/use-video-preview";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { videoStatusTone } from "@/lib/status-tone";
+import { VIDEO_STATUS_LABELS } from "@/domain/constants/labels";
+import type { VideoStatus } from "@/domain/types";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
+
+/** Badge classes tuned for the modal's dark (black) background */
+function getStatusDarkClass(status: string): string {
+  const s = status.toLowerCase();
+  if (s.includes("approved")) return "border-green-500/50 bg-green-500/20 text-green-300";
+  if (s.includes("rejected")) return "border-red-500/50 bg-red-500/20 text-red-300";
+  if (s.includes("revision") || s.includes("pending"))
+    return "border-amber-400/50 bg-amber-400/20 text-amber-300";
+  return "border-white/20 bg-white/10 text-white/60";
+}
 
 interface VideoPreviewModalProps {
   preview: UseVideoPreviewReturn;
@@ -91,8 +101,8 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
     >
       <DialogContent
         className={cn(
-          "max-h-[95vh] overflow-hidden border-none bg-black p-0",
-          "max-w-[min(95vw,900px)]",
+          "max-h-[95svh] overflow-hidden border-none bg-black p-0",
+          "w-[95vw] max-w-[900px]",
           "rounded-2xl shadow-2xl",
           "[&>button:last-child]:hidden"
         )}
@@ -102,17 +112,26 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
         <DialogTitle className="sr-only">{title}</DialogTitle>
 
         {/* Glass header */}
-        <div className="absolute left-0 right-0 top-0 z-20 flex items-center gap-3 bg-black/60 px-4 py-3 backdrop-blur-md">
+        <div className="absolute left-0 right-0 top-0 z-20 flex flex-wrap items-center gap-x-2.5 gap-y-1 bg-black/70 px-4 py-2.5 pr-12 backdrop-blur-md">
           {currentItem?.status && (
-            <StatusBadge label={currentItem.status} tone={videoStatusTone(currentItem.status)} />
+            <span
+              className={cn(
+                "inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]",
+                getStatusDarkClass(currentItem.status)
+              )}
+            >
+              {VIDEO_STATUS_LABELS[currentItem.status as VideoStatus] ?? currentItem.status}
+            </span>
           )}
           {currentItem?.videoType && (
-            <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-white/80">
+            <span className="shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/80">
               {currentItem.videoType}
             </span>
           )}
           {metaParts.length > 0 && (
-            <span className="text-xs text-white/60">{metaParts.join(" \u00B7 ")}</span>
+            <span className="hidden text-xs text-white/50 sm:inline">
+              {metaParts.join(" \u00B7 ")}
+            </span>
           )}
           <DialogClose className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-white/15 hover:text-white">
             <X className="h-4 w-4" />
@@ -121,7 +140,7 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
         </div>
 
         {/* Video area */}
-        <div className="relative flex min-h-[350px] items-center justify-center bg-black">
+        <div className="relative flex min-h-[280px] items-center justify-center bg-black sm:min-h-[350px]">
           {/* Loading skeleton */}
           {loading && (
             <div className="flex flex-col items-center justify-center gap-3 py-20">
@@ -165,7 +184,7 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
                 playsInline
                 onCanPlay={() => setVideoReady(true)}
                 className={cn(
-                  "max-h-[75vh] w-full object-contain pt-12 pb-24",
+                  "max-h-[80svh] w-full object-contain pt-10 pb-20 sm:pt-12 sm:pb-24",
                   !videoReady && "invisible"
                 )}
               />
@@ -197,29 +216,27 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
         </div>
 
         {/* Glass toolbar */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-3 bg-black/60 px-4 py-3 backdrop-blur-md">
-          {/* Left: action buttons */}
-          <div className="flex items-center gap-2">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-2 bg-black/70 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3">
+          {/* Left: download */}
+          <div className="flex min-w-0 items-center gap-2">
             {signedUrl && (
-              <>
-                <a
-                  href={signedUrl}
-                  download={downloadName}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  <Download className="h-4 w-4" />
-                  Telecharger
-                  {currentItem?.fileSizeMb != null && (
-                    <span className="text-primary-foreground/70">
-                      ({currentItem.fileSizeMb} MB)
-                    </span>
-                  )}
-                </a>
-              </>
+              <a
+                href={signedUrl}
+                download={downloadName}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-3.5 sm:py-2"
+              >
+                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Télécharger</span>
+                {currentItem?.fileSizeMb != null && (
+                  <span className="hidden text-primary-foreground/70 sm:inline">
+                    ({currentItem.fileSizeMb} MB)
+                  </span>
+                )}
+              </a>
             )}
           </div>
 
-          {/* Center: gallery dots */}
+          {/* Center: gallery dots (desktop only) */}
           {isGallery && totalItems <= 12 && (
             <div className="hidden items-center gap-1.5 sm:flex">
               {Array.from({ length: totalItems }).map((_, i) => (
@@ -236,7 +253,7 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
 
           {/* Right: counter + nav */}
           {isGallery && (
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <span className="text-xs font-medium text-white/60">
                 {currentIndex + 1}/{totalItems}
               </span>

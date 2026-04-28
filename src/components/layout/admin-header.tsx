@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 const adminLinks: Array<{ href: Route; label: string }> = [
   { href: "/admin", label: "Operations" },
   { href: "/admin/applications" as Route, label: "Candidatures" },
+  { href: "/admin/content" as Route, label: "Contenu" },
   { href: "/admin/config" as Route, label: "Offres" }
 ];
 
@@ -75,7 +76,7 @@ export function AdminHeader() {
       <div className="md:hidden">
         <nav
           aria-label="Navigation administration mobile"
-          className="container-wide flex gap-2 py-2"
+          className="flex gap-2 overflow-x-auto px-4 py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {adminLinks.map((link) => {
             const isActive =
@@ -85,7 +86,7 @@ export function AdminHeader() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "inline-flex rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
+                  "inline-flex shrink-0 rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
                   isActive
                     ? "bg-secondary text-secondary-foreground font-semibold"
                     : "bg-white/60 text-foreground/60 hover:bg-white/80 hover:text-foreground"

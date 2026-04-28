@@ -487,7 +487,7 @@ ${ctaButton(`${APP_URL}/uploads`, "Modifier et ré-uploader →")}
 // ---------------------------------------------------------------------------
 // New upload admin notification
 // ---------------------------------------------------------------------------
-const ADMIN_NOTIFICATION_EMAIL = "redimpact.group@gmail.com";
+const ADMIN_NOTIFICATION_EMAILS = ["redimpact.group@gmail.com", "RetroMuscle1000@gmail.com"];
 
 export async function sendNewUploadAdminEmail(input: {
   creatorHandle: string;
@@ -529,7 +529,7 @@ ${ctaButton(`${APP_URL}/admin/videos`, "Valider le contenu →")}`;
 
   await getResendClient().emails.send({
     from: FROM,
-    to: ADMIN_NOTIFICATION_EMAIL,
+    to: ADMIN_NOTIFICATION_EMAILS,
     subject,
     html: buildAdminEmailShell(content)
   });

@@ -421,6 +421,34 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     return (data as VideoRow[]).map(mapVideo);
   }
 
+  async listAllVideos(filters?: {
+    status?: VideoStatus;
+    creatorId?: string;
+    videoType?: VideoType;
+  }): Promise<VideoAsset[]> {
+    let query = this.client
+      .from("videos")
+      .select(VIDEO_COLS)
+      .order("created_at", { ascending: false })
+      .limit(LIST_LIMIT);
+
+    if (filters?.status) {
+      query = query.eq("status", filters.status);
+    }
+    if (filters?.creatorId) {
+      query = query.eq("creator_id", filters.creatorId);
+    }
+    if (filters?.videoType) {
+      query = query.eq("video_type", filters.videoType);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Failed to list all videos: ${error.message}`);
+    }
+    return (data as VideoRow[]).map(mapVideo);
+  }
+
   async listRushesByTracking(monthlyTrackingId: string): Promise<RushAsset[]> {
     const { data, error } = await this.client
       .from("rushes")
