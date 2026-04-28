@@ -359,4 +359,8 @@ export class InMemoryCreatorRepository implements CreatorRepository {
   async deleteBatchSubmission(_batchId: string): Promise<void> {
     throw new Error("Batch submissions are not available in offline mode");
   }
+
+  async triggerCfStreamIngest(_videoId: string, _fileKey: string): Promise<void> {
+    // no-op in offline mode
+  }
 }

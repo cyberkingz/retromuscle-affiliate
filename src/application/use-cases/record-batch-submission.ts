@@ -1,7 +1,7 @@
 import { getRepository } from "@/application/dependencies";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import { BATCH_MAX_CLIPS, BATCH_MIN_CLIPS } from "@/domain/constants/batch-rules";
-import type { BatchSubmission, VideoType } from "@/domain/types";
+import type { BatchSubmission, VideoAsset, VideoType } from "@/domain/types";
 import { resolveUploadTrackingForUser } from "./resolve-upload-tracking";
 
 export async function recordBatchSubmission(input: {
@@ -12,7 +12,7 @@ export async function recordBatchSubmission(input: {
   clipSizesMb: number[];
   clipDurations?: number[];
   clipResolutions?: string[];
-}): Promise<BatchSubmission> {
+}): Promise<{ batch: BatchSubmission; clips: VideoAsset[] }> {
   const minClips = BATCH_MIN_CLIPS[input.videoType];
   if (!minClips) {
     throw new Error(`Batch upload not supported for type: ${input.videoType}`);
@@ -70,8 +70,9 @@ export async function recordBatchSubmission(input: {
     minClipsRequired: minClips,
   });
 
+  let clips: VideoAsset[];
   try {
-    await Promise.all(
+    clips = await Promise.all(
       input.clipKeys.map((key, i) =>
         repository.addClipToBatch({
           batchSubmissionId: batch.id,
@@ -92,5 +93,5 @@ export async function recordBatchSubmission(input: {
     throw clipError;
   }
 
-  return batch;
+  return { batch, clips };
 }

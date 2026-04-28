@@ -239,4 +239,7 @@ export interface CreatorRepository {
     rejectionReason?: string | null;
     reviewedBy: string;
   }): Promise<{ batch: BatchSubmission; tracking: MonthlyTracking }>;
+
+  /** Fire-and-forget: generate signed URL and push video to Cloudflare Stream. */
+  triggerCfStreamIngest(videoId: string, fileKey: string): Promise<void>;
 }

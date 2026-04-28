@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { requireApiRole } from "@/features/auth/server/api-guards";
 import { setAuthCookies } from "@/features/auth/server/auth-cookies";
 import { recordBatchSubmission } from "@/application/use-cases/record-batch-submission";
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const batch = await recordBatchSubmission({
+    const { batch, clips } = await recordBatchSubmission({
       userId: auth.session.userId,
       monthlyTrackingId: payload.monthlyTrackingId,
       videoType: payload.videoType,
@@ -157,6 +158,12 @@ export async function POST(request: Request) {
       clipSizesMb: payload.clipSizesMb,
       clipDurations: payload.clipDurations,
       clipResolutions: payload.clipResolutions
+    });
+
+    // Ingest clips to CF Stream after response is sent (keeps function alive on Vercel)
+    const repo = getRepository();
+    after(async () => {
+      await Promise.allSettled(clips.map((c) => repo.triggerCfStreamIngest(c.id, c.fileUrl)));
     });
 
     // Fire-and-forget admin notification

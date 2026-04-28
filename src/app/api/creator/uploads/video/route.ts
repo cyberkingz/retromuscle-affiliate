@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { recordVideoUpload } from "@/application/use-cases/record-video-upload";
 import { getRepository } from "@/application/dependencies";
 import { VIDEO_TYPES, type VideoAsset } from "@/domain/types";
@@ -168,6 +169,10 @@ export async function POST(request: Request) {
       resolution: payload.resolution,
       fileSizeMb: payload.fileSizeMb
     });
+
+    // Ingest to CF Stream after response is sent
+    const repo = getRepository();
+    after(() => repo.triggerCfStreamIngest(video.id, video.fileUrl));
 
     // Fire-and-forget admin notification — look up the creator handle for a useful email
     getRepository()

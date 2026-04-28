@@ -526,9 +526,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to create video asset: ${error.message}`);
     }
 
-    const video = mapVideo(data as VideoRowExtended);
-    void this.triggerCfStreamIngest(video.id, video.fileUrl);
-    return video;
+    return mapVideo(data as VideoRowExtended);
   }
 
   async markVideoSuperseded(input: {
@@ -1363,9 +1361,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to increment batch clip count: ${incrementError.message}`);
     }
 
-    const clip = mapVideo(data as VideoRowExtended);
-    void this.triggerCfStreamIngest(clip.id, clip.fileUrl);
-    return clip;
+    return mapVideo(data as VideoRowExtended);
   }
 
   async listClipsByBatch(batchId: string): Promise<import("@/domain/types").VideoAsset[]> {
@@ -1438,7 +1434,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     if (error) throw new Error(`Failed to delete batch submission: ${error.message}`);
   }
 
-  private async triggerCfStreamIngest(videoId: string, fileKey: string): Promise<void> {
+  async triggerCfStreamIngest(videoId: string, fileKey: string): Promise<void> {
     try {
       const { data, error } = await this.client.storage.from("videos").createSignedUrl(fileKey, 86400);
       if (error || !data?.signedUrl) return;
