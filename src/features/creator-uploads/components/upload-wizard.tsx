@@ -330,7 +330,7 @@ export function UploadWizard({
         const meta = metadataResults[i];
         if (meta?.status === "fulfilled") {
           collectedDurations.push(meta.value.durationSeconds);
-          collectedResolutions.push(`${meta.value.width}x${meta.value.height}`);
+          collectedResolutions.push(resolveAllowedResolution(meta.value.width, meta.value.height) ?? "1080x1920");
         } else {
           collectedDurations.push(1);
           collectedResolutions.push("1080x1920");

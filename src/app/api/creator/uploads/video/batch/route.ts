@@ -97,7 +97,8 @@ function parsePayload(body: unknown): BatchUploadPayload {
   if (Array.isArray(input.clipResolutions) && input.clipResolutions.length === clipKeys.length) {
     for (const r of input.clipResolutions) {
       const str = typeof r === "string" ? r.trim() : "";
-      clipResolutions.push(/^\d+x\d+$/.test(str) ? str : "1080x1920");
+      const allowed = ["1080x1920", "1080x1080"] as const;
+      clipResolutions.push(allowed.includes(str as (typeof allowed)[number]) ? str : "1080x1920");
     }
   } else {
     clipKeys.forEach(() => clipResolutions.push("1080x1920"));
