@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, X } from "lucide-react";
 
 import type { UseVideoPreviewReturn } from "@/hooks/use-video-preview";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { videoStatusTone } from "@/lib/status-tone";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
 
 interface VideoPreviewModalProps {
@@ -93,7 +93,8 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
         className={cn(
           "max-h-[95vh] overflow-hidden border-none bg-black p-0",
           "max-w-[min(95vw,900px)]",
-          "rounded-2xl shadow-2xl"
+          "rounded-2xl shadow-2xl",
+          "[&>button:last-child]:hidden"
         )}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
@@ -113,6 +114,10 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
           {metaParts.length > 0 && (
             <span className="text-xs text-white/60">{metaParts.join(" \u00B7 ")}</span>
           )}
+          <DialogClose className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-white/15 hover:text-white">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fermer</span>
+          </DialogClose>
         </div>
 
         {/* Video area */}

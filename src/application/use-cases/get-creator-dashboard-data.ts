@@ -3,7 +3,7 @@ import { PAYMENT_STATUS_LABELS, VIDEO_TYPE_LABELS } from "@/domain/constants/lab
 import { calculatePayout } from "@/domain/services/calculate-payout";
 import { deriveKitStatusForCreator } from "@/domain/services/derive-kit-status";
 import { summarizeTracking } from "@/domain/services/tracking-summary";
-import { VIDEO_TYPES, type VideoType } from "@/domain/types";
+import { VIDEO_TYPES, type BatchSubmission, type VideoType } from "@/domain/types";
 import {
   createZeroDeliveredCount,
   resolveCurrentMonth,
@@ -60,6 +60,7 @@ export interface CreatorDashboardData {
       rejectionReason?: string;
       supersededBy?: string;
     }>;
+    recentBatches: BatchSubmission[];
   };
   rushes: {
     totalFiles: number;
@@ -140,9 +141,10 @@ export async function getCreatorDashboardData(input: {
     delivered: currentTracking.delivered[videoType]
   }));
 
-  const [uploadedVideos, rushes] = await Promise.all([
+  const [uploadedVideos, rushes, batches] = await Promise.all([
     repository.listVideosByTracking(currentTracking.id),
-    repository.listRushesByTracking(currentTracking.id)
+    repository.listRushesByTracking(currentTracking.id),
+    repository.listBatchSubmissionsByTracking(currentTracking.id)
   ]);
 
   const activity = [
@@ -297,12 +299,16 @@ export async function getCreatorDashboardData(input: {
           "Ambiance forte, on s\u2019occupe du reste"
         ]
       },
-      pendingReviewCount: uploadedVideos.filter((video) => video.status === "pending_review")
-        .length,
-      revisionCount: uploadedVideos.filter(
-        (video) => video.status === "revision_requested" && !video.supersededBy
-      ).length,
-      rejectedCount: uploadedVideos.filter((video) => video.status === "rejected").length,
+      pendingReviewCount:
+        uploadedVideos.filter((video) => video.status === "pending_review").length +
+        batches.filter((b) => b.status === "pending_review").length,
+      revisionCount:
+        uploadedVideos.filter(
+          (video) => video.status === "revision_requested" && !video.supersededBy
+        ).length + batches.filter((b) => b.status === "revision_requested").length,
+      rejectedCount:
+        uploadedVideos.filter((video) => video.status === "rejected").length +
+        batches.filter((b) => b.status === "rejected").length,
       recentVideos: uploadedVideos.filter((video) => !video.supersededBy).slice(0, 8).map((video) => ({
         id: video.id,
         videoType: video.videoType,
@@ -311,7 +317,8 @@ export async function getCreatorDashboardData(input: {
         fileUrl: video.fileUrl,
         rejectionReason: video.rejectionReason,
         supersededBy: video.supersededBy
-      }))
+      })),
+      recentBatches: batches.slice(0, 6) as BatchSubmission[]
     },
     rushes: {
       totalFiles: rushes.length,

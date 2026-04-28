@@ -1,6 +1,7 @@
 import { creators, monthlyTrackings, rushes, videos, references } from "@/data/mock-db";
 import type {
   ApplicationStatus,
+  BatchSubmission,
   Creator,
   CreatorApplication,
   CreatorContractSignature,
@@ -9,7 +10,8 @@ import type {
   RushAsset,
   VideoAsset,
   VideoRate,
-  VideoStatus
+  VideoStatus,
+  VideoType
 } from "@/domain/types";
 
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
@@ -290,5 +292,56 @@ export class InMemoryCreatorRepository implements CreatorRepository {
 
   async clearKitPromoCode(_creatorId: string): Promise<Creator> {
     throw new Error("Kit promo code updates are not available in offline mode");
+  }
+
+  // ── Batch submissions (stubs — not used in tests) ─────────────────────────
+
+  async createBatchSubmission(_input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoType;
+    minClipsRequired: number;
+  }): Promise<BatchSubmission> {
+    throw new Error("Batch submissions are not available in offline mode");
+  }
+
+  async getBatchSubmissionById(_batchId: string): Promise<BatchSubmission | null> {
+    throw new Error("Batch submissions are not available in offline mode");
+  }
+
+  async addClipToBatch(_input: {
+    batchSubmissionId: string;
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoType;
+    fileUrl: string;
+    fileSizeMb: number;
+  }): Promise<VideoAsset> {
+    throw new Error("Batch submissions are not available in offline mode");
+  }
+
+  async listClipsByBatch(batchId: string): Promise<VideoAsset[]> {
+    return videos.filter((v) => v.batchSubmissionId === batchId);
+  }
+
+  async listBatchSubmissionsByStatus(_status: VideoStatus): Promise<BatchSubmission[]> {
+    return [];
+  }
+
+  async listBatchSubmissionsByTracking(_monthlyTrackingId: string): Promise<BatchSubmission[]> {
+    return [];
+  }
+
+  async reviewBatchAndUpdateTracking(_input: {
+    batchId: string;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ batch: BatchSubmission; tracking: MonthlyTracking }> {
+    throw new Error("Batch submissions are not available in offline mode");
+  }
+
+  async deleteBatchSubmission(_batchId: string): Promise<void> {
+    throw new Error("Batch submissions are not available in offline mode");
   }
 }

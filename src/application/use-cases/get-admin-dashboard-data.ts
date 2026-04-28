@@ -48,6 +48,9 @@ export interface AdminDashboardData {
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
+    /** Defined when this row represents a batch submission rather than a single video. */
+    batchId?: string;
+    clipCount?: number;
   }>;
   payments: Array<{
     monthlyTrackingId: string;
@@ -75,10 +78,11 @@ export async function getAdminDashboardData(input?: {
   month?: string;
 }): Promise<AdminDashboardData> {
   const repository = getRepository();
-  const [creators, rates, pendingVideos, allTrackings] = await Promise.all([
+  const [creators, rates, pendingVideos, pendingBatches, allTrackings] = await Promise.all([
     repository.listCreators(),
     repository.listRates(),
     repository.listVideosByStatus("pending_review"),
+    repository.listBatchSubmissionsByStatus("pending_review"),
     repository.listMonthlyTrackings()
   ]);
 
@@ -125,7 +129,7 @@ export async function getAdminDashboardData(input?: {
     creatorsActive: monthlyRows.length,
     contractsSigned: creators.filter((c) => !!c.contractSignedAt).length,
     creatorsTotal: nonPendingCreators.length,
-    validationTodo: pendingVideos.length,
+    validationTodo: pendingVideos.length + pendingBatches.length,
     paymentsTodo: paymentsTodoRows.length,
     totalToPay: paymentsTodoRows.reduce((sum, row) => sum + row.payoutAmount, 0)
   };
@@ -144,18 +148,37 @@ export async function getAdminDashboardData(input?: {
       kitStatus: deriveKitStatusForCreator(creator)
     })),
     monthlyRows,
-    validationQueue: pendingVideos.map((video) => {
-      const creator = creatorById.get(video.creatorId);
-      return {
-        videoId: video.id,
-        creatorHandle: creator?.handle ?? "@inconnu",
-        videoType: VIDEO_TYPE_LABELS[video.videoType],
-        fileUrl: video.fileUrl,
-        uploadedAt: video.createdAt,
-        durationSeconds: video.durationSeconds,
-        resolution: video.resolution
-      };
-    }),
+    validationQueue: [
+      // Single-video submissions (clips with batch_submission_id are excluded because
+      // they have status "uploaded", not "pending_review")
+      ...pendingVideos.map((video) => {
+        const creator = creatorById.get(video.creatorId);
+        return {
+          videoId: video.id,
+          creatorHandle: creator?.handle ?? "@inconnu",
+          videoType: VIDEO_TYPE_LABELS[video.videoType],
+          fileUrl: video.fileUrl,
+          uploadedAt: video.createdAt,
+          durationSeconds: video.durationSeconds,
+          resolution: video.resolution
+        };
+      }),
+      // Batch submissions
+      ...pendingBatches.map((batch) => {
+        const creator = creatorById.get(batch.creatorId);
+        return {
+          videoId: batch.id,
+          batchId: batch.id,
+          clipCount: batch.clipCount,
+          creatorHandle: creator?.handle ?? "@inconnu",
+          videoType: VIDEO_TYPE_LABELS[batch.videoType],
+          fileUrl: "",
+          uploadedAt: batch.createdAt,
+          durationSeconds: 0,
+          resolution: ""
+        };
+      })
+    ].sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt)),
     payments: await (async () => {
       // Single query instead of N+1 per creator
       const allProfiles = await repository.listPayoutProfiles();

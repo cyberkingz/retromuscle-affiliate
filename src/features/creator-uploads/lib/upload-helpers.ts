@@ -15,9 +15,9 @@ export async function readVideoMetadata(
   file: File
 ): Promise<{ durationSeconds: number; width: number; height: number }> {
   const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement("video");
 
   try {
-    const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
@@ -50,6 +50,7 @@ export async function readVideoMetadata(
       height: video.videoHeight
     };
   } finally {
+    video.src = "";
     URL.revokeObjectURL(objectUrl);
   }
 }
@@ -80,4 +81,47 @@ export function resolveAllowedResolution(
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Upload a file to a Supabase Storage signed PUT URL with progress reporting.
+ * Reused by single-video and batch upload flows.
+ */
+export function uploadFileToSignedUrl(
+  signedUrl: string,
+  file: File,
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Upload annulé.", "AbortError"));
+      return;
+    }
+
+    const form = new FormData();
+    form.append("cacheControl", "3600");
+    form.append("", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error("Upload impossible. Réessaie dans quelques instants."));
+    });
+    xhr.addEventListener("error", () =>
+      reject(new Error("Upload impossible. Réessaie dans quelques instants."))
+    );
+    signal?.addEventListener("abort", () => {
+      xhr.abort();
+      reject(new DOMException("Upload annulé.", "AbortError"));
+    });
+    xhr.send(form);
+  });
 }

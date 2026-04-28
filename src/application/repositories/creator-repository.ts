@@ -1,5 +1,6 @@
 import type {
   ApplicationStatus,
+  BatchSubmission,
   Creator,
   CreatorApplication,
   CreatorContractSignature,
@@ -8,7 +9,8 @@ import type {
   RushAsset,
   VideoAsset,
   VideoRate,
-  VideoStatus
+  VideoStatus,
+  VideoType
 } from "@/domain/types";
 
 export interface CreatorRepository {
@@ -200,4 +202,34 @@ export interface CreatorRepository {
   }): Promise<boolean>;
   /** Remove a recorded webhook event when downstream processing fails, so retries can proceed. */
   rollbackShopifyWebhook(webhookId: string): Promise<void>;
+
+  // ── Batch submissions ──────────────────────────────────────────────────────
+  createBatchSubmission(input: {
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoType;
+    minClipsRequired: number;
+  }): Promise<BatchSubmission>;
+  getBatchSubmissionById(batchId: string): Promise<BatchSubmission | null>;
+  /** Insert a clip row linked to a batch. Status is always "uploaded" — clips are never individually reviewed. */
+  addClipToBatch(input: {
+    batchSubmissionId: string;
+    monthlyTrackingId: string;
+    creatorId: string;
+    videoType: VideoType;
+    fileUrl: string;
+    fileSizeMb: number;
+  }): Promise<VideoAsset>;
+  listClipsByBatch(batchId: string): Promise<VideoAsset[]>;
+  listBatchSubmissionsByStatus(status: VideoStatus): Promise<BatchSubmission[]>;
+  listBatchSubmissionsByTracking(monthlyTrackingId: string): Promise<BatchSubmission[]>;
+  /** Delete a batch submission row (used for compensating rollback on partial clip insert failure). */
+  deleteBatchSubmission(batchId: string): Promise<void>;
+  /** Atomically review a batch and increment delivered[videoType] by 1 when approved. */
+  reviewBatchAndUpdateTracking(input: {
+    batchId: string;
+    status: Extract<VideoStatus, "approved" | "rejected" | "revision_requested">;
+    rejectionReason?: string | null;
+    reviewedBy: string;
+  }): Promise<{ batch: BatchSubmission; tracking: MonthlyTracking }>;
 }

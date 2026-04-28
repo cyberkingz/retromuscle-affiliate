@@ -1,4 +1,4 @@
-import { reviewVideoUpload } from "@/application/use-cases/review-video-upload";
+import { reviewBatchSubmission } from "@/application/use-cases/review-batch-submission";
 import { getRepository } from "@/application/dependencies";
 import {
   sendVideoApprovedEmail,
@@ -15,30 +15,31 @@ import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
 import { parseReviewDecision } from "../_parse-review-decision";
 
-interface ReviewVideoPayload {
-  videoId: string;
+interface ReviewBatchPayload {
+  batchId: string;
   decision: "approved" | "rejected" | "revision_requested";
   rejectionReason: string | null;
 }
 
-function parsePayload(body: unknown): ReviewVideoPayload {
+function parsePayload(body: unknown): ReviewBatchPayload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid payload");
   }
 
   const input = body as Record<string, unknown>;
-  const videoId = typeof input.videoId === "string" ? input.videoId.trim() : "";
+  const batchId = typeof input.batchId === "string" ? input.batchId.trim() : "";
 
-  if (!videoId || !isUuid(videoId)) {
-    throw new Error("Invalid videoId");
+  if (!batchId || !isUuid(batchId)) {
+    throw new Error("Invalid batchId");
   }
 
   const { decision, rejectionReason } = parseReviewDecision(input);
-  return { videoId, decision, rejectionReason };
+  return { batchId, decision, rejectionReason };
 }
 
 export async function POST(request: Request) {
   const ctx = createApiContext(request);
+
   if (!isAllowedOrigin(request)) {
     return apiError(ctx, { status: 403, code: "INVALID_ORIGIN", message: "Invalid origin" });
   }
@@ -46,33 +47,26 @@ export async function POST(request: Request) {
   const limited = await rateLimit({
     ctx,
     request,
-    key: "admin:videos:review",
+    key: "admin:videos:review-batch-submission",
     limit: 120,
     windowMs: 60_000
   });
-  if (limited) {
-    return limited;
-  }
+  if (limited) return limited;
 
   const auth = await requireApiRole(request, "admin", { ctx });
-  if (!auth.ok) {
-    return auth.response;
-  }
+  if (!auth.ok) return auth.response;
 
-  // Per-user rate limit (stricter, scoped to authenticated admin)
   const userLimited = await rateLimit({
     ctx,
     request,
-    key: "admin:videos:review",
+    key: "admin:videos:review-batch-submission",
     limit: 120,
     windowMs: 60_000,
     userId: auth.session.userId
   });
-  if (userLimited) {
-    return userLimited;
-  }
+  if (userLimited) return userLimited;
 
-  let payload: ReviewVideoPayload;
+  let payload: ReviewBatchPayload;
   try {
     payload = parsePayload(await readJsonBodyWithLimit(request, { maxBytes: 16 * 1024 }));
   } catch (error) {
@@ -82,37 +76,37 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await reviewVideoUpload({
+    const result = await reviewBatchSubmission({
       adminUserId: auth.session.userId,
-      videoId: payload.videoId,
+      batchId: payload.batchId,
       decision: payload.decision,
       rejectionReason: payload.rejectionReason
     });
 
-    // Fire-and-forget email to creator for all review decisions
+    // Fire-and-forget creator email notification
     getRepository()
-      .getCreatorById(result.video.creatorId)
+      .getCreatorById(result.batch.creatorId)
       .then((creator) => {
         if (!creator) return;
         if (payload.decision === "approved") {
           return sendVideoApprovedEmail({
             to: creator.email,
             creatorName: creator.displayName,
-            videoType: result.video.videoType
+            videoType: result.batch.videoType
           });
         }
         if (payload.decision === "rejected") {
           return sendVideoRejectedEmail({
             to: creator.email,
             creatorName: creator.displayName,
-            videoType: result.video.videoType,
+            videoType: result.batch.videoType,
             reason: payload.rejectionReason
           });
         }
         return sendVideoRevisionRequestedEmail({
           to: creator.email,
           creatorName: creator.displayName,
-          videoType: result.video.videoType,
+          videoType: result.batch.videoType,
           revisionNote: payload.rejectionReason ?? ""
         });
       })
@@ -122,9 +116,9 @@ export async function POST(request: Request) {
       request,
       requestId: ctx.requestId,
       adminUserId: auth.session.userId,
-      action: `video.${payload.decision}`,
-      entityType: "video",
-      entityId: payload.videoId,
+      action: `batch.${payload.decision}`,
+      entityType: "batch_submission",
+      entityId: payload.batchId,
       metadata: {
         decision: payload.decision,
         rejectionReason: payload.rejectionReason ?? null
@@ -138,10 +132,15 @@ export async function POST(request: Request) {
     const isConflict =
       error instanceof Error &&
       (error.message.includes("already approved") || error.message.includes("Cannot change status"));
+    const isNotFound = error instanceof Error && error.message.includes("not found");
+
     const response = apiError(ctx, {
-      status: isConflict ? 409 : 500,
-      code: isConflict ? "BAD_REQUEST" : "INTERNAL",
-      message: isConflict ? error.message : "Unable to review video"
+      status: isConflict ? 409 : isNotFound ? 404 : 500,
+      code: isConflict ? "BAD_REQUEST" : isNotFound ? "NOT_FOUND" : "INTERNAL",
+      message:
+        isConflict || isNotFound
+          ? (error as Error).message
+          : "Unable to review batch submission"
     });
     if (auth.setAuthCookies) setAuthCookies(response, auth.setAuthCookies);
     return response;

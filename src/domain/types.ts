@@ -82,6 +82,23 @@ export interface VideoAsset {
   status: VideoStatus;
   rejectionReason?: string;
   supersededBy?: string;
+  batchSubmissionId?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  createdAt: string;
+}
+
+export type UploadMode = "single" | "batch";
+
+export interface BatchSubmission {
+  id: string;
+  monthlyTrackingId: string;
+  creatorId: string;
+  videoType: VideoType;
+  status: VideoStatus;
+  minClipsRequired: number;
+  clipCount: number;
+  rejectionReason?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   createdAt: string;

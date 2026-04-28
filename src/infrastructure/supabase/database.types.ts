@@ -457,8 +457,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      batch_submissions: {
+        Row: {
+          id: string;
+          monthly_tracking_id: string;
+          creator_id: string;
+          video_type: string;
+          status: string;
+          min_clips_required: number;
+          clip_count: number;
+          rejection_reason: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          monthly_tracking_id: string;
+          creator_id: string;
+          video_type: string;
+          status?: string;
+          min_clips_required?: number;
+          clip_count?: number;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          monthly_tracking_id?: string;
+          creator_id?: string;
+          video_type?: string;
+          status?: string;
+          min_clips_required?: number;
+          clip_count?: number;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "batch_submissions_monthly_tracking_id_fkey";
+            columns: ["monthly_tracking_id"];
+            isOneToOne: false;
+            referencedRelation: "monthly_tracking";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "batch_submissions_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       videos: {
         Row: {
+          batch_submission_id: string | null;
           created_at: string;
           creator_id: string;
           duration_seconds: number;
@@ -475,6 +533,7 @@ export type Database = {
           video_type: string;
         };
         Insert: {
+          batch_submission_id?: string | null;
           created_at?: string;
           creator_id: string;
           duration_seconds: number;
@@ -491,6 +550,7 @@ export type Database = {
           video_type: string;
         };
         Update: {
+          batch_submission_id?: string | null;
           created_at?: string;
           creator_id?: string;
           duration_seconds?: number;
@@ -528,6 +588,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      increment_batch_clip_count: {
+        Args: { p_batch_id: string };
+        Returns: undefined;
+      };
+      review_batch_and_update_tracking: {
+        Args: {
+          p_batch_id: string;
+          p_rejection_reason?: string | null;
+          p_reviewed_by?: string | null;
+          p_status: string;
+        };
+        Returns: Json;
+      };
       review_video_and_update_tracking: {
         Args: {
           p_rejection_reason?: string;

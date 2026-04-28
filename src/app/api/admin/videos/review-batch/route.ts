@@ -13,11 +13,12 @@ import { isAllowedOrigin } from "@/lib/origin";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit } from "@/lib/request-body";
 import { isUuid } from "@/lib/validation";
+import { parseReviewDecision } from "../_parse-review-decision";
 
 interface ReviewBatchPayload {
   videoIds: string[];
   decision: "approved" | "rejected" | "revision_requested";
-  rejectionReason?: string | null;
+  rejectionReason: string | null;
 }
 
 interface ReviewBatchResult {
@@ -51,17 +52,7 @@ function parsePayload(body: unknown): ReviewBatchPayload {
   }
 
   const input = body as Record<string, unknown>;
-  const decision = input.decision;
-  const rejectionReason =
-    typeof input.rejectionReason === "string" ? input.rejectionReason.trim() : null;
-
-  if (decision !== "approved" && decision !== "rejected" && decision !== "revision_requested") {
-    throw new Error("Invalid decision");
-  }
-
-  if (decision === "revision_requested" && !rejectionReason) {
-    throw new Error("revisionReason is required when requesting a revision");
-  }
+  const { decision, rejectionReason } = parseReviewDecision(input);
 
   if (!Array.isArray(input.videoIds) || input.videoIds.length === 0) {
     throw new Error("videoIds must be a non-empty array");
@@ -83,15 +74,7 @@ function parsePayload(body: unknown): ReviewBatchPayload {
     videoIds.push(trimmed);
   }
 
-  if (rejectionReason && rejectionReason.length > 2000) {
-    throw new Error("rejectionReason is too long");
-  }
-
-  return {
-    videoIds,
-    decision,
-    rejectionReason
-  };
+  return { videoIds, decision, rejectionReason };
 }
 
 export async function POST(request: Request) {
@@ -114,6 +97,18 @@ export async function POST(request: Request) {
   const auth = await requireApiRole(request, "admin", { ctx });
   if (!auth.ok) {
     return auth.response;
+  }
+
+  const userLimited = await rateLimit({
+    ctx,
+    request,
+    key: "admin:videos:review-batch",
+    limit: 30,
+    windowMs: 60_000,
+    userId: auth.session.userId
+  });
+  if (userLimited) {
+    return userLimited;
   }
 
   let payload: ReviewBatchPayload;

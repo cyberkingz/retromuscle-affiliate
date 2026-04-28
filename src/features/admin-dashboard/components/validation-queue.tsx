@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  Layers,
   MessageSquareDiff,
-  MoreHorizontal,
   Play,
   Search,
   ThumbsDown,
@@ -32,6 +34,9 @@ interface ValidationQueueProps {
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
+    /** Defined for batch submissions; absent for single-video rows. */
+    batchId?: string;
+    clipCount?: number;
   }>;
 }
 
@@ -92,7 +97,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [revisingId, setRevisingId]       = useState<string | null>(null);
   const [revisionNote, setRevisionNote]   = useState("");
-  const [moreOpenId, setMoreOpenId]       = useState<string | null>(null); // mobile overflow
+  const [moreOpenId, setMoreOpenId]       = useState<string | null>(null);
 
   // Bulk actions
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
@@ -105,6 +110,10 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
   const [dateFilter, setDateFilter]       = useState<"ALL" | "7D" | "30D">("ALL");
   const [page, setPage]                   = useState(0);
   const [error, setError]                 = useState<string | null>(null);
+
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [batchClips, setBatchClips] = useState<Record<string, Array<{ id: string; fileUrl: string; resolution: string; durationSeconds: number; videoType: string }>>>({});
+  const [clipsLoading, setClipsLoading] = useState<string | null>(null);
 
   const videoPreview = useVideoPreview("/api/videos/preview");
 
@@ -129,11 +138,32 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
   const pageCount = Math.ceil(filteredRows.length / PAGE_SIZE);
   const pageRows  = filteredRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  useEffect(() => {
+    const maxPage = Math.max(0, pageCount - 1);
+    if (page > maxPage) setPage(maxPage);
+  }, [pageCount, page]);
+
   const resetPanel = () => {
     setRejectingId(null); setRejectionReason("");
     setRevisingId(null);  setRevisionNote("");
     setMoreOpenId(null);
   };
+
+  const toggleBatchClips = useCallback(async (batchId: string) => {
+    if (expandedBatchId === batchId) { setExpandedBatchId(null); return; }
+    setExpandedBatchId(batchId);
+    if (batchClips[batchId]) return;
+    setClipsLoading(batchId);
+    try {
+      const res = await fetch(`/api/admin/videos/batch/${batchId}/clips`, { cache: "no-store" });
+      const d = (await res.json().catch(() => null)) as { clips?: Array<{ id: string; fileUrl: string; resolution: string; durationSeconds: number; videoType: string }> } | null;
+      setBatchClips((prev) => ({ ...prev, [batchId]: d?.clips ?? [] }));
+    } catch {
+      setBatchClips((prev) => ({ ...prev, [batchId]: [] }));
+    } finally {
+      setClipsLoading(null);
+    }
+  }, [expandedBatchId, batchClips]);
 
   const reviewMany = useCallback(
     async (videoIds: string[], decision: "approved" | "rejected" | "revision_requested", reason?: string | null) => {
@@ -168,6 +198,30 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
     (id: string, decision: "approved" | "rejected" | "revision_requested", reason?: string | null) =>
       reviewMany([id], decision, reason),
     [reviewMany]
+  );
+
+  const reviewBatchSubmission = useCallback(
+    async (batchId: string, decision: "approved" | "rejected" | "revision_requested", reason?: string | null) => {
+      if (!canAct) { router.replace("/login"); return; }
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/videos/review-batch-submission", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchId, decision, rejectionReason: decision !== "approved" ? (reason ?? null) : null }),
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const d = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(d?.message ?? "Impossible de mettre à jour le lot.");
+        }
+        resetPanel();
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Impossible de mettre à jour le lot.");
+      }
+    },
+    [canAct, router] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const toggleSelect = (id: string) => setSelectedIds((prev) => {
@@ -314,46 +368,91 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
           ) : (
             <div>
               {pageRows.map((row) => {
-                const isRejecting = rejectingId === row.videoId;
-                const isRevising  = revisingId  === row.videoId;
-                const isMoreOpen  = moreOpenId  === row.videoId;
-                const isSelected  = selectedIds.has(row.videoId);
+                const isBatch     = row.batchId !== undefined;
+                const reviewId    = row.videoId;
+                const isRejecting = rejectingId === reviewId;
+                const isRevising  = revisingId  === reviewId;
+                const isMoreOpen  = moreOpenId  === reviewId;
+                const isSelected  = !isBatch && selectedIds.has(reviewId);
+                const metaSuffix  = isBatch
+                  ? ` · lot de ${row.clipCount ?? "?"} clips`
+                  : ` · ${row.durationSeconds}s · ${row.resolution}`;
+
+                const approve = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "approved")
+                    : void reviewOne(reviewId, "approved");
+
+                const confirmRevision = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "revision_requested", revisionNote)
+                    : void reviewOne(reviewId, "revision_requested", revisionNote);
+
+                const confirmReject = () =>
+                  isBatch
+                    ? void reviewBatchSubmission(row.batchId!, "rejected", rejectionReason)
+                    : void reviewOne(reviewId, "rejected", rejectionReason);
 
                 return (
-                  <div key={row.videoId} className={cn(
+                  <div key={reviewId} className={cn(
                     "border-b border-line/40 last:border-0 transition-colors",
-                    isSelected && "bg-secondary/5"
+                    isSelected && "bg-secondary/5",
+                    isBatch && "bg-secondary/[0.02]"
                   )}>
                     {/* ── Main row ── */}
                     <div className="flex items-center gap-3 py-2.5 px-1">
 
-                      {/* Checkbox */}
-                      <input type="checkbox" className="h-3.5 w-3.5 shrink-0 accent-secondary"
-                        checked={isSelected} onChange={() => toggleSelect(row.videoId)}
-                        aria-label={`Sélectionner ${row.creatorHandle}`} />
+                      {/* Checkbox — disabled for batch rows */}
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 accent-secondary disabled:opacity-30"
+                        checked={isSelected}
+                        disabled={isBatch}
+                        onChange={() => { if (!isBatch) toggleSelect(reviewId); }}
+                        aria-label={isBatch ? "Lot — sélection individuelle non disponible" : `Sélectionner ${row.creatorHandle}`}
+                      />
 
-                      {/* Creator + type */}
+                      {/* Creator + type + batch badge */}
                       <div className="flex min-w-0 flex-1 items-center gap-2">
                         <span className="truncate text-sm font-bold text-foreground/85">
                           @{row.creatorHandle}
                         </span>
                         <TypePill type={row.videoType} />
+                        {isBatch && (
+                          <span className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-md border border-secondary/30 bg-secondary/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-widest text-secondary">
+                            <Layers className="h-2.5 w-2.5" />
+                            {row.clipCount ?? "?"} clips
+                          </span>
+                        )}
                         {/* Meta — visible desktop only */}
                         <span className="hidden shrink-0 sm:inline text-[11px] text-foreground/35">
-                          {formatDate(row.uploadedAt)} · {row.durationSeconds}s · {row.resolution}
+                          {formatDate(row.uploadedAt)}
+                          {metaSuffix}
                         </span>
                       </div>
 
                       {/* ── Desktop actions (≥sm) ── */}
                       <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-                        {/* Preview */}
-                        <ActionIcon title="Voir la vidéo" disabled={!canAct}
-                          onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
-                          <Play className="h-3.5 w-3.5" />
-                        </ActionIcon>
+                        {/* Preview — single video only; Clips gallery — batch only */}
+                        {!isBatch ? (
+                          <ActionIcon title="Voir la vidéo" disabled={!canAct}
+                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
+                            <Play className="h-3.5 w-3.5" />
+                          </ActionIcon>
+                        ) : (
+                          <ActionIcon
+                            title={expandedBatchId === row.batchId ? "Masquer les clips" : "Voir les clips"}
+                            onClick={() => void toggleBatchClips(row.batchId!)}
+                            className={expandedBatchId === row.batchId ? "border-secondary/40 bg-secondary/8 text-secondary" : ""}
+                          >
+                            {expandedBatchId === row.batchId
+                              ? <ChevronUp className="h-3.5 w-3.5" />
+                              : <ChevronDown className="h-3.5 w-3.5" />}
+                          </ActionIcon>
+                        )}
                         {/* Approve */}
                         <button type="button" disabled={!canAct}
-                          onClick={() => void reviewOne(row.videoId, "approved")}
+                          onClick={approve}
                           className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-30">
                           <ThumbsUp className="h-3.5 w-3.5" />
                           Valider
@@ -362,77 +461,93 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         <ActionIcon title="Demander une révision" disabled={!canAct}
                           className={cn(isRevising && "border-amber-400 bg-amber-100 text-amber-700")}
                           onClick={() => { setError(null); setRejectingId(null); setRejectionReason(""); setMoreOpenId(null);
-                            setRevisingId((c) => c === row.videoId ? null : row.videoId); setRevisionNote(""); }}>
+                            setRevisingId((c) => c === reviewId ? null : reviewId); setRevisionNote(""); }}>
                           <MessageSquareDiff className="h-3.5 w-3.5 text-amber-500" />
                         </ActionIcon>
                         {/* Reject */}
                         <ActionIcon title="Rejeter" disabled={!canAct}
                           className={cn(isRejecting && "border-destructive/40 bg-destructive/10 text-destructive")}
                           onClick={() => { setError(null); setRevisingId(null); setRevisionNote(""); setMoreOpenId(null);
-                            setRejectingId((c) => c === row.videoId ? null : row.videoId); setRejectionReason(""); }}>
+                            setRejectingId((c) => c === reviewId ? null : reviewId); setRejectionReason(""); }}>
                           <ThumbsDown className="h-3.5 w-3.5 text-destructive/60" />
                         </ActionIcon>
                       </div>
 
                       {/* ── Mobile actions (<sm) ── */}
-                      <div className="flex sm:hidden items-center gap-2 shrink-0">
-                        {/* Primary CTA */}
+                      <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+                        {/* Play / clips toggle */}
+                        {!isBatch ? (
+                          <button type="button" disabled={!canAct}
+                            aria-label="Voir la vidéo"
+                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-foreground/45 transition hover:bg-frost disabled:opacity-30">
+                            <Play className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <button type="button"
+                            aria-label={expandedBatchId === row.batchId ? "Masquer les clips" : "Voir les clips"}
+                            onClick={() => void toggleBatchClips(row.batchId!)}
+                            className={cn(
+                              "flex h-8 w-8 items-center justify-center rounded-lg border transition",
+                              expandedBatchId === row.batchId
+                                ? "border-secondary/40 bg-secondary/10 text-secondary"
+                                : "border-line bg-white text-foreground/45 hover:bg-frost"
+                            )}>
+                            {expandedBatchId === row.batchId
+                              ? <ChevronUp className="h-3.5 w-3.5" />
+                              : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                        {/* Approve */}
                         <button type="button" disabled={!canAct}
-                          onClick={() => void reviewOne(row.videoId, "approved")}
-                          className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 active:scale-95 disabled:opacity-30">
+                          aria-label="Valider"
+                          onClick={approve}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-95 disabled:opacity-30">
                           <ThumbsUp className="h-3.5 w-3.5" />
-                          Valider
                         </button>
-                        {/* Overflow toggle */}
-                        <button type="button"
-                          aria-label="Plus d'actions"
-                          aria-expanded={isMoreOpen}
-                          onClick={() => { setMoreOpenId((c) => c === row.videoId ? null : row.videoId); }}
+                        {/* Revision */}
+                        <button type="button" disabled={!canAct}
+                          aria-label="Demander une révision"
+                          onClick={() => { setError(null); setRejectingId(null); setRejectionReason(""); setMoreOpenId(null);
+                            setRevisingId((c) => c === reviewId ? null : reviewId); setRevisionNote(""); }}
                           className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-xl border transition",
-                            isMoreOpen
-                              ? "border-foreground/20 bg-foreground/10 text-foreground/70"
-                              : "border-line bg-frost/60 text-foreground/40 hover:bg-frost hover:text-foreground/60"
+                            "flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:opacity-30",
+                            isRevising
+                              ? "border-amber-400 bg-amber-100 text-amber-700"
+                              : "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100"
                           )}>
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MessageSquareDiff className="h-3.5 w-3.5" />
+                        </button>
+                        {/* Reject */}
+                        <button type="button" disabled={!canAct}
+                          aria-label="Rejeter"
+                          onClick={() => { setError(null); setRevisingId(null); setRevisionNote(""); setMoreOpenId(null);
+                            setRejectingId((c) => c === reviewId ? null : reviewId); setRejectionReason(""); }}
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:opacity-30",
+                            isRejecting
+                              ? "border-destructive/40 bg-destructive/10 text-destructive"
+                              : "border-destructive/15 bg-destructive/5 text-destructive/50 hover:bg-destructive/10"
+                          )}>
+                          <ThumbsDown className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
 
                     {/* Mobile meta row */}
                     <div className="flex sm:hidden items-center gap-2 px-6 pb-2 text-[10px] text-foreground/35">
-                      {formatDate(row.uploadedAt)} · {row.durationSeconds}s · {row.resolution}
+                      {formatDate(row.uploadedAt)}
+                      {isBatch
+                        ? ` · lot de ${row.clipCount ?? "?"} clips`
+                        : ` · ${row.durationSeconds}s · ${row.resolution}`}
                     </div>
-
-                    {/* ── Mobile overflow strip ── */}
-                    {isMoreOpen && (
-                      <div className="flex sm:hidden items-center gap-2 px-1 pb-3">
-                        <button type="button" disabled={!canAct}
-                          onClick={() => { setMoreOpenId(null); videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds }); }}
-                          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-white text-xs text-foreground/60 hover:bg-frost disabled:opacity-30">
-                          <Play className="h-3.5 w-3.5" /> Voir
-                        </button>
-                        <button type="button" disabled={!canAct}
-                          onClick={() => { setMoreOpenId(null); setError(null); setRejectingId(null); setRejectionReason("");
-                            setRevisingId((c) => c === row.videoId ? null : row.videoId); setRevisionNote(""); }}
-                          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-30">
-                          <MessageSquareDiff className="h-3.5 w-3.5" /> Révision
-                        </button>
-                        <button type="button" disabled={!canAct}
-                          onClick={() => { setMoreOpenId(null); setError(null); setRevisingId(null); setRevisionNote("");
-                            setRejectingId((c) => c === row.videoId ? null : row.videoId); setRejectionReason(""); }}
-                          className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-30">
-                          <ThumbsDown className="h-3.5 w-3.5" /> Rejeter
-                        </button>
-                      </div>
-                    )}
 
                     {/* ── Revision panel ── */}
                     {isRevising && (
                       <div className="mx-1 mb-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-700">
-                            Demande de modification
+                            {isBatch ? "Demande de révision du lot" : "Demande de modification"}
                           </p>
                           <button type="button" onClick={() => { setRevisingId(null); setRevisionNote(""); }}
                             className="text-amber-500 hover:text-amber-700">
@@ -447,7 +562,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           className="mt-2 border-amber-200 bg-white focus:border-amber-400 focus-visible:ring-amber-300/50 focus-visible:ring-offset-0" rows={3} autoFocus />
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" className="bg-amber-500 text-white hover:bg-amber-600"
-                            onClick={() => void reviewOne(row.videoId, "revision_requested", revisionNote)}
+                            onClick={confirmRevision}
                             disabled={!canAct || !revisionNote.trim()}>
                             Envoyer la demande
                           </Button>
@@ -459,12 +574,45 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                       </div>
                     )}
 
+                    {/* ── Batch clips gallery ── */}
+                    {isBatch && expandedBatchId === row.batchId && (
+                      <div className="mx-1 mb-3 rounded-2xl border border-secondary/15 bg-secondary/[0.03] p-4">
+                        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-secondary/70">
+                          Clips du lot ({row.clipCount ?? "?"})
+                        </p>
+                        {clipsLoading === row.batchId ? (
+                          <p className="text-xs text-foreground/40">Chargement...</p>
+                        ) : (batchClips[row.batchId!] ?? []).length === 0 ? (
+                          <p className="text-xs text-foreground/40">Aucun clip trouvé.</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {(batchClips[row.batchId!] ?? []).map((clip, idx) => (
+                              <button
+                                key={clip.id}
+                                type="button"
+                                onClick={() => videoPreview.open({ id: clip.id, fileUrl: clip.fileUrl, videoType: clip.videoType, resolution: clip.resolution, durationSeconds: clip.durationSeconds })}
+                                className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-left transition hover:border-secondary/30 hover:bg-secondary/[0.04]"
+                              >
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+                                  <Play className="h-3.5 w-3.5" />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold text-foreground/70">Clip {idx + 1}</p>
+                                  <p className="text-[10px] text-foreground/35">{clip.resolution}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* ── Rejection panel ── */}
                     {isRejecting && (
                       <div className="mx-1 mb-3 rounded-2xl border border-destructive/15 bg-destructive/5 p-4">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold uppercase tracking-[0.12em] text-destructive/70">
-                            Raison du rejet
+                            {isBatch ? "Raison du rejet du lot" : "Raison du rejet"}
                           </p>
                           <button type="button" onClick={() => { setRejectingId(null); setRejectionReason(""); }}
                             className="text-destructive/40 hover:text-destructive/70">
@@ -476,7 +624,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                           className="mt-2" rows={3} autoFocus />
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" variant="destructive"
-                            onClick={() => void reviewOne(row.videoId, "rejected", rejectionReason)}
+                            onClick={confirmReject}
                             disabled={!canAct || !rejectionReason.trim()}>
                             Confirmer le rejet
                           </Button>
