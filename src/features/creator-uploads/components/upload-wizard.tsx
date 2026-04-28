@@ -283,8 +283,14 @@ export function UploadWizard({
     setBatchProgress(files.map(() => 0));
 
     try {
+      // Read real metadata (duration, resolution) for all files before uploading.
+      // Uses the browser's HTMLVideoElement — fast, no network.
+      const metadataResults = await Promise.allSettled(files.map(readVideoMetadata));
+
       const collectedKeys: string[] = [];
       const collectedSizes: number[] = [];
+      const collectedDurations: number[] = [];
+      const collectedResolutions: string[] = [];
       let batchTrackingId = resolvedTrackingId;
 
       for (let i = 0; i < files.length; i++) {
@@ -320,6 +326,15 @@ export function UploadWizard({
 
         collectedKeys.push(signedPayload.key);
         collectedSizes.push(Math.max(1, Math.ceil(file.size / (1024 * 1024))));
+
+        const meta = metadataResults[i];
+        if (meta?.status === "fulfilled") {
+          collectedDurations.push(meta.value.durationSeconds);
+          collectedResolutions.push(`${meta.value.width}x${meta.value.height}`);
+        } else {
+          collectedDurations.push(1);
+          collectedResolutions.push("1080x1920");
+        }
       }
 
       const response = await fetch("/api/creator/uploads/video/batch", {
@@ -329,7 +344,9 @@ export function UploadWizard({
           monthlyTrackingId: batchTrackingId,
           videoType: activeType,
           clipKeys: collectedKeys,
-          clipSizesMb: collectedSizes
+          clipSizesMb: collectedSizes,
+          clipDurations: collectedDurations,
+          clipResolutions: collectedResolutions
         })
       });
 

@@ -1323,6 +1323,8 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     videoType: import("@/domain/types").VideoType;
     fileUrl: string;
     fileSizeMb: number;
+    durationSeconds?: number;
+    resolution?: string;
   }): Promise<VideoAsset> {
     const { data, error } = await this.client
       .from("videos")
@@ -1332,8 +1334,8 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         video_type: input.videoType,
         file_url: input.fileUrl,
         file_size_mb: input.fileSizeMb,
-        duration_seconds: 1,
-        resolution: "1080x1920",
+        duration_seconds: input.durationSeconds ?? 1,
+        resolution: input.resolution ?? "1080x1920",
         status: "uploaded",
         batch_submission_id: input.batchSubmissionId
       })

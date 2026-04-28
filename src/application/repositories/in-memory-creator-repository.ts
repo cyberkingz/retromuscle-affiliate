@@ -329,6 +329,8 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     videoType: VideoType;
     fileUrl: string;
     fileSizeMb: number;
+    durationSeconds?: number;
+    resolution?: string;
   }): Promise<VideoAsset> {
     throw new Error("Batch submissions are not available in offline mode");
   }

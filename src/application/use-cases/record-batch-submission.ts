@@ -10,6 +10,8 @@ export async function recordBatchSubmission(input: {
   videoType: VideoType;
   clipKeys: string[];
   clipSizesMb: number[];
+  clipDurations?: number[];
+  clipResolutions?: string[];
 }): Promise<BatchSubmission> {
   const minClips = BATCH_MIN_CLIPS[input.videoType];
   if (!minClips) {
@@ -78,6 +80,8 @@ export async function recordBatchSubmission(input: {
           videoType: input.videoType,
           fileUrl: key,
           fileSizeMb: Math.max(1, Math.ceil(input.clipSizesMb[i] ?? 1)),
+          durationSeconds: input.clipDurations?.[i] ?? 1,
+          resolution: input.clipResolutions?.[i] ?? "1080x1920",
         })
       )
     );

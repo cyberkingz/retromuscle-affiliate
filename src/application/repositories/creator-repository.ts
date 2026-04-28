@@ -224,6 +224,8 @@ export interface CreatorRepository {
     videoType: VideoType;
     fileUrl: string;
     fileSizeMb: number;
+    durationSeconds?: number;
+    resolution?: string;
   }): Promise<VideoAsset>;
   listClipsByBatch(batchId: string): Promise<VideoAsset[]>;
   listBatchSubmissionsByStatus(status: VideoStatus): Promise<BatchSubmission[]>;

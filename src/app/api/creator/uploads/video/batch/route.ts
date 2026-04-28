@@ -18,6 +18,8 @@ interface BatchUploadPayload {
   videoType: VideoAsset["videoType"];
   clipKeys: string[];
   clipSizesMb: number[];
+  clipDurations: number[];
+  clipResolutions: string[];
 }
 
 function parsePayload(body: unknown): BatchUploadPayload {
@@ -79,7 +81,29 @@ function parsePayload(body: unknown): BatchUploadPayload {
     clipSizesMb.push(Math.ceil(parsed));
   }
 
-  return { monthlyTrackingId, videoType, clipKeys, clipSizesMb };
+  // clipDurations — optional, falls back to 1 per clip
+  const clipDurations: number[] = [];
+  if (Array.isArray(input.clipDurations) && input.clipDurations.length === clipKeys.length) {
+    for (const d of input.clipDurations) {
+      const parsed = typeof d === "number" ? d : Number(d);
+      clipDurations.push(Number.isFinite(parsed) && parsed > 0 && parsed <= 3600 ? Math.round(parsed) : 1);
+    }
+  } else {
+    clipKeys.forEach(() => clipDurations.push(1));
+  }
+
+  // clipResolutions — optional, falls back to "1080x1920" per clip
+  const clipResolutions: string[] = [];
+  if (Array.isArray(input.clipResolutions) && input.clipResolutions.length === clipKeys.length) {
+    for (const r of input.clipResolutions) {
+      const str = typeof r === "string" ? r.trim() : "";
+      clipResolutions.push(/^\d+x\d+$/.test(str) ? str : "1080x1920");
+    }
+  } else {
+    clipKeys.forEach(() => clipResolutions.push("1080x1920"));
+  }
+
+  return { monthlyTrackingId, videoType, clipKeys, clipSizesMb, clipDurations, clipResolutions };
 }
 
 export async function POST(request: Request) {
@@ -129,7 +153,9 @@ export async function POST(request: Request) {
       monthlyTrackingId: payload.monthlyTrackingId,
       videoType: payload.videoType,
       clipKeys: payload.clipKeys,
-      clipSizesMb: payload.clipSizesMb
+      clipSizesMb: payload.clipSizesMb,
+      clipDurations: payload.clipDurations,
+      clipResolutions: payload.clipResolutions
     });
 
     // Fire-and-forget admin notification
