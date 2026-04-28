@@ -1304,7 +1304,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
         video_type: input.videoType,
         file_url: input.fileUrl,
         file_size_mb: input.fileSizeMb,
-        duration_seconds: 0,
+        duration_seconds: 1,
         resolution: "1080x1920",
         status: "uploaded",
         batch_submission_id: input.batchSubmissionId
@@ -1327,6 +1327,16 @@ export class SupabaseCreatorRepository implements CreatorRepository {
     }
 
     return mapVideo(data as VideoRow & { batch_submission_id?: string | null });
+  }
+
+  async listClipsByBatch(batchId: string): Promise<import("@/domain/types").VideoAsset[]> {
+    const { data, error } = await this.client
+      .from("videos")
+      .select(VIDEO_COLS)
+      .eq("batch_submission_id", batchId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(`listClipsByBatch: ${error.message}`);
+    return (data ?? []).map((row) => mapVideo(row as VideoRow & { batch_submission_id?: string | null }));
   }
 
   async listBatchSubmissionsByStatus(

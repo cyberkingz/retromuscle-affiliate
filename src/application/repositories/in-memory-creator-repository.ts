@@ -320,6 +320,10 @@ export class InMemoryCreatorRepository implements CreatorRepository {
     throw new Error("Batch submissions are not available in offline mode");
   }
 
+  async listClipsByBatch(batchId: string): Promise<VideoAsset[]> {
+    return videos.filter((v) => v.batchSubmissionId === batchId);
+  }
+
   async listBatchSubmissionsByStatus(_status: VideoStatus): Promise<BatchSubmission[]> {
     return [];
   }

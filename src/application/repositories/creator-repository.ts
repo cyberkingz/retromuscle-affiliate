@@ -220,6 +220,7 @@ export interface CreatorRepository {
     fileUrl: string;
     fileSizeMb: number;
   }): Promise<VideoAsset>;
+  listClipsByBatch(batchId: string): Promise<VideoAsset[]>;
   listBatchSubmissionsByStatus(status: VideoStatus): Promise<BatchSubmission[]>;
   listBatchSubmissionsByTracking(monthlyTrackingId: string): Promise<BatchSubmission[]>;
   /** Delete a batch submission row (used for compensating rollback on partial clip insert failure). */

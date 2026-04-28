@@ -66,7 +66,7 @@ export function CreatorUploadsPage({ data }: CreatorUploadsPageProps) {
       ) : null}
 
       {/* Status summary */}
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-line bg-white/95 px-4 py-4 text-center">
           <p className="text-xs uppercase tracking-[0.12em] text-foreground/70">À valider</p>
           <p className="mt-1 font-display text-3xl uppercase leading-none text-foreground/80">
