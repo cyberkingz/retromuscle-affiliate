@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 export interface PreviewItem {
   id: string;
   fileUrl: string;
+  cfStreamUid?: string;
   videoType?: string;
   resolution?: string;
   durationSeconds?: number;
@@ -71,6 +72,14 @@ export function useVideoPreview(
 
   const loadUrl = useCallback(
     async (item: PreviewItem) => {
+      if (item.cfStreamUid) {
+        // CF Stream handles playback — show iframe immediately, fetch signed URL for download only
+        setState((prev) => ({ ...prev, loading: false, error: null, signedUrl: null }));
+        fetchSignedUrl(item.fileUrl, endpoint)
+          .then((url) => setState((prev) => ({ ...prev, signedUrl: url })))
+          .catch(() => undefined);
+        return;
+      }
       setState((prev) => ({ ...prev, loading: true, error: null, signedUrl: null }));
       try {
         const url = await fetchSignedUrl(item.fileUrl, endpoint);
@@ -123,7 +132,13 @@ export function useVideoPreview(
         const nextItem = prev.items[nextIndex];
         if (!nextItem) return prev;
         void loadUrl(nextItem);
-        return { ...prev, currentIndex: nextIndex, signedUrl: null, loading: true, error: null };
+        return {
+          ...prev,
+          currentIndex: nextIndex,
+          signedUrl: null,
+          loading: !nextItem.cfStreamUid,
+          error: null
+        };
       });
     },
     [loadUrl]

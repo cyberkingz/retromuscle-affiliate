@@ -7,6 +7,7 @@ export interface AdminContentVideo {
   creatorHandle: string;
   videoType: VideoType;
   fileUrl: string;
+  cfStreamUid?: string;
   status: VideoStatus;
   rejectionReason?: string;
   durationSeconds: number;
@@ -43,6 +44,7 @@ export async function getAdminContentData(): Promise<AdminContentData> {
     creatorHandle: creatorById.get(video.creatorId)?.handle ?? "@inconnu",
     videoType: video.videoType,
     fileUrl: video.fileUrl,
+    cfStreamUid: video.cfStreamUid,
     status: video.status,
     rejectionReason: video.rejectionReason,
     durationSeconds: video.durationSeconds,

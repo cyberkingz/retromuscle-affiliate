@@ -394,10 +394,11 @@ export function AdminContentPage({ data }: AdminContentPageProps) {
   const toPreviewItem = (v: AdminContentVideo) => ({
     id: v.videoId,
     fileUrl: v.fileUrl,
+    cfStreamUid: v.cfStreamUid,
     videoType: v.videoType,
     resolution: v.resolution,
     durationSeconds: v.durationSeconds,
-    status: v.status,
+    status: v.status
   });
 
   const openPreview = (v: AdminContentVideo) => {

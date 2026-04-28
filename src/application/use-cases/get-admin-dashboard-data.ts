@@ -45,6 +45,7 @@ export interface AdminDashboardData {
     creatorHandle: string;
     videoType: string;
     fileUrl: string;
+    cfStreamUid?: string;
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
@@ -158,6 +159,7 @@ export async function getAdminDashboardData(input?: {
           creatorHandle: creator?.handle ?? "@inconnu",
           videoType: VIDEO_TYPE_LABELS[video.videoType],
           fileUrl: video.fileUrl,
+          cfStreamUid: video.cfStreamUid,
           uploadedAt: video.createdAt,
           durationSeconds: video.durationSeconds,
           resolution: video.resolution

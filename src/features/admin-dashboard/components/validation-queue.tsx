@@ -31,6 +31,7 @@ interface ValidationQueueProps {
     creatorHandle: string;
     videoType: string;
     fileUrl: string;
+    cfStreamUid?: string;
     uploadedAt: string;
     durationSeconds: number;
     resolution: string;
@@ -112,7 +113,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
   const [error, setError]                 = useState<string | null>(null);
 
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
-  const [batchClips, setBatchClips] = useState<Record<string, Array<{ id: string; fileUrl: string; resolution: string; durationSeconds: number; videoType: string }>>>({});
+  const [batchClips, setBatchClips] = useState<Record<string, Array<{ id: string; fileUrl: string; cfStreamUid?: string; resolution: string; durationSeconds: number; videoType: string }>>>({});
   const [clipsLoading, setClipsLoading] = useState<string | null>(null);
 
   const videoPreview = useVideoPreview("/api/videos/preview");
@@ -436,7 +437,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         {/* Preview — single video only; Clips gallery — batch only */}
                         {!isBatch ? (
                           <ActionIcon title="Voir la vidéo" disabled={!canAct}
-                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
+                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, cfStreamUid: row.cfStreamUid, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}>
                             <Play className="h-3.5 w-3.5" />
                           </ActionIcon>
                         ) : (
@@ -479,7 +480,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                         {!isBatch ? (
                           <button type="button" disabled={!canAct}
                             aria-label="Voir la vidéo"
-                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}
+                            onClick={() => videoPreview.open({ id: row.videoId, fileUrl: row.fileUrl, cfStreamUid: row.cfStreamUid, videoType: row.videoType, resolution: row.resolution, durationSeconds: row.durationSeconds })}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-foreground/45 transition hover:bg-frost disabled:opacity-30">
                             <Play className="h-3.5 w-3.5" />
                           </button>
@@ -590,7 +591,7 @@ export function ValidationQueue({ rows }: ValidationQueueProps) {
                               <button
                                 key={clip.id}
                                 type="button"
-                                onClick={() => videoPreview.open({ id: clip.id, fileUrl: clip.fileUrl, videoType: clip.videoType, resolution: clip.resolution, durationSeconds: clip.durationSeconds })}
+                                onClick={() => videoPreview.open({ id: clip.id, fileUrl: clip.fileUrl, cfStreamUid: clip.cfStreamUid, videoType: clip.videoType, resolution: clip.resolution, durationSeconds: clip.durationSeconds })}
                                 className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-left transition hover:border-secondary/30 hover:bg-secondary/[0.04]"
                               >
                                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">

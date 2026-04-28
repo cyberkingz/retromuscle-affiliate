@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, Tables } from "./database.types";
+import { ingestVideoToStream } from "@/infrastructure/cloudflare/stream";
+
 type TypedClient = SupabaseClient<Database>;
 
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
@@ -152,7 +154,9 @@ function mapMonthlyTracking(row: MonthlyTrackingRow): MonthlyTracking {
   };
 }
 
-function mapVideo(row: VideoRow & { batch_submission_id?: string | null }): VideoAsset {
+type VideoRowExtended = VideoRow & { batch_submission_id?: string | null; cf_stream_uid?: string | null };
+
+function mapVideo(row: VideoRowExtended): VideoAsset {
   return {
     id: row.id,
     monthlyTrackingId: row.monthly_tracking_id,
@@ -168,7 +172,8 @@ function mapVideo(row: VideoRow & { batch_submission_id?: string | null }): Vide
     reviewedAt: row.reviewed_at ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
     createdAt: row.created_at,
-    batchSubmissionId: row.batch_submission_id ?? undefined
+    batchSubmissionId: row.batch_submission_id ?? undefined,
+    cfStreamUid: row.cf_stream_uid ?? undefined
   };
 }
 
@@ -268,7 +273,7 @@ const CREATOR_COLS =
   "id,user_id,handle,display_name,email,whatsapp,country,address,followers_tiktok,followers_instagram,social_links,status,start_date,contract_signed_at,notes,kit_promo_code,shopify_discount_id,kit_order_placed_at,shopify_kit_order_id,kit_order_amount,kit_order_currency" as const;
 const TRACKING_COLS = "id,month,creator_id,delivered,payment_status,paid_at,paid_amount" as const;
 const VIDEO_COLS =
-  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,superseded_by,reviewed_at,reviewed_by,created_at,batch_submission_id" as const;
+  "id,monthly_tracking_id,creator_id,video_type,file_url,duration_seconds,resolution,file_size_mb,status,rejection_reason,superseded_by,reviewed_at,reviewed_by,created_at,batch_submission_id,cf_stream_uid" as const;
 const RUSH_COLS =
   "id,monthly_tracking_id,creator_id,file_name,file_size_mb,file_url,created_at" as const;
 const RATE_COLS = "video_type,rate_per_video,is_placeholder" as const;
@@ -388,7 +393,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to get video ${videoId}: ${error.message}`);
     }
 
-    return data ? mapVideo(data as VideoRow) : null;
+    return data ? mapVideo(data as VideoRowExtended) : null;
   }
 
   async listVideosByStatus(status: VideoStatus): Promise<VideoAsset[]> {
@@ -521,7 +526,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to create video asset: ${error.message}`);
     }
 
-    return mapVideo(data as VideoRow);
+    const video = mapVideo(data as VideoRowExtended);
+    void this.triggerCfStreamIngest(video.id, video.fileUrl);
+    return video;
   }
 
   async markVideoSuperseded(input: {
@@ -541,7 +548,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       );
     }
 
-    return mapVideo(data as VideoRow);
+    return mapVideo(data as VideoRowExtended);
   }
 
   async reviewVideoAsset(input: {
@@ -568,7 +575,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       );
     }
 
-    return mapVideo(data as VideoRow);
+    return mapVideo(data as VideoRowExtended);
   }
 
   async reviewVideoAndUpdateTracking(input: {
@@ -1356,7 +1363,9 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       throw new Error(`Failed to increment batch clip count: ${incrementError.message}`);
     }
 
-    return mapVideo(data as VideoRow & { batch_submission_id?: string | null });
+    const clip = mapVideo(data as VideoRowExtended);
+    void this.triggerCfStreamIngest(clip.id, clip.fileUrl);
+    return clip;
   }
 
   async listClipsByBatch(batchId: string): Promise<import("@/domain/types").VideoAsset[]> {
@@ -1366,7 +1375,7 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .eq("batch_submission_id", batchId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(`listClipsByBatch: ${error.message}`);
-    return (data ?? []).map((row) => mapVideo(row as VideoRow & { batch_submission_id?: string | null }));
+    return (data ?? []).map((row) => mapVideo(row as VideoRowExtended));
   }
 
   async listBatchSubmissionsByStatus(
@@ -1427,5 +1436,19 @@ export class SupabaseCreatorRepository implements CreatorRepository {
       .delete()
       .eq("id", batchId);
     if (error) throw new Error(`Failed to delete batch submission: ${error.message}`);
+  }
+
+  private async triggerCfStreamIngest(videoId: string, fileKey: string): Promise<void> {
+    try {
+      const { data, error } = await this.client.storage.from("videos").createSignedUrl(fileKey, 86400);
+      if (error || !data?.signedUrl) return;
+
+      const uid = await ingestVideoToStream(videoId, data.signedUrl);
+      if (!uid) return;
+
+      await this.client.from("videos").update({ cf_stream_uid: uid } as never).eq("id", videoId);
+    } catch {
+      // fire-and-forget — never throw
+    }
   }
 }

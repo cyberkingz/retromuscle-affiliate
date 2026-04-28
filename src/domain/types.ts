@@ -83,6 +83,7 @@ export interface VideoAsset {
   rejectionReason?: string;
   supersededBy?: string;
   batchSubmissionId?: string;
+  cfStreamUid?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   createdAt: string;

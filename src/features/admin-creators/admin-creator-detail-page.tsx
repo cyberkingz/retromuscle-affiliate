@@ -88,6 +88,7 @@ export function AdminCreatorDetailPage({ data, creatorId }: AdminCreatorDetailPa
       current?.videos.map((v) => ({
         id: v.id,
         fileUrl: v.fileUrl,
+        cfStreamUid: v.cfStreamUid,
         videoType: v.videoType,
         resolution: v.resolution,
         durationSeconds: v.durationSeconds,

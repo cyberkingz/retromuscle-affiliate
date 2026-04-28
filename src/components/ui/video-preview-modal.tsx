@@ -164,8 +164,19 @@ export function VideoPreviewModal({ preview, title = "Preview" }: VideoPreviewMo
             </div>
           )}
 
-          {/* Video player */}
-          {signedUrl && !loading && !error && (
+          {/* CF Stream iframe player (compressed preview) */}
+          {currentItem?.cfStreamUid && !loading && !error && (
+            <iframe
+              key={currentItem.cfStreamUid}
+              src={`https://iframe.cloudflarestream.com/${currentItem.cfStreamUid}?autoplay=true&muted=true&loop=false&preload=auto`}
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowFullScreen
+              className="h-[80svh] w-full pt-10 pb-20 sm:pt-12 sm:pb-24"
+            />
+          )}
+
+          {/* Native video player (fallback: no CF Stream UID yet) */}
+          {signedUrl && !loading && !error && !currentItem?.cfStreamUid && (
             <>
               {/* Skeleton pulse while video loads */}
               {!videoReady && (
