@@ -62,6 +62,7 @@ export interface AdminCreatorDetailData {
       videoType: string;
       status: string;
       fileUrl: string;
+      cfStreamUid?: string;
       createdAt: string;
       rejectionReason?: string;
       durationSeconds: number;
@@ -179,6 +180,7 @@ export async function getAdminCreatorDetailData(input: {
             videoType: VIDEO_TYPE_LABELS[video.videoType],
             status: video.status,
             fileUrl: video.fileUrl,
+            cfStreamUid: video.cfStreamUid,
             createdAt: video.createdAt,
             rejectionReason: video.rejectionReason,
             durationSeconds: video.durationSeconds,

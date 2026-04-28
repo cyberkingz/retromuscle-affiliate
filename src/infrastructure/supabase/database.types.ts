@@ -517,6 +517,7 @@ export type Database = {
       videos: {
         Row: {
           batch_submission_id: string | null;
+          cf_stream_uid: string | null;
           created_at: string;
           creator_id: string;
           duration_seconds: number;
@@ -534,6 +535,7 @@ export type Database = {
         };
         Insert: {
           batch_submission_id?: string | null;
+          cf_stream_uid?: string | null;
           created_at?: string;
           creator_id: string;
           duration_seconds: number;
@@ -551,6 +553,7 @@ export type Database = {
         };
         Update: {
           batch_submission_id?: string | null;
+          cf_stream_uid?: string | null;
           created_at?: string;
           creator_id?: string;
           duration_seconds?: number;
