@@ -32,7 +32,7 @@ function buildCsp(nonce: string): string {
     // H-07: Explicit allowlist — no blanket https: so data cannot be exfiltrated to arbitrary origins on XSS.
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel-insights.com https://vitals.vercel-insights.com https://www.facebook.com https://connect.facebook.net",
     "media-src 'self' https://*.supabase.co blob:",
-    "frame-src 'self'",
+    "frame-src 'self' https://iframe.cloudflarestream.com",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
