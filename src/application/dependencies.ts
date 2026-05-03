@@ -1,10 +1,13 @@
 import type { CreatorRepository } from "@/application/repositories/creator-repository";
+import type { IResourceRepository } from "@/application/repositories/resource-repository";
 import { InMemoryCreatorRepository } from "@/application/repositories/in-memory-creator-repository";
+import { InMemoryResourceRepository } from "@/application/repositories/in-memory-resource-repository";
 import {
   createSupabaseServerClient,
   isSupabaseConfigured
 } from "@/infrastructure/supabase/server-client";
 import { SupabaseCreatorRepository } from "@/infrastructure/supabase/supabase-creator-repository";
+import { SupabaseResourceRepository } from "@/infrastructure/supabase/supabase-resource-repository";
 
 /**
  * Create a fresh repository instance per call.
@@ -20,4 +23,12 @@ export function getRepository(): CreatorRepository {
   }
 
   return new InMemoryCreatorRepository();
+}
+
+export function getResourceRepository(): IResourceRepository {
+  if (isSupabaseConfigured()) {
+    return new SupabaseResourceRepository(createSupabaseServerClient());
+  }
+
+  return new InMemoryResourceRepository();
 }

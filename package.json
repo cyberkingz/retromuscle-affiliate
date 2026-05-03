@@ -17,7 +17,7 @@
     "test": "vitest",
     "test:unit": "vitest run",
     "test:ci": "vitest run --reporter=verbose",
-    "supabase:types": "supabase gen types typescript --linked > src/types/supabase.ts",
+    "supabase:types": "supabase gen types typescript --local > src/infrastructure/supabase/database.types.ts",
     "smoke:flow": "node scripts/smoke-flow.mjs",
     "audit:ui": "node scripts/ui-audit.mjs",
     "seed:admin": "node scripts/seed-admin.mjs"

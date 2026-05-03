@@ -27,6 +27,7 @@ interface SiteHeaderProps {
     | "/dashboard"
     | "/uploads"
     | "/payouts"
+    | "/resources"
     | "/settings"
     | "/admin"
     | "/admin/applications"
@@ -44,6 +45,7 @@ const creatorLinks: Array<{ href: Route; label: string }> = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/uploads", label: "Uploads" },
   { href: "/payouts", label: "Paiements" },
+  { href: "/resources" as Route, label: "Ressources" },
   { href: "/settings", label: "Param\u00e8tres" }
 ];
 

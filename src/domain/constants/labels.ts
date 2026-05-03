@@ -1,4 +1,4 @@
-import type { CreatorStatus, PaymentStatus, VideoStatus, VideoType } from "@/domain/types";
+import type { CreatorStatus, PaymentStatus, ResourceContentType, VideoStatus, VideoType } from "@/domain/types";
 
 export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
   OOTD: "OOTD",
@@ -27,4 +27,12 @@ export const VIDEO_STATUS_LABELS: Record<VideoStatus, string> = {
   approved: "Approuve",
   rejected: "Rejete",
   revision_requested: "Révision demandée"
+};
+
+export const RESOURCE_CONTENT_TYPE_LABELS: Record<ResourceContentType, string> = {
+  TRAINING: "Entraînement",
+  OOTD: "Tenue du jour",
+  UNBOXING: "Unboxing",
+  REVIEW: "Test produit",
+  GENERAL: "Général"
 };

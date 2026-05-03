@@ -159,3 +159,32 @@ export interface CreatorApplication {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Resources ───────────────────────────────────────────────────────────────
+
+export const RESOURCE_CONTENT_TYPES = [
+  "TRAINING",
+  "OOTD",
+  "UNBOXING",
+  "REVIEW",
+  "GENERAL"
+] as const;
+
+export type ResourceContentType = (typeof RESOURCE_CONTENT_TYPES)[number];
+
+export interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  contentType: ResourceContentType;
+  fileKey: string | null;
+  fileName: string | null;
+  fileSizeBytes: number | null;
+  isPublished: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Shape returned to API clients — fileKey is an internal storage detail, never exposed. */
+export type PublicResource = Omit<Resource, "fileKey">;

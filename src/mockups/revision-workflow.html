@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetroMuscle — Revision Workflow Mockups</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,800;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── CSS vars (exact values from globals.css → converted to hex) ── */
+    :root {
+      --bg:        #A3E3FF;  /* hsl(198 100% 82%) */
+      --fg:        #07123B;  /* hsl(227  78% 12%) */
+      --primary:   #FF52B1;  /* hsl(327 100% 66%) */
+      --secondary: #051D7A;  /* hsl(228  92% 25%) */
+      --accent:    #FDF062;  /* hsl( 55  98% 69%) */
+      --mint:      #1EB86E;  /* hsl(151  72% 42%) */
+      --muted:     #D4F3FF;  /* hsl(198 100% 92%) */
+      --frost:     #EAF9FF;  /* hsl(198 100% 95%) */
+      --line:      rgba(7,18,59,0.18);
+      --amber-bg:  #FEF3C7;
+      --amber-bdr: #FCD34D;
+      --amber-txt: #92400E;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+    }
+
+    /* Retro grid — 24×24px, fg/8% lines — exact from globals.css */
+    .bg-retro-grid {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(7,18,59,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(7,18,59,0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: -1px -1px;
+    }
+
+    /* Display font = italic Barlow Condensed */
+    .font-display {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-style: italic;
+      letter-spacing: -0.02em;
+      font-weight: 900;
+    }
+
+    /* Glass panel — from globals.css */
+    .glass-panel {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 26px -14px rgba(6,13,56,0.26);
+    }
+
+    /* ── Tab nav ── */
+    .tab-btn {
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      background: rgba(7,18,59,0.08);
+      color: rgba(7,18,59,0.5);
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { background: rgba(7,18,59,0.14); }
+    .tab-btn.active { background: var(--secondary); color: #fff; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .badge-amber  { background: var(--amber-bg); color: var(--amber-txt); border: 1px solid var(--amber-bdr); }
+    .badge-green  { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .badge-blue   { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+    .badge-red    { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+    .badge-gray   { background: rgba(7,18,59,0.07); color: rgba(7,18,59,0.55); border: 1px solid rgba(7,18,59,0.12); }
+    .badge-primary { background: var(--primary); color: #fff; }
+
+    /* ── Card ── */
+    .card { border-radius: 22px; border: 1px solid var(--line); overflow: hidden; }
+    .card-white { background: rgba(255,255,255,0.9); }
+
+    /* ── Button styles ── */
+    .btn-primary {
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: #e8449f; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--secondary); color: #fff;
+      border: none; border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-secondary:hover { opacity: 0.85; }
+
+    .btn-outline {
+      background: transparent; color: var(--fg);
+      border: 1px solid rgba(7,18,59,0.22); border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: rgba(7,18,59,0.4); }
+
+    .btn-disabled {
+      background: rgba(7,18,59,0.12); color: rgba(7,18,59,0.3);
+      border: none; border-radius: 999px;
+      padding: 12px 22px;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: not-allowed; width: 100%;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed rgba(7,18,59,0.18);
+      border-radius: 16px; transition: all 0.2s;
+      background: rgba(7,18,59,0.02);
+      cursor: pointer;
+    }
+    .drop-zone:hover {
+      border-color: var(--primary);
+      background: rgba(255,82,177,0.04);
+    }
+
+    /* ── Timeline dots ── */
+    .tl-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .tl-dot-navy   { background: var(--secondary); }
+    .tl-dot-amber  { background: #F59E0B; }
+    .tl-dot-blue   { background: #3B82F6; }
+    .tl-dot-green  { background: var(--mint); }
+    .tl-dot-ghost  { background: transparent; border: 2px solid rgba(7,18,59,0.2); }
+
+    /* ── Progress steps ── */
+    .prog-step { flex: 1; height: 4px; border-radius: 2px; }
+
+    /* ── Locked pill ── */
+    .lock-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(7,18,59,0.06); border: 1px solid rgba(7,18,59,0.1);
+      border-radius: 10px; padding: 6px 12px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(7,18,59,0.55);
+    }
+
+    /* ── Animated checkmark ── */
+    @keyframes draw-check { from { stroke-dashoffset: 50; } to { stroke-dashoffset: 0; } }
+    .check-line { stroke-dasharray: 50; stroke-dashoffset: 50; animation: draw-check 0.5s ease-out 0.3s forwards; }
+
+    /* ── Pulse dot ── */
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.45); }
+      70%  { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+      100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+    }
+    .pulse-blue { animation: pulse-ring 2s ease-out infinite; }
+
+    /* Mobile frame */
+    .mobile-frame { max-width: 390px; margin: 0 auto; }
+
+    /* ── Site header ── */
+    .site-header {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .site-header-announce {
+      background: var(--secondary);
+      color: rgba(255,255,255,0.7);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 6px 16px;
+    }
+    .site-header-announce a { color: #fff; text-decoration: underline; }
+    .site-header-announce.amber {
+      background: #FBBF24; color: #78350F;
+    }
+    .site-header-announce.amber a { color: #78350F; }
+
+    details summary { list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+
+    .grid-2col { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+
+    @media (max-width: 900px) {
+      .grid-2col { grid-template-columns: 1fr; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--muted); }
+    ::-webkit-scrollbar-thumb { background: rgba(7,18,59,0.2); border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-retro-grid">
+
+  <!-- ═══ STICKY TAB NAV ═══ -->
+  <div style="position:sticky;top:0;z-index:50;background:rgba(163,227,255,0.95);backdrop-filter:blur(10px);border-bottom:1px solid rgba(7,18,59,0.12);">
+    <div style="max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px;overflow-x:auto;">
+      <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(7,18,59,0.3);flex-shrink:0;">Mockups</span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="showTab('uploads-list')"    class="tab-btn active"  id="btn-uploads-list"   >1 · Page Uploads</button>
+        <button onclick="showTab('revision-desktop')" class="tab-btn"         id="btn-revision-desktop">2 · Révision Desktop</button>
+        <button onclick="showTab('revision-mobile')"  class="tab-btn"         id="btn-revision-mobile" >3 · Révision Mobile</button>
+        <button onclick="showTab('revision-success')" class="tab-btn"         id="btn-revision-success">4 · Succès + Timeline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 1 — PAGE UPLOADS (updated)
+  ════════════════════════════════════════ -->
+  <div id="tab-uploads-list" class="tab-content active bg-retro-grid">
+
+    <!-- Simulated site header -->
+    <div class="site-header">
+      <div class="site-header-announce amber">
+        <a href="#" onclick="showTab('revision-desktop');return false;">1 vidéo à corriger — voir les instructions</a>
+      </div>
+      <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:0 32px;height:64px;">
+        <nav style="display:flex;gap:20px;">
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg);text-decoration:none;">Dashboard</a>
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--primary);padding-bottom:2px;">Uploads</a>
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(7,18,59,0.4);text-decoration:none;">Paiements</a>
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(7,18,59,0.4);text-decoration:none;">Paramètres</a>
+        </nav>
+        <div class="font-display" style="font-size:22px;color:var(--secondary);">RETROMUSCLE</div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;">Mon espace</button>
+          <button class="btn-primary" style="padding:6px 14px;font-size:11px;">Déconnexion</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page content — 2-col: main + aside -->
+    <div style="max-width:1100px;margin:0 auto;padding:32px 16px;">
+
+      <!-- Page title (full width above grid) -->
+      <div style="margin-bottom:20px;">
+        <span class="badge badge-gray" style="margin-bottom:8px;display:inline-block;">Uploads</span>
+        <h1 class="font-display" style="font-size:42px;line-height:1;color:var(--secondary);">DÉPOSE TES CONTENUS — AVRIL 2026</h1>
+        <p style="font-size:13px;color:rgba(7,18,59,0.45);margin-top:6px;">Upload, suis le statut (validation / révision / rejet), et re-uploade si besoin.</p>
+      </div>
+
+      <!-- Stats grid (full width above grid) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="card card-white" style="padding:14px 16px;text-align:center;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(7,18,59,0.4);">À valider</p>
+          <p class="font-display" style="font-size:32px;color:rgba(7,18,59,0.25);margin-top:4px;">0</p>
+        </div>
+        <div class="card card-white" style="padding:14px 16px;text-align:center;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(7,18,59,0.4);">Approuvées</p>
+          <p class="font-display" style="font-size:32px;color:var(--mint);margin-top:4px;">0</p>
+        </div>
+        <!-- Highlighted: revision -->
+        <div class="card" style="padding:14px 16px;text-align:center;background:#FFFBEB;border-color:#FCD34D;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#B45309;">En révision</p>
+          <p class="font-display" style="font-size:32px;color:#F59E0B;margin-top:4px;">1</p>
+        </div>
+        <div class="card card-white" style="padding:14px 16px;text-align:center;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(7,18,59,0.4);">Rejetées</p>
+          <p class="font-display" style="font-size:32px;color:#EF4444;margin-top:4px;">0</p>
+        </div>
+      </div>
+
+      <!-- 2-col layout: main (video list + wizard) + aside (revision alert) -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+        <!-- ── MAIN COL ── -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Upload wizard (collapsed placeholder) -->
+          <div class="card card-white">
+            <div style="padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);">Nouvel upload</p>
+                <p class="font-display" style="font-size:22px;color:var(--secondary);">DÉPOSER UN CONTENU</p>
+              </div>
+              <span style="font-size:11px;background:rgba(7,18,59,0.06);color:rgba(7,18,59,0.4);padding:6px 12px;border-radius:999px;font-weight:600;">Étape 1/4</span>
+            </div>
+            <div style="padding:24px;text-align:center;color:rgba(7,18,59,0.25);font-style:italic;font-size:13px;">
+              — Wizard d'upload inchangé (choix type → specs → dépôt → succès) —
+            </div>
+          </div>
+
+          <!-- Video list label -->
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.4);">Tous les uploads — Avril 2026</p>
+
+          <!-- ── VIDEO CARD: revision_requested ── -->
+          <div class="card" style="background:rgba(255,255,255,0.95);border-color:#FCD34D;border-width:2px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
+              <div>
+                <p class="font-display" style="font-size:20px;color:var(--secondary);">OOTD</p>
+                <p style="font-size:11px;color:rgba(7,18,59,0.4);">20/04/26 · 00:38 · 1080×1920</p>
+              </div>
+              <span class="badge badge-amber">Révision demandée</span>
+            </div>
+            <!-- Admin note inline -->
+            <div style="margin:0 20px 16px;border-radius:14px;border:1px solid #FDE68A;background:#FFFBEB;padding:12px 16px;">
+              <p style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(146,64,14,0.7);margin-bottom:6px;">Modifications demandées</p>
+              <p style="font-size:13px;color:#78350F;line-height:1.5;">L'éclairage est insuffisant — utilise une lumière naturelle ou un ring light. Le fond doit être neutre (mur blanc ou fond uni).</p>
+            </div>
+            <div style="padding:0 20px 20px;display:flex;gap:10px;align-items:center;">
+              <button onclick="showTab('revision-desktop')" class="btn-secondary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                Corriger et re-uploader
+              </button>
+              <button class="btn-outline" style="padding:10px 16px;font-size:11px;display:flex;align-items:center;gap:6px;">
+                <svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Voir
+              </button>
+            </div>
+          </div>
+
+          <!-- Approved video -->
+          <div class="card card-white" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;opacity:0.55;">
+            <div>
+              <p class="font-display" style="font-size:18px;color:var(--secondary);">TRAINING</p>
+              <p style="font-size:11px;color:rgba(7,18,59,0.4);">15/04/26 · 01:24</p>
+            </div>
+            <span class="badge badge-green">Approuvée</span>
+          </div>
+
+          <p style="text-align:center;font-size:11px;color:rgba(7,18,59,0.3);padding-bottom:16px;">
+            ↑ Clique "Corriger et re-uploader" pour voir la page de révision guidée
+          </p>
+        </div>
+
+        <!-- ── ASIDE: revision alert (sticky) ── -->
+        <aside style="position:sticky;top:72px;display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Amber alert card -->
+          <div style="border-radius:20px;border:1.5px solid #FCD34D;background:#FFFBEB;overflow:hidden;">
+            <!-- Coloured top accent -->
+            <div style="background:#FBBF24;padding:10px 16px;display:flex;align-items:center;gap:8px;">
+              <svg style="width:14px;height:14px;flex-shrink:0;" fill="none" viewBox="0 0 24 24" stroke="#78350F" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#78350F;">Action requise</p>
+            </div>
+            <div style="padding:16px;">
+              <p class="font-display" style="font-size:22px;color:#92400E;line-height:1.1;">1 VIDÉO À CORRIGER</p>
+              <p style="font-size:13px;color:#78350F;margin-top:6px;line-height:1.5;">L'équipe a demandé des modifications. Suis les instructions et re-uploade pour être payé(e).</p>
+              <button onclick="showTab('revision-desktop')" class="btn-primary" style="margin-top:14px;width:100%;justify-content:center;background:#F59E0B;">
+                Voir les instructions →
+              </button>
+            </div>
+          </div>
+
+          <!-- Tip card -->
+          <div style="border-radius:16px;border:1px solid rgba(7,18,59,0.09);background:rgba(255,255,255,0.6);padding:14px 16px;">
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(7,18,59,0.3);margin-bottom:6px;">Rappel</p>
+            <p style="font-size:12px;color:rgba(7,18,59,0.5);line-height:1.5;">Une correction validée est comptabilisée dans tes gains du mois en cours.</p>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 2 — REVISION PAGE DESKTOP
+  ════════════════════════════════════════ -->
+  <div id="tab-revision-desktop" class="tab-content bg-retro-grid">
+
+    <!-- Site header — notification bar + nav -->
+    <div class="site-header">
+      <div class="site-header-announce amber">
+        <a href="#" onclick="showTab('uploads-list');return false;">1 vidéo à corriger — voir les instructions</a>
+      </div>
+      <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:0 32px;height:64px;">
+        <nav style="display:flex;gap:20px;">
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(7,18,59,0.45);text-decoration:none;">Dashboard</a>
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--primary);padding-bottom:2px;">Uploads</a>
+          <a href="#" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(7,18,59,0.45);text-decoration:none;">Paiements</a>
+        </nav>
+        <div class="font-display" style="font-size:22px;color:var(--secondary);">RETROMUSCLE</div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;">Mon espace</button>
+          <button class="btn-primary" style="padding:6px 14px;font-size:11px;">Déconnexion</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1100px;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Breadcrumb -->
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(7,18,59,0.4);">
+        <a href="#" onclick="showTab('uploads-list');return false;" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--fg)'" onmouseout="this.style.color='rgba(7,18,59,0.4)'">Uploads</a>
+        <span>/</span>
+        <span style="color:rgba(7,18,59,0.65);font-weight:600;">Corriger ma vidéo</span>
+      </div>
+
+      <!-- Page title -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+        <div>
+          <span class="badge badge-amber" style="margin-bottom:10px;display:inline-block;">Action requise</span>
+          <h1 class="font-display" style="font-size:44px;line-height:1;color:var(--secondary);">CORRECTION REQUISE</h1>
+          <p style="font-size:13px;color:rgba(7,18,59,0.45);margin-top:6px;">Type : OOTD · Déposée le 20/04/2026 · Version 1</p>
+        </div>
+        <span style="flex-shrink:0;border:1px solid rgba(7,18,59,0.15);padding:6px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(7,18,59,0.35);">v1 → v2</span>
+      </div>
+
+      <!-- 3-step progress -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:8px;">
+          <div class="prog-step" style="background:var(--primary);"></div>
+          <div class="prog-step" style="background:rgba(7,18,59,0.1);"></div>
+          <div class="prog-step" style="background:rgba(7,18,59,0.1);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(7,18,59,0.3);">
+          <span style="color:var(--primary);">1 · Comprendre</span>
+          <span>2 · Uploader</span>
+          <span>3 · Confirmer</span>
+        </div>
+      </div>
+
+      <!-- 2-col layout -->
+      <div class="grid-2col">
+
+        <!-- ── LEFT COL ── -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Original video preview -->
+          <div class="card card-white">
+            <div style="padding:16px 20px 12px;border-bottom:1px solid var(--line);">
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);">Ta vidéo originale</p>
+            </div>
+            <!-- Simulated video thumbnail — 16:9, all children absolutely positioned -->
+            <div style="position:relative;width:100%;aspect-ratio:16/9;background:var(--secondary);overflow:hidden;">
+              <!-- Gradient overlay bottom -->
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(5,29,122,0.75) 0%,transparent 55%);"></div>
+              <!-- Type watermark — large, centred -->
+              <p class="font-display" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:72px;color:rgba(255,255,255,0.07);white-space:nowrap;pointer-events:none;">OOTD</p>
+              <!-- Play button — dead centre -->
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);">
+                <svg style="width:22px;height:22px;fill:white;margin-left:3px;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <!-- Status badge + date — bottom bar -->
+              <div style="position:absolute;bottom:10px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;">
+                <span class="badge badge-amber" style="font-size:9px;">Révision demandée</span>
+                <span style="font-size:10px;color:rgba(255,255,255,0.5);font-weight:600;">20/04/26</span>
+              </div>
+            </div>
+            <!-- Metadata row -->
+            <div style="padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);">
+              <div style="display:flex;gap:16px;font-size:11px;color:rgba(7,18,59,0.4);font-weight:600;">
+                <span>00:38</span>
+                <span>1080×1920</span>
+                <span>45 MB</span>
+              </div>
+              <button style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(7,18,59,0.4);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Voir en plein écran
+              </button>
+            </div>
+          </div>
+
+          <!-- Admin instructions card — plain text only, no generated checklist -->
+          <div style="border-radius:22px;border:1px solid #FDE68A;border-left:4px solid #FBBF24;background:#FFFBEB;padding:20px 20px 20px 18px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <svg style="width:16px;height:16px;flex-shrink:0;margin-top:2px;" fill="none" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+              <div>
+                <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#B45309;">Ce que l'équipe te demande</p>
+                <p style="font-size:14px;color:#78350F;line-height:1.6;margin-top:6px;">
+                  L'éclairage est insuffisant — utilise une lumière naturelle ou un ring light. Le fond doit être neutre (mur blanc ou fond uni).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin format toggle — annotation showing the admin-side UX -->
+          <div style="border-radius:14px;border:1px dashed rgba(7,18,59,0.15);background:rgba(7,18,59,0.02);padding:14px 16px;">
+            <p style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(7,18,59,0.3);margin-bottom:10px;">🔧 Côté admin — choix du format à la rédaction :</p>
+            <div style="display:inline-flex;align-items:center;background:rgba(7,18,59,0.08);border-radius:999px;padding:3px;gap:2px;">
+              <button style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:white;color:var(--secondary);border:none;border-radius:999px;padding:6px 14px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Texte libre</button>
+              <button style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;color:rgba(7,18,59,0.4);border:none;border-radius:999px;padding:6px 14px;cursor:pointer;">Liste à puces</button>
+            </div>
+            <p style="font-size:11px;color:rgba(7,18,59,0.4);margin-top:8px;line-height:1.45;">Si "Liste à puces" est sélectionné, l'admin écrit une ligne par point. Le créateur voit une liste à puces, pas des cases à cocher.</p>
+          </div>
+
+          <!-- Hint -->
+          <div style="border-radius:14px;border:1px solid rgba(7,18,59,0.09);background:rgba(7,18,59,0.03);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;">
+            <svg style="width:14px;height:14px;color:rgba(7,18,59,0.25);flex-shrink:0;margin-top:1px;" fill="none" viewBox="0 0 24 24" stroke="rgba(7,18,59,0.3)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p style="font-size:12px;color:rgba(7,18,59,0.45);line-height:1.5;">Tu ne sais pas exactement quoi changer ? Contacte l'équipe sur WhatsApp avant de re-uploader — une vidéo bien corrigée du premier coup, c'est un paiement plus rapide.</p>
+          </div>
+        </div>
+
+        <!-- ── RIGHT COL ── -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <!-- Upload card -->
+          <div class="card card-white">
+            <div style="padding:16px 20px 12px;border-bottom:1px solid var(--line);">
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);">Ta nouvelle version</p>
+              <p class="font-display" style="font-size:22px;color:var(--secondary);">UPLOADER LA CORRECTION</p>
+            </div>
+            <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px;">
+
+              <!-- Locked type pill -->
+              <div class="lock-pill">
+                <svg style="width:12px;height:12px;" fill="none" viewBox="0 0 24 24" stroke="rgba(7,18,59,0.45)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                Type verrouillé :&nbsp;<strong style="color:var(--fg);">OOTD</strong>
+              </div>
+
+              <!-- Drop zone -->
+              <div class="drop-zone" style="padding:28px 20px;text-align:center;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:16px;background:rgba(255,82,177,0.12);display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:24px;height:24px;" fill="none" viewBox="0 0 24 24" stroke="var(--primary)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                  </div>
+                  <div>
+                    <p class="font-display" style="font-size:18px;color:var(--secondary);">GLISSE TA VIDÉO CORRIGÉE (V2)</p>
+                    <p style="font-size:11px;color:rgba(7,18,59,0.35);margin-top:2px;">ou clique pour choisir un fichier</p>
+                  </div>
+                  <p style="font-size:10px;color:rgba(7,18,59,0.25);">MP4 · max 2 Go · 9:16 ou 1:1</p>
+                </div>
+              </div>
+
+              <!-- Specs collapsible -->
+              <details style="border-radius:14px;border:1px solid var(--line);overflow:hidden;">
+                <summary style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(7,18,59,0.4);cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                  Voir les specs techniques
+                  <svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="rgba(7,18,59,0.3)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                </summary>
+                <div style="padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--line);">
+                  <div style="background:rgba(7,18,59,0.04);border-radius:10px;padding:8px 12px;">
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(7,18,59,0.3);">Format</p>
+                    <p style="font-size:12px;font-weight:600;color:var(--fg);margin-top:2px;">MP4 / MOV</p>
+                  </div>
+                  <div style="background:rgba(7,18,59,0.04);border-radius:10px;padding:8px 12px;">
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(7,18,59,0.3);">Résolution</p>
+                    <p style="font-size:12px;font-weight:600;color:var(--fg);margin-top:2px;">1080×1920</p>
+                  </div>
+                  <div style="background:rgba(7,18,59,0.04);border-radius:10px;padding:8px 12px;">
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(7,18,59,0.3);">Durée</p>
+                    <p style="font-size:12px;font-weight:600;color:var(--fg);margin-top:2px;">15 – 90 sec</p>
+                  </div>
+                  <div style="background:rgba(7,18,59,0.04);border-radius:10px;padding:8px 12px;">
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(7,18,59,0.3);">Taille max</p>
+                    <p style="font-size:12px;font-weight:600;color:var(--fg);margin-top:2px;">2 Go</p>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Mini history -->
+          <div class="card card-white" style="padding:16px 20px;">
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);margin-bottom:12px;">Historique</p>
+            <div style="display:flex;flex-direction:column;gap:0;">
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                  <div class="tl-dot tl-dot-navy" style="margin-top:3px;"></div>
+                  <div style="width:1px;height:28px;background:rgba(7,18,59,0.12);margin-top:4px;"></div>
+                </div>
+                <div style="padding-bottom:8px;">
+                  <p style="font-size:12px;font-weight:600;color:var(--fg);">Upload original (v1)</p>
+                  <p style="font-size:10px;color:rgba(7,18,59,0.35);">20 avr. 2026</p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                  <div class="tl-dot tl-dot-amber" style="margin-top:3px;"></div>
+                  <div style="width:1px;height:28px;background:#FDE68A;margin-top:4px;"></div>
+                </div>
+                <div style="padding-bottom:8px;">
+                  <p style="font-size:12px;font-weight:600;color:#B45309;">Révision demandée</p>
+                  <p style="font-size:10px;color:rgba(7,18,59,0.35);">20 avr. 2026</p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;opacity:0.4;">
+                <div class="tl-dot tl-dot-ghost" style="margin-top:3px;"></div>
+                <div>
+                  <p style="font-size:12px;font-weight:600;color:rgba(7,18,59,0.5);">Ta correction v2</p>
+                  <p style="font-size:10px;color:rgba(7,18,59,0.3);">En attente...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit btn (disabled until file selected) -->
+          <button class="btn-disabled">Envoyer la correction →</button>
+          <p style="text-align:center;font-size:10px;color:rgba(7,18,59,0.28);">Le bouton s'active après avoir déposé un fichier</p>
+
+          <!-- Active state preview -->
+          <div style="border-top:1px solid var(--line);padding-top:14px;">
+            <p style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(7,18,59,0.3);margin-bottom:8px;">État après sélection de fichier :</p>
+            <button onclick="showTab('revision-success')" class="btn-primary" style="width:100%;justify-content:center;">
+              Envoyer la correction →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 3 — REVISION PAGE MOBILE
+  ════════════════════════════════════════ -->
+  <div id="tab-revision-mobile" class="tab-content bg-retro-grid" style="padding:32px 16px;">
+    <p style="text-align:center;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);margin-bottom:24px;">iPhone 390px — scroll simulation</p>
+
+    <div class="mobile-frame" style="border-radius:36px;overflow:hidden;border:4px solid rgba(7,18,59,0.15);box-shadow:0 24px 60px -12px rgba(7,18,59,0.2);">
+
+      <!-- Mobile site header -->
+      <div style="background:rgba(255,255,255,0.97);border-bottom:1px solid var(--line);">
+        <div style="background:#FBBF24;padding:6px 16px;text-align:center;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#78350F;">
+            <a href="#" style="color:#78350F;text-decoration:none;">1 vidéo à corriger — voir les instructions</a>
+          </p>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;">
+          <button style="background:none;border:none;padding:4px;cursor:pointer;">
+            <svg style="width:22px;height:22px;" fill="none" viewBox="0 0 24 24" stroke="var(--fg)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+          </button>
+          <p class="font-display" style="font-size:18px;color:var(--secondary);">RETROMUSCLE</p>
+          <div style="width:30px;"></div>
+        </div>
+      </div>
+
+      <!-- Mobile page content -->
+      <div style="background:var(--bg);background-image:linear-gradient(rgba(7,18,59,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(7,18,59,0.08) 1px,transparent 1px);background-size:24px 24px;padding:16px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Title -->
+        <div>
+          <span class="badge badge-amber" style="margin-bottom:8px;display:inline-block;">Action requise</span>
+          <h1 class="font-display" style="font-size:30px;line-height:1.05;color:var(--secondary);">CORRECTION REQUISE</h1>
+          <p style="font-size:11px;color:rgba(7,18,59,0.4);margin-top:4px;">OOTD · 20/04/2026</p>
+        </div>
+
+        <!-- Progress -->
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;height:3px;border-radius:2px;background:var(--primary);"></div>
+          <div style="flex:1;height:3px;border-radius:2px;background:rgba(7,18,59,0.1);"></div>
+          <div style="flex:1;height:3px;border-radius:2px;background:rgba(7,18,59,0.1);"></div>
+        </div>
+
+        <!-- Admin note — plain text, no generated checklist -->
+        <div style="border-radius:18px;border:1px solid #FDE68A;border-left:4px solid #FBBF24;background:#FFFBEB;padding:14px 14px 14px 12px;">
+          <p style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(146,64,14,0.65);margin-bottom:8px;">Ce que l'équipe te demande</p>
+          <p style="font-size:14px;color:#78350F;line-height:1.55;">
+            L'éclairage est insuffisant — utilise une lumière naturelle ou un ring light. Fond neutre requis.
+          </p>
+        </div>
+
+        <!-- Original video (compact) -->
+        <div class="card card-white">
+          <div style="position:relative;background:var(--secondary);height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            <p class="font-display" style="font-size:36px;color:rgba(255,255,255,0.12);">OOTD</p>
+            <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+              <svg style="width:18px;height:18px;fill:white;margin-left:2px;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+          <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <p style="font-size:11px;color:rgba(7,18,59,0.4);font-weight:600;">Vidéo originale · 00:38</p>
+            <button style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:none;cursor:pointer;color:rgba(7,18,59,0.4);">Voir</button>
+          </div>
+        </div>
+
+        <!-- Upload zone — tap button on mobile -->
+        <div class="card card-white">
+          <div style="padding:12px 16px 10px;border-bottom:1px solid var(--line);">
+            <div class="lock-pill">
+              <svg style="width:11px;height:11px;" fill="none" viewBox="0 0 24 24" stroke="rgba(7,18,59,0.45)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+              Type verrouillé :&nbsp;<strong style="color:var(--fg);">OOTD</strong>
+            </div>
+          </div>
+          <!-- Big tap target for mobile -->
+          <button style="width:100%;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:none;cursor:pointer;">
+            <div style="width:52px;height:52px;border-radius:18px;background:rgba(255,82,177,0.1);display:flex;align-items:center;justify-content:center;">
+              <svg style="width:26px;height:26px;" fill="none" viewBox="0 0 24 24" stroke="var(--primary)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            </div>
+            <div style="text-align:center;">
+              <p class="font-display" style="font-size:18px;color:var(--secondary);">CHOISIR MA VIDÉO CORRIGÉE</p>
+              <p style="font-size:11px;color:rgba(7,18,59,0.3);margin-top:2px;">MP4 · max 2 Go</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Submit disabled -->
+        <button class="btn-disabled" style="padding:14px;">Envoyer la correction</button>
+        <p style="text-align:center;font-size:10px;color:rgba(7,18,59,0.28);padding-bottom:4px;">Sélectionne une vidéo pour continuer</p>
+      </div>
+    </div>
+
+    <!-- Floating chip annotation -->
+    <div class="mobile-frame" style="margin-top:12px;">
+      <div style="display:flex;justify-content:flex-end;">
+        <div style="background:var(--secondary);color:white;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:8px 16px;border-radius:999px;box-shadow:0 4px 16px rgba(5,29,122,0.3);display:flex;align-items:center;gap:6px;">
+          <svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>
+          Voir les instructions
+        </div>
+      </div>
+      <p style="font-size:10px;color:rgba(7,18,59,0.35);text-align:right;margin-top:4px;padding-right:4px;">Floating chip → scroll to top</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 4 — SUCCESS + TIMELINE
+  ════════════════════════════════════════ -->
+  <div id="tab-revision-success" class="tab-content bg-retro-grid">
+
+    <div style="max-width:1100px;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Breadcrumb -->
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(7,18,59,0.4);">
+        <a href="#" onclick="showTab('uploads-list');return false;" style="color:inherit;text-decoration:none;">Uploads</a>
+        <span>/</span>
+        <span style="color:rgba(7,18,59,0.65);font-weight:600;">Corriger ma vidéo</span>
+      </div>
+
+      <!-- Progress — all done -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:8px;">
+          <div class="prog-step" style="background:var(--mint);"></div>
+          <div class="prog-step" style="background:var(--mint);"></div>
+          <div class="prog-step" style="background:var(--mint);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--mint);">
+          <span>1 · Compris</span>
+          <span>2 · Uploadé</span>
+          <span>3 · Envoyé</span>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+
+        <!-- ── LEFT: Success ── -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Success hero card -->
+          <div class="card" style="background:rgba(255,255,255,0.95);border-color:rgba(30,184,110,0.3);">
+            <div style="padding:40px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px;">
+              <!-- Animated checkmark -->
+              <div style="width:80px;height:80px;border-radius:50%;background:rgba(30,184,110,0.12);display:flex;align-items:center;justify-content:center;">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="19" stroke="#1EB86E" stroke-width="2" fill="none"/>
+                  <polyline class="check-line" points="13,23 20,30 32,15" stroke="#1EB86E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="font-display" style="font-size:36px;color:var(--secondary);">CORRECTION ENVOYÉE !</h2>
+                <p style="font-size:14px;color:rgba(7,18,59,0.5);margin-top:8px;line-height:1.55;">
+                  Ta nouvelle version (v2) est maintenant en attente de validation.<br/>
+                  L'équipe RetroMuscle la review généralement sous <strong>24–48h</strong>.
+                </p>
+              </div>
+              <!-- File summary -->
+              <div style="width:100%;background:rgba(7,18,59,0.04);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:40px;height:40px;border-radius:12px;background:rgba(7,18,59,0.08);display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:20px;height:20px;" fill="none" viewBox="0 0 24 24" stroke="rgba(7,18,59,0.35)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/></svg>
+                  </div>
+                  <div style="text-align:left;">
+                    <p style="font-size:12px;font-weight:700;color:var(--fg);">ootd-correction-v2.mp4</p>
+                    <p style="font-size:10px;color:rgba(7,18,59,0.4);">OOTD · 00:42 · 1080×1920 · 48 MB</p>
+                  </div>
+                </div>
+                <span class="badge badge-blue">v2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTAs -->
+          <div style="display:flex;gap:10px;">
+            <button onclick="showTab('uploads-list')" class="btn-secondary" style="flex:1;justify-content:center;">
+              Retour à mes uploads
+            </button>
+            <button class="btn-outline" style="display:flex;align-items:center;gap:6px;">
+              <svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.494 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z"/></svg>
+              Contacter l'équipe
+            </button>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Timeline ── -->
+        <div class="card card-white" style="overflow:visible;">
+          <div style="padding:16px 20px 14px;border-bottom:1px solid var(--line);">
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(7,18,59,0.35);">Historique de cette vidéo</p>
+            <p class="font-display" style="font-size:22px;color:var(--secondary);">OOTD · AVRIL 2026</p>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:0;">
+
+            <!-- v1: Upload original -->
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                <div class="tl-dot tl-dot-navy" style="margin-top:3px;"></div>
+                <div style="width:1px;flex:1;background:rgba(7,18,59,0.12);margin-top:4px;min-height:44px;"></div>
+              </div>
+              <div style="padding-bottom:14px;flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <p style="font-size:13px;font-weight:700;color:var(--fg);">Upload original (v1)</p>
+                  <span class="badge badge-gray" style="font-size:9px;">v1</span>
+                </div>
+                <p style="font-size:11px;color:rgba(7,18,59,0.35);margin-top:2px;">20 avr. 2026 à 14:32</p>
+                <p style="font-size:11px;color:rgba(7,18,59,0.25);margin-top:1px;">OOTD · 00:38 · 45 MB</p>
+              </div>
+            </div>
+
+            <!-- Revision requested -->
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                <div class="tl-dot tl-dot-amber" style="margin-top:3px;"></div>
+                <div style="width:1px;flex:1;background:#FDE68A;margin-top:4px;min-height:60px;"></div>
+              </div>
+              <div style="padding-bottom:14px;flex:1;">
+                <p style="font-size:13px;font-weight:700;color:#B45309;">Révision demandée par l'équipe</p>
+                <p style="font-size:11px;color:rgba(7,18,59,0.35);margin-top:2px;">20 avr. 2026 à 16:15</p>
+                <div style="margin-top:8px;border-radius:10px;border:1px solid #FDE68A;background:#FFFBEB;padding:8px 12px;">
+                  <p style="font-size:12px;color:#92400E;line-height:1.4;font-style:italic;">"Éclairage insuffisant, fond non-conforme"</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- v2: Correction sent (NOW, pulsing) -->
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                <div class="tl-dot tl-dot-blue pulse-blue" style="margin-top:3px;"></div>
+                <div style="width:1px;flex:1;background:#BFDBFE;margin-top:4px;min-height:44px;"></div>
+              </div>
+              <div style="padding-bottom:14px;flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <p style="font-size:13px;font-weight:700;color:#1D4ED8;">Ta correction envoyée (v2)</p>
+                  <span class="badge badge-blue" style="font-size:9px;">maintenant</span>
+                </div>
+                <p style="font-size:11px;color:rgba(7,18,59,0.35);margin-top:2px;">20 avr. 2026 à 18:47</p>
+                <p style="font-size:11px;font-weight:600;color:#3B82F6;margin-top:2px;">En attente de validation</p>
+              </div>
+            </div>
+
+            <!-- Validation pending (ghost) -->
+            <div style="display:flex;align-items:flex-start;gap:14px;opacity:0.38;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                <div class="tl-dot tl-dot-ghost" style="margin-top:3px;"></div>
+                <div style="width:1px;flex:1;background:rgba(7,18,59,0.1);margin-top:4px;min-height:36px;"></div>
+              </div>
+              <div style="padding-bottom:14px;flex:1;">
+                <p style="font-size:13px;font-weight:600;color:rgba(7,18,59,0.5);">Validation par l'équipe</p>
+                <p style="font-size:11px;color:rgba(7,18,59,0.3);margin-top:2px;">Sous 24–48h habituellement</p>
+              </div>
+            </div>
+
+            <!-- Gains pending (ghost) -->
+            <div style="display:flex;align-items:flex-start;gap:14px;opacity:0.25;">
+              <div class="tl-dot tl-dot-ghost" style="margin-top:3px;flex-shrink:0;"></div>
+              <div>
+                <p style="font-size:13px;font-weight:600;color:rgba(7,18,59,0.5);">Comptabilisé dans tes gains</p>
+                <p style="font-size:11px;color:rgba(7,18,59,0.3);margin-top:2px;">+3,00 € · Virement en fin de mois</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = ['uploads-list','revision-desktop','revision-mobile','revision-success'];
+    function showTab(id) {
+      tabs.forEach(t => {
+        document.getElementById('tab-'+t).classList.remove('active');
+        const btn = document.getElementById('btn-'+t);
+        btn.classList.remove('active');
+      });
+      document.getElementById('tab-'+id).classList.add('active');
+      document.getElementById('btn-'+id).classList.add('active');
+      window.scrollTo({ top:0, behavior:'smooth' });
+    }
+  </script>
+</body>
+</html>

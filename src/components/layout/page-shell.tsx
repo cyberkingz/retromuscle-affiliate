@@ -19,6 +19,7 @@ interface PageShellProps extends PropsWithChildren {
     | "/dashboard"
     | "/uploads"
     | "/payouts"
+    | "/resources"
     | "/settings"
     | "/admin"
     | "/admin/applications"

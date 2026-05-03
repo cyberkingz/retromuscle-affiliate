@@ -52,7 +52,7 @@ export function ActivityFeedCard({ items }: ActivityFeedCardProps) {
           Aucune activité pour ce mois.
         </p>
       ) : (
-        <div className="space-y-0">
+        <div className="max-h-[288px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-foreground/15 [&::-webkit-scrollbar-track]:bg-transparent">
           {items.map((item, i) => (
             <div
               key={item.id}
